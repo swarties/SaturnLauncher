@@ -3,7 +3,6 @@ import {createRoot} from 'react-dom/client'
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import {routeTree} from './routeTree.gen.ts'
 import './style.css'
-import App from './App'
 
 const router = createRouter({
     routeTree,
