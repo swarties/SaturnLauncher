@@ -1,19 +1,19 @@
-import React from 'react'
-import {createRoot} from 'react-dom/client'
+import React from "react";
+import { createRoot } from "react-dom/client";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import {routeTree} from './routeTree.gen.ts'
-import './style.css'
+import { routeTree } from "./routeTree.gen.ts";
+import "./style.css";
 
 const router = createRouter({
-    routeTree,
-    defaultPreload: 'intent',
-})
+  routeTree,
+  defaultPreload: "intent",
+});
 
-const container = document.getElementById('root')
-const root = createRoot(container)
+const container = document.getElementById("root");
+const root = createRoot(container);
 
 root.render(
-    <React.StrictMode>
-        <RouterProvider router={router} />
-    </React.StrictMode>
-)
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>,
+);
