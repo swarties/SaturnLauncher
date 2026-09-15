@@ -14,7 +14,7 @@ var assets embed.FS
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
-
+	authapp := NewAuth()
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "SaturnLauncher",
@@ -27,6 +27,7 @@ func main() {
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app,
+			authapp,
 		},
 	})
 
