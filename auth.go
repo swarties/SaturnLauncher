@@ -173,8 +173,13 @@ func (a *Auth) GetXSTS(xblToken XBLPayload) (XSTSPayload, error) {
 	} else if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
 		fmt.Println("Status Code", resp.StatusCode)
+		// check https://minecraft.wiki/w/Microsoft_authentication for xbox error codes meaning
 		fmt.Println(string(b))
 	}
 	defer resp.Body.Close()
 	return XSTSToken, err
+}
+
+func (a *Auth) GetMinecraftAuth() {
+
 }

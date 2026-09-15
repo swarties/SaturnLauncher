@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"time"
 )
 
 // App struct
@@ -24,7 +22,7 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func main() {
+/* func main() {
 	// debug function before frontend
 	app := NewAuth()
 	payload, err := (*Auth).GetOAuthCode(app)
@@ -55,3 +53,4 @@ func main() {
 	xststoken := xsts.Token
 	fmt.Println("XSTS Token:", xststoken)
 }
+*/
