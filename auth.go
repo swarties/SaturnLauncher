@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 )
 
 type Auth struct {
+	ctx context.Context
 }
 
 func NewAuth() *Auth {
@@ -37,6 +39,10 @@ type XBLPayload struct {
 		} `json:"xui"`
 	} `json:"DisplayClaims"`
 	// userhash = resp.DisplayClaims.Xui[0].Uhs
+}
+
+type XSTSPayload struct {
+	Token string `json:"Token"`
 }
 
 func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
@@ -138,4 +144,37 @@ func (a *Auth) GetXBL(at MicrosoftAccessToken) (XBLPayload, error) {
 	defer resp.Body.Close()
 	return XBLToken, err
 
+}
+func (a *Auth) GetXSTS(xblToken XBLPayload) (XSTSPayload, error) {
+	var XSTSToken XSTSPayload
+	body := map[string]any{
+		"Properties": map[string]any{
+			"SandboxId":  "RETAIL",
+			"UserTokens": []interface{}{xblToken.Token},
+		},
+		"RelyingParty": "rp://api.minecraftservices.com/",
+		"TokenType":    "JWT",
+	}
+	JsonBody, err := json.Marshal(body)
+	if err != nil {
+		fmt.Println(err)
+	}
+	req, err := http.NewRequest("POST", "https://xsts.auth.xboxlive.com/xsts/authorize", bytes.NewBuffer(JsonBody))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	} else if resp.StatusCode == http.StatusOK {
+		err := json.NewDecoder(resp.Body).Decode(&XSTSToken)
+		if err != nil {
+			fmt.Println(err)
+		}
+	} else if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		fmt.Println("Status Code", resp.StatusCode)
+		fmt.Println(string(b))
+	}
+	defer resp.Body.Close()
+	return XSTSToken, err
 }

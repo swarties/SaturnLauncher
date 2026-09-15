@@ -50,4 +50,8 @@ func main() {
 	userHash := xbt.DisplayClaims.Xui[0].Uhs
 	fmt.Println("XblToken:", xbltoken)
 	fmt.Println("Userhash:", userHash)
+
+	xsts, err := (*Auth).GetXSTS(app, xbt)
+	xststoken := xsts.Token
+	fmt.Println("XSTS Token:", xststoken)
 }
