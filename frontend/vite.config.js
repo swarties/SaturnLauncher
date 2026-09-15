@@ -6,6 +6,9 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Wails serves the production bundle from its embedded asset filesystem.
+  // Relative URLs keep scripts and styles resolvable in that environment.
+  base: "./",
   plugins: [
     tanstackRouter({
       target: "react",
