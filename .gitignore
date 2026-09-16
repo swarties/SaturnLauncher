@@ -3,5 +3,6 @@ node_modules
 frontend/dist
 /frontend/package.json.md5
 /frontend/saturnlauncher-frontend-dependencies.md
+/frontend/src/routeTree.gen.ts
 .idea/
 .env
