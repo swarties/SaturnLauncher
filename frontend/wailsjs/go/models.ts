@@ -1,5 +1,19 @@
 export namespace main {
 	
+	export class AuthSession {
+	    RefreshToken: string;
+	    Uhs: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AuthSession(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.RefreshToken = source["RefreshToken"];
+	        this.Uhs = source["Uhs"];
+	    }
+	}
 	export class MicrosoftAccessToken {
 	    access_token: string;
 	    refresh_token: string;
@@ -34,6 +48,18 @@ export namespace main {
 	        this.verification_uri = source["verification_uri"];
 	        this.interval = source["interval"];
 	        this.expires_in = source["expires_in"];
+	    }
+	}
+	export class MinecraftPayload {
+	    access_token: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MinecraftPayload(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.access_token = source["access_token"];
 	    }
 	}
 	export class XBLPayload {
