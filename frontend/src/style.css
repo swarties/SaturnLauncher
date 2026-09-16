@@ -7,6 +7,17 @@
 @custom-variant dark (&:is(.dark *));
 @plugin 'daisyui';
 
+html, body, #root {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+input, textarea, [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Raleway Variable', sans-serif;
