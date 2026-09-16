@@ -26,8 +26,8 @@ function RouteComponent() {
           alt="microsoft icon"
         />
       </Button>
-      // Add a small gray text with Other Logins? that open a pop up saying only
-      microsoft logins are supported
     </div>
+
+    // Add a small gray text with Other Logins? that open a pop up saying only microsoft logins are supported
   );
 }

@@ -3,7 +3,7 @@ import * as Runtime from '../../wailsjs/runtime/runtime';
 import { useEffect } from 'react';
 
 const auth = {
-  isAuthenticated: false,
+  isAuthenticated: true,
 };
 
 const PUBLIC_ROUTES = ['/login'];
@@ -18,7 +18,7 @@ export const Route = createRootRoute({
       });
     }
 
-    if (auth.isAuthenticated && location.pathname === '/logi{ Window }n') {
+    if (auth.isAuthenticated && location.pathname === '/login') {
       throw redirect({ to: '/' });
     }
   },
