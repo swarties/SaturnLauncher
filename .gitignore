@@ -1,6 +1,7 @@
 build/bin
 node_modules
 frontend/dist
+/frontend/package.json.md5
 /frontend/saturnlauncher-frontend-dependencies.md
 .idea/
 .env

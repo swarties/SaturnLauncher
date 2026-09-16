@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -45,6 +46,10 @@ type XSTSPayload struct {
 	Token string `json:"Token"`
 }
 
+type MinecraftPayload struct {
+	AccessToken string `json:"access_token"`
+}
+
 func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 	// if nothing happens in 15 mins refresh code
 	var payload MicrosoftOAuthPayload
@@ -55,13 +60,13 @@ func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 	}
 	resp, err := http.PostForm("https://login.live.com/oauth20_connect.srf", form)
 	if err != nil {
-		fmt.Println("Error occured", err)
+		log.Fatal(err)
 	} else if resp.StatusCode == http.StatusOK {
 		fmt.Println("Succesfully retrived the OAuth Code!")
 
 		err := json.NewDecoder(resp.Body).Decode(&payload)
 		if err != nil {
-			return nil, err
+			log.Fatal(err)
 		}
 
 	} else if resp.StatusCode != http.StatusOK {
@@ -84,12 +89,12 @@ func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessTok
 	for {
 		resp, err := http.PostForm("https://login.live.com/oauth20_token.srf", body)
 		if err != nil {
-			fmt.Println("Error Occured", err)
+			log.Fatal(err)
 		} else if resp.StatusCode == http.StatusOK {
 			fmt.Println("User Logged In!")
 			err := json.NewDecoder(resp.Body).Decode(&accesstoken)
 			if err != nil {
-				return nil, err
+				log.Fatal(err)
 			}
 			resp.Body.Close()
 			break
@@ -123,18 +128,18 @@ func (a *Auth) GetXBL(at MicrosoftAccessToken) (XBLPayload, error) {
 	}
 	JsonBody, err := json.Marshal(body)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 	req, err := http.NewRequest("POST", "https://user.auth.xboxlive.com/user/authenticate", bytes.NewBuffer(JsonBody))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	} else if resp.StatusCode == http.StatusOK {
 		err := json.NewDecoder(resp.Body).Decode(&XBLToken)
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 		}
 	} else {
 		b, _ := io.ReadAll(resp.Body)
@@ -157,18 +162,18 @@ func (a *Auth) GetXSTS(xblToken XBLPayload) (XSTSPayload, error) {
 	}
 	JsonBody, err := json.Marshal(body)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 	req, err := http.NewRequest("POST", "https://xsts.auth.xboxlive.com/xsts/authorize", bytes.NewBuffer(JsonBody))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	} else if resp.StatusCode == http.StatusOK {
 		err := json.NewDecoder(resp.Body).Decode(&XSTSToken)
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 		}
 	} else if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
@@ -180,6 +185,33 @@ func (a *Auth) GetXSTS(xblToken XBLPayload) (XSTSPayload, error) {
 	return XSTSToken, err
 }
 
-func (a *Auth) GetMinecraftAuth() {
-
+func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (MinecraftPayload, error) {
+	var MinecraftToken MinecraftPayload
+	body := map[string]any{
+		"identityToken": "XBL3.0 x=" + XBLuhs.DisplayClaims.Xui[0].Uhs + ";" + xstsToken.Token,
+	}
+	JsonBody, err := json.Marshal(body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req, err := http.NewRequest("POST", "https://api.minecraftservices.com/authentication/login_with_xbox", bytes.NewBuffer(JsonBody))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	} else if resp.StatusCode == http.StatusOK {
+		err := json.NewDecoder(resp.Body).Decode(&MinecraftToken)
+		if err != nil {
+			log.Fatal(err)
+		} else if resp.StatusCode != http.StatusOK {
+			b, _ := io.ReadAll(resp.Body)
+			fmt.Println("Status Code", resp.StatusCode)
+			fmt.Println(string(b))
+		}
+	}
+	return MinecraftToken, err
 }
+
+// Refresh Token Function use RefreshToken string `json:"refresh_token"` save and/or update to a json file in appdata encrypt it
+// Note: Minecraft Access Token Is One Use And regenerated before launch

@@ -22,7 +22,8 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-/* func main() {
+/*
+func main() {
 	// debug function before frontend
 	app := NewAuth()
 	payload, err := (*Auth).GetOAuthCode(app)
@@ -52,5 +53,8 @@ func (a *App) startup(ctx context.Context) {
 	xsts, err := (*Auth).GetXSTS(app, xbt)
 	xststoken := xsts.Token
 	fmt.Println("XSTS Token:", xststoken)
+	mct, err := (*Auth).GetMinecraftAuth(app, xsts, xbt)
+	mctoken := mct.AccessToken
+	fmt.Println("\n\n\n\n Minecraft Access Token!!!!:", mctoken)
 }
 */
