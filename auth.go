@@ -56,6 +56,13 @@ type AuthSession struct {
 	Uhs          string `json:"Uhs"`
 }
 
+type MinecraftInfo struct {
+	Username     string `json:"name"`
+	UUID         string `json:"id"`
+	Error        string `json:"error"`
+	ErrorMessage string `json:"errorMessage"`
+}
+
 func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 	// if nothing happens in 15 mins refresh code
 	var payload MicrosoftOAuthPayload
@@ -68,7 +75,7 @@ func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 	if err != nil {
 		return nil, err
 	} else if resp.StatusCode == http.StatusOK {
-		fmt.Println("Succesfully retrived the OAuth Code!")
+		fmt.Println("Successfully retrieved the OAuth Code!")
 
 		err := json.NewDecoder(resp.Body).Decode(&payload)
 		if err != nil {
@@ -217,6 +224,7 @@ func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (*Mine
 	req.Header.Add("Accept", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		defer resp.Body.Close()
 		return nil, err
 	} else if resp.StatusCode == http.StatusOK {
 		err := json.NewDecoder(resp.Body).Decode(&MinecraftToken)
@@ -230,11 +238,11 @@ func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (*Mine
 		defer resp.Body.Close()
 		fmt.Println(string(b))
 	}
-
+	defer resp.Body.Close()
 	return &MinecraftToken, err
 }
 
-// Refresh Token Function use RefreshToken string `json:"refresh_token"` save and/or update to a json file in appdata encrypt it
+// Refresh Token Function use RefreshToken string `json:"refresh_token"` save and/or update to a JSON file in appdata encrypt it
 // Note: Minecraft Access Token Is One Use And regenerated before launch
 
 func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys MicrosoftAccessToken) (MinecraftPayload, error, AuthSession) {
@@ -290,10 +298,6 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys MicrosoftAccessToken) (
 
 // SaveKeysToJson save and encrypt data to json file func ?
 func (a *Auth) SaveKeysToJson(data AuthSession) (bool, error) {
-	RefreshKey := data.RefreshToken
-	UhsKey := data.Uhs
-	fmt.Println(RefreshKey, UhsKey) // encrypt refresh and modify it using pointers stuff - turn data into a json format - save it in appdata as .json \\
-
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return false, err
@@ -314,6 +318,62 @@ func (a *Auth) SaveKeysToJson(data AuthSession) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	fmt.Printf("Succesfully Saved The Keys To: %s\n", filePath)
+	fmt.Printf("Successfully Saved The Keys To: %s\n", filePath)
+	return true, nil
+}
+
+// get user info func for app.go to use mctoken var
+
+func (a *Auth) GetAccountInfo(mctoken MinecraftPayload) (*MinecraftInfo, error) {
+	accesstoken := mctoken.AccessToken
+	req, err := http.NewRequest("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+accesstoken)
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("profile Request Failed with code %d: %s", resp.StatusCode, string(b))
+	}
+
+	var mcinfo MinecraftInfo
+	err = json.NewDecoder(resp.Body).Decode(&mcinfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcinfo, err
+}
+
+// make a SaveAccountInfo func similar to SaveKeysToJson for when launching the launcher after initial login
+
+func (a *Auth) SaveAccountInfo(info MinecraftInfo) (bool, error) {
+
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return false, err
+	}
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
+	filePath := filepath.Join(targetdir, "userinfo.json")
+	Jsonbytes, err := json.Marshal(info)
+	if err != nil {
+		return false, err
+	}
+	err = os.MkdirAll(targetdir, 0755)
+	if err != nil {
+		return false, err
+	}
+
+	err = os.WriteFile(filePath, Jsonbytes, 0644)
+	if err != nil {
+		return false, err
+	}
+	fmt.Printf("Successfully Saved The Accounts Info To: %s\n", filePath)
 	return true, nil
 }

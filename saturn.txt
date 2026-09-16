@@ -1,0 +1,3 @@
+userinfo.json contains UUID and Username
+Keys.json contains RefreshKey and UhsKey
+located in appdata/SaturnLauncher
