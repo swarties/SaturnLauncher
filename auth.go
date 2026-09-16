@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -50,6 +51,11 @@ type MinecraftPayload struct {
 	AccessToken string `json:"access_token"`
 }
 
+type AuthSession struct {
+	RefreshToken string `json:"RefreshToken"`
+	Uhs          string `json:"Uhs"`
+}
+
 func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 	// if nothing happens in 15 mins refresh code
 	var payload MicrosoftOAuthPayload
@@ -60,13 +66,13 @@ func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 	}
 	resp, err := http.PostForm("https://login.live.com/oauth20_connect.srf", form)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	} else if resp.StatusCode == http.StatusOK {
 		fmt.Println("Succesfully retrived the OAuth Code!")
 
 		err := json.NewDecoder(resp.Body).Decode(&payload)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 	} else if resp.StatusCode != http.StatusOK {
@@ -87,14 +93,18 @@ func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessTok
 	}
 	var accesstoken MicrosoftAccessToken
 	for {
+		var pollError struct {
+			Error string `json:"error"`
+		}
+
 		resp, err := http.PostForm("https://login.live.com/oauth20_token.srf", body)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		} else if resp.StatusCode == http.StatusOK {
 			fmt.Println("User Logged In!")
 			err := json.NewDecoder(resp.Body).Decode(&accesstoken)
 			if err != nil {
-				log.Fatal(err)
+				return nil, err
 			}
 			resp.Body.Close()
 			break
@@ -105,6 +115,11 @@ func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessTok
 			resp.Body.Close()
 			time.Sleep(time.Duration(payload.Interval) * time.Second)
 		} else {
+			json.NewDecoder(resp.Body).Decode(&pollError)
+			if pollError.Error != "authorization_pending" {
+				resp.Body.Close()
+				return nil, fmt.Errorf("oauth polling stopped: %s", pollError.Error)
+			}
 			respbody, _ := io.ReadAll(resp.Body)
 			fmt.Println("status code:", resp.StatusCode)
 			fmt.Println("body:", string(respbody))
@@ -114,7 +129,7 @@ func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessTok
 	}
 	return &accesstoken, nil
 }
-func (a *Auth) GetXBL(at MicrosoftAccessToken) (XBLPayload, error) {
+func (a *Auth) GetXBL(at MicrosoftAccessToken) (*XBLPayload, error) {
 	// user.auth.xboxlive.com
 	var XBLToken XBLPayload
 	body := map[string]any{
@@ -128,18 +143,18 @@ func (a *Auth) GetXBL(at MicrosoftAccessToken) (XBLPayload, error) {
 	}
 	JsonBody, err := json.Marshal(body)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	req, err := http.NewRequest("POST", "https://user.auth.xboxlive.com/user/authenticate", bytes.NewBuffer(JsonBody))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	} else if resp.StatusCode == http.StatusOK {
 		err := json.NewDecoder(resp.Body).Decode(&XBLToken)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 	} else {
 		b, _ := io.ReadAll(resp.Body)
@@ -147,10 +162,10 @@ func (a *Auth) GetXBL(at MicrosoftAccessToken) (XBLPayload, error) {
 
 	}
 	defer resp.Body.Close()
-	return XBLToken, err
+	return &XBLToken, err
 
 }
-func (a *Auth) GetXSTS(xblToken XBLPayload) (XSTSPayload, error) {
+func (a *Auth) GetXSTS(xblToken XBLPayload) (*XSTSPayload, error) {
 	var XSTSToken XSTSPayload
 	body := map[string]any{
 		"Properties": map[string]any{
@@ -162,18 +177,18 @@ func (a *Auth) GetXSTS(xblToken XBLPayload) (XSTSPayload, error) {
 	}
 	JsonBody, err := json.Marshal(body)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	req, err := http.NewRequest("POST", "https://xsts.auth.xboxlive.com/xsts/authorize", bytes.NewBuffer(JsonBody))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	} else if resp.StatusCode == http.StatusOK {
 		err := json.NewDecoder(resp.Body).Decode(&XSTSToken)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 	} else if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
@@ -182,36 +197,123 @@ func (a *Auth) GetXSTS(xblToken XBLPayload) (XSTSPayload, error) {
 		fmt.Println(string(b))
 	}
 	defer resp.Body.Close()
-	return XSTSToken, err
+	return &XSTSToken, err
 }
 
-func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (MinecraftPayload, error) {
+func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (*MinecraftPayload, error) {
 	var MinecraftToken MinecraftPayload
+	if len(XBLuhs.DisplayClaims.Xui) == 0 {
+		return nil, fmt.Errorf("Missing UserHash ")
+	}
 	body := map[string]any{
 		"identityToken": "XBL3.0 x=" + XBLuhs.DisplayClaims.Xui[0].Uhs + ";" + xstsToken.Token,
 	}
 	JsonBody, err := json.Marshal(body)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	req, err := http.NewRequest("POST", "https://api.minecraftservices.com/authentication/login_with_xbox", bytes.NewBuffer(JsonBody))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	} else if resp.StatusCode == http.StatusOK {
 		err := json.NewDecoder(resp.Body).Decode(&MinecraftToken)
+		defer resp.Body.Close()
 		if err != nil {
-			log.Fatal(err)
-		} else if resp.StatusCode != http.StatusOK {
-			b, _ := io.ReadAll(resp.Body)
-			fmt.Println("Status Code", resp.StatusCode)
-			fmt.Println(string(b))
+			return nil, err
 		}
+	} else if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		fmt.Println("Status Code", resp.StatusCode)
+		defer resp.Body.Close()
+		fmt.Println(string(b))
 	}
-	return MinecraftToken, err
+
+	return &MinecraftToken, err
 }
 
 // Refresh Token Function use RefreshToken string `json:"refresh_token"` save and/or update to a json file in appdata encrypt it
 // Note: Minecraft Access Token Is One Use And regenerated before launch
+
+func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys MicrosoftAccessToken) (MinecraftPayload, error, AuthSession) {
+	var AuthInfo AuthSession
+	RefreshKey := microsoftaccesskeys.RefreshToken
+	body := url.Values{
+		"client_id":     {"000000004C12AE6F"},
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {RefreshKey},
+		"scope":         {"service::user.auth.xboxlive.com::MBI_SSL"},
+	}
+	resp, err := http.PostForm("https://login.live.com/oauth20_connect.srf", body)
+	var newaccesskeys MicrosoftAccessToken
+	if err != nil {
+		return MinecraftPayload{}, err, AuthInfo
+	} else if resp.StatusCode == http.StatusOK {
+		fmt.Println("Succesfully retrived the OAuth Code!")
+		err := json.NewDecoder(resp.Body).Decode(&newaccesskeys)
+		defer resp.Body.Close()
+		if err != nil {
+			return MinecraftPayload{}, err, AuthInfo
+		}
+		AuthInfo.RefreshToken = newaccesskeys.RefreshToken
+	} else if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+		return MinecraftPayload{}, err, AuthInfo
+	}
+
+	// -------------------------------------------------
+	GetNewXBLToken, err := a.GetXBL(newaccesskeys)
+	if err != nil {
+		return MinecraftPayload{}, err, AuthInfo
+	}
+	// NewXBLToken := GetNewXBLToken.Token
+
+	if len(GetNewXBLToken.DisplayClaims.Xui) == 0 {
+		return MinecraftPayload{}, fmt.Errorf("missing userhash in Xbox Live response"), AuthInfo
+	}
+
+	GetNewXSTSToken, err := a.GetXSTS(*GetNewXBLToken)
+	uhskey := GetNewXBLToken.DisplayClaims.Xui[0].Uhs
+	AuthInfo.Uhs = uhskey
+	if err != nil {
+		return MinecraftPayload{}, err, AuthInfo
+	}
+	// var NewMinecraftPayload MinecraftPayload
+	GetNewMinecraftAuth, err := a.GetMinecraftAuth(*GetNewXSTSToken, *GetNewXBLToken)
+	if err != nil {
+		return MinecraftPayload{}, err, AuthInfo
+	}
+	return *GetNewMinecraftAuth, nil, AuthInfo
+}
+
+// SaveKeysToJson save and encrypt data to json file func ?
+func (a *Auth) SaveKeysToJson(data AuthSession) (bool, error) {
+	RefreshKey := data.RefreshToken
+	UhsKey := data.Uhs
+	fmt.Println(RefreshKey, UhsKey) // encrypt refresh and modify it using pointers stuff - turn data into a json format - save it in appdata as .json \\
+
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return false, err
+	}
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
+	filePath := filepath.Join(targetdir, "keys.json")
+	Jsonbytes, err := json.Marshal(data)
+	if err != nil {
+		return false, err
+	}
+
+	err = os.MkdirAll(targetdir, 0755)
+	if err != nil {
+		return false, err
+	}
+
+	err = os.WriteFile(filePath, Jsonbytes, 0644)
+	if err != nil {
+		return false, err
+	}
+	fmt.Printf("Succesfully Saved The Keys To: %s\n", filePath)
+	return true, nil
+}
