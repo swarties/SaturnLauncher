@@ -1,21 +1,28 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button.jsx';
 import microsoftLight from '../assets/images/microsoft-light.svg';
 import microsoftDark from '../assets/images/microsoft-dark.svg';
+import { useState } from 'react';
 
 export const Route = createFileRoute('/login')({
   component: RouteComponent,
 });
 
-export function authFlow() {}
-
 function RouteComponent() {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+
+  const authFlow = async () => {
+    setIsLoading(true);
+  };
+
   return (
     <div className="relative flex h-screen flex-col items-center justify-center">
       <div className="scale-175">
         <Button
           variant="outline"
-          className="group flex items-center gap-[0.4em] rounded-lg border bg-black px-[0.9em] py-[0.5em] text-[clamp(1rem,2vw,2rem)] font-bold tracking-wide text-white transition-all hover:translate-0 hover:scale-100 hover:bg-white hover:text-black"
+          className="group flex items-center gap-[0.4em] rounded-lg border bg-black px-[0.9em] py-[0.5em] text-[clamp(1rem,2vw,2rem)] font-bold tracking-wide text-white transition-all hover:translate-0 hover:scale-105 hover:bg-white hover:text-black"
           onClick={authFlow()}
         >
           <span className="leading-none font-thin">LOGIN</span>
