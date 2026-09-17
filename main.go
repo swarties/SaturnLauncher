@@ -15,6 +15,7 @@ func main() {
 	// Create an instance of the app structure
 	app := NewApp()
 	authapp := NewAuth()
+	accountapp := NewAccount()
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "SaturnLauncher",
@@ -28,6 +29,7 @@ func main() {
 		Bind: []interface{}{
 			app,
 			authapp,
+			accountapp,
 		},
 	})
 

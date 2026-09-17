@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -9,8 +12,11 @@ import (
 // App struct
 
 type App struct {
-	ctx  context.Context
-	Auth *Auth
+	ctx               context.Context
+	Auth              *Auth
+	Account           *Account
+	ActiveAccessToken string
+	Launch            *Launch
 }
 
 // NewApp creates a new App application struct
@@ -24,34 +30,53 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
+// StartLogin is run in js on the login page
 func (a *App) StartLogin() {
 	go func() {
 		// 1. Get OAuth Device Code
 		payload, err := a.Auth.GetOAuthCode()
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", err.Error())
+			return
 		}
 		// Send code & URL to frontend to render
 		wailsRuntime.EventsEmit(a.ctx, "login:send_received", payload)
+		// payload.DeviceCode is the code
+		// payload.VerificationUri is the url
 		// 2. Poll for Access Token (blocking call)
 		at, err := a.Auth.PollOAuthCode(*payload)
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", err.Error())
+			return
 		}
 		// 3. Exchange tokens through Xbox Live and Minecraft Services
 		xbt, err := a.Auth.GetXBL(*at)
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", err.Error())
+			return
 		}
 
 		xsts, err := a.Auth.GetXSTS(*xbt)
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", err.Error())
+			return
 		}
 
 		mctoken, err := a.Auth.GetMinecraftAuth(*xsts, *xbt)
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", err.Error())
+			return
+		}
+
+		err, gameOwnership := a.Account.GetEntitlementInfo(*mctoken)
+		if err != nil {
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to retrieve EntitlementInfo: "+err.Error())
+			return
+		}
+		OwnsJava := a.Account.HasJavaEdition(gameOwnership)
+		if OwnsJava == false {
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "User does not own game")
+			return
 		}
 		// 4. Save Refresh Session
 		if len(xbt.DisplayClaims.Xui) > 0 {
@@ -62,8 +87,62 @@ func (a *App) StartLogin() {
 			_, _ = a.Auth.SaveKeysToJson(session)
 		}
 		mcinfo, err := a.Auth.GetAccountInfo(*mctoken)
+		if err != nil {
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to retrieve profile: "+err.Error())
+			return
+		}
 		_, _ = a.Auth.SaveAccountInfo(*mcinfo)
 		// 5. Notify frontend on completion
-		wailsRuntime.EventsEmit(a.ctx, "login:success", mcinfo) // replace nil with a map containing user uuid and username also add a ownership check that if fails returns login:error
+		wailsRuntime.EventsEmit(a.ctx, "login:success", mcinfo)
+
 	}()
 }
+
+func (a *App) StartApp() {
+	go func() {
+		appdatadir, err := os.UserConfigDir()
+		if err != nil {
+			wailsRuntime.EventsEmit(a.ctx, "auth:required")
+			return
+		}
+		targetdir := filepath.Join(appdatadir, "SaturnLauncher")
+		filePath := filepath.Join(targetdir, "keys.json")
+		fileData, err := os.ReadFile(filePath)
+		if err != nil {
+			wailsRuntime.EventsEmit(a.ctx, "auth:required")
+			return
+		}
+		var Keys AuthSession
+		err = json.Unmarshal(fileData, &Keys)
+		if err != nil {
+			wailsRuntime.EventsEmit(a.ctx, "auth:required")
+			return
+		}
+
+		mctoken, err, NewAuthSession := a.Auth.RefreshMinecraftToken(Keys)
+		if err != nil {
+			_ = os.Remove(filepath.Join(targetdir, "keys.json"))
+			_ = os.Remove(filepath.Join(targetdir, "userinfo.json"))
+
+			wailsRuntime.EventsEmit(a.ctx, "auth:required")
+			return
+		}
+		isDone, err := a.Auth.SaveKeysToJson(NewAuthSession)
+		if isDone != true {
+			wailsRuntime.EventsEmit(a.ctx, "auth:required")
+			return
+		}
+		a.ActiveAccessToken = mctoken.AccessToken
+
+		mcinfo, err := a.Auth.GetAccountInfo(mctoken)
+		if err != nil {
+			wailsRuntime.EventsEmit(a.ctx, "auth:success", nil)
+			return
+		}
+		_, err = a.Auth.SaveAccountInfo(*mcinfo)
+		wailsRuntime.EventsEmit(a.ctx, "auth:success", mcinfo)
+		return
+	}()
+}
+
+// AuthSession struct for unmarshalling json
