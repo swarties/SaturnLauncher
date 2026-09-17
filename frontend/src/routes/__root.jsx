@@ -3,7 +3,7 @@ import * as Runtime from '../../wailsjs/runtime/runtime';
 import { useEffect } from 'react';
 
 const auth = {
-  isAuthenticated: true,
+  isAuthenticated: false,
 };
 export const onboarding = {
   hasOnboarded: false,

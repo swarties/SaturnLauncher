@@ -245,7 +245,7 @@ func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (*Mine
 // Refresh Token Function use RefreshToken string `json:"refresh_token"` save and/or update to a JSON file in appdata encrypt it
 // Note: Minecraft Access Token Is One Use And regenerated before launch
 
-func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys MicrosoftAccessToken) (MinecraftPayload, error, AuthSession) {
+func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (MinecraftPayload, error, AuthSession) {
 	var AuthInfo AuthSession
 	RefreshKey := microsoftaccesskeys.RefreshToken
 	body := url.Values{
@@ -361,7 +361,7 @@ func (a *Auth) SaveAccountInfo(info MinecraftInfo) (bool, error) {
 	}
 	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
 	filePath := filepath.Join(targetdir, "userinfo.json")
-	Jsonbytes, err := json.Marshal(info)
+	Jsonbytes, err := json.MarshalIndent(info, "", " ")
 	if err != nil {
 		return false, err
 	}

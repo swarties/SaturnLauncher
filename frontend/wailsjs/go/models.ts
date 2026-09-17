@@ -50,6 +50,24 @@ export namespace main {
 	        this.expires_in = source["expires_in"];
 	    }
 	}
+	export class MinecraftInfo {
+	    name: string;
+	    id: string;
+	    error: string;
+	    errorMessage: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MinecraftInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.id = source["id"];
+	        this.error = source["error"];
+	        this.errorMessage = source["errorMessage"];
+	    }
+	}
 	export class MinecraftPayload {
 	    access_token: string;
 	
