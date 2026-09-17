@@ -1,0 +1,23 @@
+[Auth]          [Onboarding]
+
+        [Home]
+
+
+isAuth
+arrow_down
+isOnboarded
+arrow_down
+Public?
+
+P(A(O()))
+
+if A
+    if O
+        if P
+        redirect home
+        if notP
+        do nothing
+    if notO
+        redirect onboarding
+if notA
+    redirect login

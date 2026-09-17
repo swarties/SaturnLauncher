@@ -3,7 +3,7 @@ import * as Runtime from '../../wailsjs/runtime/runtime';
 import { useEffect } from 'react';
 
 const auth = {
-  isAuthenticated: true,
+  isAuthenticated: false,
 };
 export const onboarding = {
   hasOnboarded: false,
@@ -15,22 +15,52 @@ export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
     const isPublic = PUBLIC_ROUTES.includes(location.pathname);
 
-    if (onboarding.hasOnboarded) {
-      if (!auth.isAuthenticated && !isPublic) {
-        throw redirect({
-          to: '/login',
-        });
-      }
+    // if (onboarding.hasOnboarded) {
+    //   if (!auth.isAuthenticated && !isPublic) {
+    //     throw redirect({
+    //       to: '/login',
+    //     });
+    //   }
+    //
+    //   if (auth.isAuthenticated && location.pathname === '/login') {
+    //     throw redirect({ to: '/' });
+    //   }
+    // } else {
+    //   if (location.pathname !== '/onboarding') {
+    //     throw redirect({
+    //       to: '/onboarding',
+    //     });
+    //   }
+    // }
+    //
+    // if (!auth.isAuthenticated && !isPublic) {
+    //   throw redirect({
+    //     to: '/login',
+    //   });
+    // } else if (auth.isAuthenticated) {
+    //   if (location.pathname === '/login') {
+    //   }
+    // }
 
-      if (auth.isAuthenticated && location.pathname === '/login') {
-        throw redirect({ to: '/' });
-      }
-    } else {
-      if (location.pathname !== '/onboarding') {
+    if (auth.isAuthenticated) {
+      if (onboarding.hasOnboarded) {
+        if (isPublic && location.pathname !== '/home') {
+          throw redirect({
+            to: '/home',
+          });
+        }
+      } else if (
+        !onboarding.hasOnboarded &&
+        location.pathname !== '/onboarding'
+      ) {
         throw redirect({
           to: '/onboarding',
         });
       }
+    } else if (!auth.isAuthenticated && location.pathname !== '/login') {
+      throw redirect({
+        to: '/login',
+      });
     }
   },
   component: RootLayout,
