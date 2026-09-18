@@ -21,6 +21,10 @@ func NewAuth() *Auth {
 	return &Auth{}
 }
 
+type PollOAuthError struct {
+	ExpiredToken          string `json:"expired_token"`
+	AuthorizationDeclined string `json:"authorization_declined"`
+}
 type MicrosoftOAuthPayload struct {
 	UserCode        string `json:"user_code"`
 	DeviceCode      string `json:"device_code"`
@@ -84,7 +88,7 @@ func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 
 	} else if resp.StatusCode != http.StatusOK {
 		respbody, _ := io.ReadAll(resp.Body)
-		fmt.Println("error", string(respbody), resp.StatusCode)
+		return nil, fmt.Errorf("error status code : %d, error body: %s", resp.StatusCode, string(respbody))
 	}
 	defer resp.Body.Close()
 	return &payload, err
@@ -99,7 +103,9 @@ func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessTok
 		"scope":       {"service::user.auth.xboxlive.com::MBI_SSL"},
 	}
 	var accesstoken MicrosoftAccessToken
-	for {
+	deadline := time.Now().Add(time.Duration(payload.ExpiresIn) * time.Second)
+
+	for time.Now().Before(deadline) {
 		var pollError struct {
 			Error string `json:"error"`
 		}
@@ -107,34 +113,39 @@ func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessTok
 		resp, err := http.PostForm("https://login.live.com/oauth20_token.srf", body)
 		if err != nil {
 			return nil, err
-		} else if resp.StatusCode == http.StatusOK {
+		}
+		if resp.StatusCode == http.StatusOK {
 			fmt.Println("User Logged In!")
 			err := json.NewDecoder(resp.Body).Decode(&accesstoken)
+			resp.Body.Close()
 			if err != nil {
 				return nil, err
 			}
+			return &accesstoken, nil
+		}
+
+		if resp.StatusCode == http.StatusBadRequest || resp.StatusCode != http.StatusOK {
+			err := json.NewDecoder(resp.Body).Decode(&pollError)
 			resp.Body.Close()
-			break
-		} else if resp.StatusCode == http.StatusBadRequest {
-			//respbody, _ := io.ReadAll(resp.Body)
-			//fmt.Println("status code:", resp.StatusCode)
-			//fmt.Println("body:", string(respbody))
-			resp.Body.Close()
-			time.Sleep(time.Duration(payload.Interval) * time.Second)
-		} else {
-			json.NewDecoder(resp.Body).Decode(&pollError)
-			if pollError.Error != "authorization_pending" {
-				resp.Body.Close()
+			if err != nil {
+				return nil, fmt.Errorf("an error occured: %s", err)
+			}
+			switch pollError.Error {
+			case "authorization_pending":
+				time.Sleep(time.Duration(payload.Interval) * time.Second)
+			case "slow_down":
+				time.Sleep(time.Duration(payload.Interval+5) * time.Second)
+			case "expired_token":
+				return nil, fmt.Errorf("the device code has expired")
+			case "authorization_declined":
+				return nil, fmt.Errorf("the user declined the auth request")
+			default:
 				return nil, fmt.Errorf("oauth polling stopped: %s", pollError.Error)
 			}
-			respbody, _ := io.ReadAll(resp.Body)
-			fmt.Println("status code:", resp.StatusCode)
-			fmt.Println("body:", string(respbody))
-			resp.Body.Close()
-			time.Sleep(time.Duration(payload.Interval) * time.Second)
+
 		}
 	}
-	return &accesstoken, nil
+	return nil, fmt.Errorf("polling timed out after %d seconds", payload.ExpiresIn)
 }
 func (a *Auth) GetXBL(at MicrosoftAccessToken) (*XBLPayload, error) {
 	// user.auth.xboxlive.com
@@ -165,7 +176,7 @@ func (a *Auth) GetXBL(at MicrosoftAccessToken) (*XBLPayload, error) {
 		}
 	} else {
 		b, _ := io.ReadAll(resp.Body)
-		fmt.Printf("Xbox Error HTTP %d: %s\n\n", resp.StatusCode, string(b))
+		return nil, fmt.Errorf("Xbox Error HTTP %d: %s\n\n", resp.StatusCode, string(b))
 
 	}
 	defer resp.Body.Close()
@@ -245,7 +256,7 @@ func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (*Mine
 // Refresh Token Function use RefreshToken string `json:"refresh_token"` save and/or update to a JSON file in appdata encrypt it
 // Note: Minecraft Access Token Is One Use And regenerated before launch
 
-func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (MinecraftPayload, error, AuthSession) {
+func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (MinecraftPayload, AuthSession, error) {
 	var AuthInfo AuthSession
 	RefreshKey := microsoftaccesskeys.RefreshToken
 	body := url.Values{
@@ -257,43 +268,43 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 	resp, err := http.PostForm("https://login.live.com/oauth20_connect.srf", body)
 	var newaccesskeys MicrosoftAccessToken
 	if err != nil {
-		return MinecraftPayload{}, err, AuthInfo
+		return MinecraftPayload{}, AuthInfo, err
 	} else if resp.StatusCode == http.StatusOK {
 		fmt.Println("Succesfully retrived the OAuth Code!")
 		err := json.NewDecoder(resp.Body).Decode(&newaccesskeys)
 		defer resp.Body.Close()
 		if err != nil {
-			return MinecraftPayload{}, err, AuthInfo
+			return MinecraftPayload{}, AuthInfo, err
 		}
 		AuthInfo.RefreshToken = newaccesskeys.RefreshToken
 	} else if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
-		return MinecraftPayload{}, err, AuthInfo
+		return MinecraftPayload{}, AuthInfo, err
 	}
 
 	// -------------------------------------------------
 	GetNewXBLToken, err := a.GetXBL(newaccesskeys)
 	if err != nil {
-		return MinecraftPayload{}, err, AuthInfo
+		return MinecraftPayload{}, AuthInfo, err
 	}
 	// NewXBLToken := GetNewXBLToken.Token
 
 	if len(GetNewXBLToken.DisplayClaims.Xui) == 0 {
-		return MinecraftPayload{}, fmt.Errorf("missing userhash in Xbox Live response"), AuthInfo
+		return MinecraftPayload{}, AuthInfo, fmt.Errorf("missing userhash in Xbox Live response")
 	}
 
 	GetNewXSTSToken, err := a.GetXSTS(*GetNewXBLToken)
 	uhskey := GetNewXBLToken.DisplayClaims.Xui[0].Uhs
 	AuthInfo.Uhs = uhskey
 	if err != nil {
-		return MinecraftPayload{}, err, AuthInfo
+		return MinecraftPayload{}, AuthInfo, err
 	}
 	// var NewMinecraftPayload MinecraftPayload
 	GetNewMinecraftAuth, err := a.GetMinecraftAuth(*GetNewXSTSToken, *GetNewXBLToken)
 	if err != nil {
-		return MinecraftPayload{}, err, AuthInfo
+		return MinecraftPayload{}, AuthInfo, err
 	}
-	return *GetNewMinecraftAuth, nil, AuthInfo
+	return *GetNewMinecraftAuth, AuthInfo, nil
 }
 
 // SaveKeysToJson save and encrypt data to json file func ?

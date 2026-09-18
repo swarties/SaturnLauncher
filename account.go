@@ -42,29 +42,29 @@ type EntitlementPayload struct {
 	Entitlements []EntitlementItem `json:"entitlements"`
 }
 
-func (ac *Account) GetEntitlementInfo(mctoken MinecraftPayload) (error, *EntitlementPayload) {
+func (ac *Account) GetEntitlementInfo(mctoken MinecraftPayload) (*EntitlementPayload, error) {
 	accesstoken := mctoken.AccessToken
 	req, err := http.NewRequest("GET", "https://api.minecraftservices.com/entitlements/mcstore", nil)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	req.Header.Add("Authorization", "Bearer "+accesstoken)
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
+	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("error getting entitlements information %d:%s", resp.StatusCode, string(b)), nil
+		return nil, fmt.Errorf("error getting entitlements information %d:%s", resp.StatusCode, string(b))
 	}
 	var payload EntitlementPayload
 	err = json.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
-		return nil, &payload
+		return nil, err
 	}
-	return nil, &payload
+	return &payload, nil
 }
 
 func (ac *Account) HasJavaEdition(payload *EntitlementPayload) bool {

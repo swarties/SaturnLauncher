@@ -21,7 +21,10 @@ type App struct {
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-	return &App{}
+	return &App{
+		Auth:    NewAuth(),
+		Account: NewAccount(),
+		Launch:  NewLaunch()}
 }
 
 // startup is called when the app starts. The context is saved
@@ -68,7 +71,7 @@ func (a *App) StartLogin() {
 			return
 		}
 
-		err, gameOwnership := a.Account.GetEntitlementInfo(*mctoken)
+		gameOwnership, err := a.Account.GetEntitlementInfo(*mctoken)
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to retrieve EntitlementInfo: "+err.Error())
 			return
@@ -79,19 +82,35 @@ func (a *App) StartLogin() {
 			return
 		}
 		// 4. Save Refresh Session
-		if len(xbt.DisplayClaims.Xui) > 0 {
-			session := AuthSession{
-				RefreshToken: at.RefreshToken,
-				Uhs:          xbt.DisplayClaims.Xui[0].Uhs,
-			}
-			_, _ = a.Auth.SaveKeysToJson(session)
+		if len(xbt.DisplayClaims.Xui) == 0 {
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "Missing UserHash from Xbox Live response")
+			return
+		}
+
+		session := AuthSession{
+			RefreshToken: at.RefreshToken,
+			Uhs:          xbt.DisplayClaims.Xui[0].Uhs,
+		}
+		_, err = a.Auth.SaveKeysToJson(session)
+		if err != nil {
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to save session keys: "+err.Error())
 		}
 		mcinfo, err := a.Auth.GetAccountInfo(*mctoken)
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to retrieve profile: "+err.Error())
 			return
 		}
-		_, _ = a.Auth.SaveAccountInfo(*mcinfo)
+
+		if mcinfo.Error != "" || mcinfo.UUID == "" {
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "No Minecraft Profile Found: Please create a username on minecraft.net first. ")
+			return
+		}
+
+		_, err = a.Auth.SaveAccountInfo(*mcinfo)
+		if err != nil {
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to save account information "+err.Error())
+			return
+		}
 		// 5. Notify frontend on completion
 		wailsRuntime.EventsEmit(a.ctx, "login:success", mcinfo)
 
@@ -119,7 +138,7 @@ func (a *App) StartApp() {
 			return
 		}
 
-		mctoken, err, NewAuthSession := a.Auth.RefreshMinecraftToken(Keys)
+		mctoken, NewAuthSession, err := a.Auth.RefreshMinecraftToken(Keys)
 		if err != nil {
 			_ = os.Remove(filepath.Join(targetdir, "keys.json"))
 			_ = os.Remove(filepath.Join(targetdir, "userinfo.json"))
@@ -135,11 +154,14 @@ func (a *App) StartApp() {
 		a.ActiveAccessToken = mctoken.AccessToken
 
 		mcinfo, err := a.Auth.GetAccountInfo(mctoken)
-		if err != nil {
-			wailsRuntime.EventsEmit(a.ctx, "auth:success", nil)
+		if err != nil || mcinfo.Error != "" || mcinfo.UUID == "" {
+			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
 		_, err = a.Auth.SaveAccountInfo(*mcinfo)
+		if err != nil {
+			fmt.Println("Warning: Could not save updated account info")
+		}
 		wailsRuntime.EventsEmit(a.ctx, "auth:success", mcinfo)
 		return
 	}()
