@@ -56,10 +56,10 @@ function RouteComponent() {
     case 2:
       return (
         <div className="flex h-screen flex-col items-center justify-center">
-          <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)]">
+          <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)] font-thin">
             Let's get started, shall we?
           </h1>
-          <Button className="bg-[#412E66] text-[clamp(1rem,2vw,3rem)] font-semibold hover:bg-[#2e2046]">
+          <Button className="bg-[#412E66] text-[clamp(1rem,2vw,3rem)] font-thin hover:bg-[#2e2046]">
             Welcome →
           </Button>
         </div>

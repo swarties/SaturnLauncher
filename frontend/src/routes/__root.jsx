@@ -15,22 +15,25 @@ export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
     const isPublic = PUBLIC_ROUTES.includes(location.pathname);
 
-    if (onboarding.hasOnboarded) {
-      if (!auth.isAuthenticated && !isPublic) {
-        throw redirect({
-          to: '/login',
-        });
-      }
-
-      if (auth.isAuthenticated && location.pathname === '/login') {
-        throw redirect({ to: '/' });
-      }
-    } else {
-      if (location.pathname !== '/onboarding') {
+    if (auth.isAuthenticated) {
+      if (onboarding.hasOnboarded) {
+        if (isPublic && location.pathname !== '/home') {
+          throw redirect({
+            to: '/home',
+          });
+        }
+      } else if (
+        !onboarding.hasOnboarded &&
+        location.pathname !== '/onboarding'
+      ) {
         throw redirect({
           to: '/onboarding',
         });
       }
+    } else if (!auth.isAuthenticated && location.pathname !== '/login') {
+      throw redirect({
+        to: '/login',
+      });
     }
   },
   component: RootLayout,
