@@ -27,6 +27,8 @@ func main() {
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app,
+			(*app).StartLogin,
+			(*app).StartApp,
 		},
 	})
 

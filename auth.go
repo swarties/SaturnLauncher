@@ -169,7 +169,9 @@ func (a *Auth) GetXBL(at MicrosoftAccessToken) (*XBLPayload, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
-	} else if resp.StatusCode == http.StatusOK {
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusOK {
 		err := json.NewDecoder(resp.Body).Decode(&XBLToken)
 		if err != nil {
 			return nil, err
@@ -179,7 +181,6 @@ func (a *Auth) GetXBL(at MicrosoftAccessToken) (*XBLPayload, error) {
 		return nil, fmt.Errorf("Xbox Error HTTP %d: %s\n\n", resp.StatusCode, string(b))
 
 	}
-	defer resp.Body.Close()
 	return &XBLToken, err
 
 }

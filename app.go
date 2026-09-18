@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -167,4 +168,5 @@ func (a *App) StartApp() {
 	}()
 }
 
+// logout deletes the 2 .jsons and clears all the vals
 // AuthSession struct for unmarshalling json
