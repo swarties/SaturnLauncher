@@ -23,7 +23,7 @@ function RouteComponent() {
         <Button
           variant="outline"
           className="group flex items-center gap-[0.4em] rounded-lg border bg-black px-[0.9em] py-[0.5em] text-[clamp(1rem,2vw,2rem)] font-bold tracking-wide text-white transition-all hover:translate-0 hover:scale-105 hover:bg-white hover:text-black"
-          onClick={authFlow()}
+          onClick={authFlow}
         >
           <span className="leading-none font-thin">LOGIN</span>
           <img

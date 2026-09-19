@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button.jsx';
 import { LineWobble } from 'ldrs/react';
 import 'ldrs/react/LineWobble.css';
-import * as root from '@/routes/__root.jsx';
+import { hasOnboarded, setOnboarded } from '@/lib/onboarding';
 
 export const Route = createFileRoute('/onboarding')({
   component: RouteComponent,
@@ -35,7 +35,7 @@ function RouteComponent() {
         setStage(1);
       }, 7500); // temp big but set to 3k in prod
       return () => clearTimeout(Timer);
-    } else if (stage === 1 && !root.onboarding.hasOnboarded) {
+    } else if (stage === 1 && !hasOnboarded()) {
       const Timer = setTimeout(() => {
         setStage(2);
       }, 5000);

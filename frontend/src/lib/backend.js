@@ -1,5 +1,9 @@
 import { StartApp, StartLogin } from '../../wailsjs/go/main/App';
-import { BrowserOpenURL, EventsOn } from '../../wailsjs/runtime/runtime';
+import {
+  BrowserOpenURL,
+  EventsOn,
+  EventsOff,
+} from '../../wailsjs/runtime/runtime';
 
 const isWails =
   typeof window !== 'undefined' && typeof window.go !== 'undefined';
@@ -28,7 +32,10 @@ export function onBackendEvent(eventName, callback) {
     return () => {};
   }
 
-  return EventsOn(eventName, callback);
+  EventsOn(eventName, callback);
+  return () => {
+    EventsOff(eventName);
+  };
 }
 
 export function openExternalURL(url) {

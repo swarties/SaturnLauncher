@@ -7,6 +7,27 @@
 @custom-variant dark (&:is(.dark *));
 @plugin 'daisyui';
 
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(var(8px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes fade-in-up {
+    from {opacity:0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
 html, body, #root {
   -webkit-user-select: none;
   user-select: none;

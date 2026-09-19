@@ -1,45 +1,51 @@
-import { createRootRoute, Outlet, redirect } from '@tanstack/react-router';
-import * as Runtime from '../../wailsjs/runtime/runtime';
+import {
+  createRootRoute,
+  Outlet,
+  redirect,
+  useLocation,
+  useNavigate,
+} from '@tanstack/react-router';
 import { useEffect } from 'react';
+import { LineWobble } from 'ldrs/react';
+import 'ldrs/react/LineWobble.css';
 
-const auth = {
-  isAuthenticated: false,
-};
-export const onboarding = {
-  hasOnboarded: false,
-};
+import * as Runtime from '../../wailsjs/runtime/runtime';
+import { authActions, useAuth, getAuthState } from '@/stores/auth';
+import { onBackendEvent, startApp } from '@/lib/backend';
+import { hasOnboarded } from '@/lib/onboarding';
 
-const PUBLIC_ROUTES = ['/login', '/onboarding'];
+function getRedirectTarget(status, pathname) {
+  if (status === 'unknown') return null;
+  if (status === 'unauthenticated')
+    return pathname === '/login' ? null : '/login';
+  if (!hasOnboarded()) return pathname === '/onboarding' ? null : '/onboarding';
+
+  if (pathname === '/login' || pathname === '/onboarding') return '/home';
+
+  return null;
+}
 
 export const Route = createRootRoute({
-  beforeLoad: async ({ location }) => {
-    const isPublic = PUBLIC_ROUTES.includes(location.pathname);
+  beforeLoad: ({ location }) => {
+    const { status } = getAuthState();
+    const redirectTarget = getRedirectTarget(status, location.pathname);
 
-    if (auth.isAuthenticated) {
-      if (onboarding.hasOnboarded) {
-        if (isPublic && location.pathname !== '/home') {
-          throw redirect({
-            to: '/home',
-          });
-        }
-      } else if (
-        !onboarding.hasOnboarded &&
-        location.pathname !== '/onboarding'
-      ) {
-        throw redirect({
-          to: '/onboarding',
-        });
-      }
-    } else if (!auth.isAuthenticated && location.pathname !== '/login') {
+    if (redirectTarget) {
       throw redirect({
-        to: '/login',
+        to: redirectTarget,
+        replace: true,
       });
     }
   },
+
   component: RootLayout,
 });
 
 function RootLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { status, profile } = useAuth();
+
   useEffect(() => {
     if (typeof window !== 'undefined' && 'runtime' in window) {
       Runtime.WindowCenter();
@@ -48,6 +54,67 @@ function RootLayout() {
         'Wails runtime not found! WindowCenter() skipped due to the nature of the window.'
       );
     }
+
+    const unsubscribeAuthSuccess = onBackendEvent(
+      'auth:success',
+      (profiledata) => {
+        authActions.authSuccess(profiledata);
+      }
+    );
+
+    const unsubscribeAuthRequired = onBackendEvent('auth:required', () => {
+      authActions.authRequired();
+    });
+
+    void startApp();
+
+    return () => {
+      unsubscribeAuthSuccess();
+      unsubscribeAuthRequired();
+    };
   }, []);
-  return <Outlet />;
+
+  useEffect(() => {
+    const redirectTarget = getRedirectTarget(status, location.pathname);
+
+    if (!redirectTarget) return;
+
+    void navigate({
+      to: redirectTarget,
+      replace: true,
+    });
+  }, [location.pathname, navigate, status]);
+
+  if (status === 'unknown') return <StartupScreen />;
+
+  //  return <Outlet />;
+
+  return (
+    <main
+      key={location.pathname}
+      className="min-h-screen w-full"
+      style={{
+        animation: 'fade-in-up 350ms cubic-bezier(0.22, 1, 0.36, 1) both',
+      }}
+    >
+      <Outlet context={{ profile }} />
+    </main>
+  );
+}
+
+function StartupScreen() {
+  return (
+    <main className="flex min-h-screen w-full flex-col items-center justify-center gap-5">
+      <LineWobble
+        size="70"
+        stroke="5"
+        bg-opacity="0.1"
+        speed="2.4"
+        color="#412E66"
+      />
+      <p className="text-muted-foreground text-sm">
+        Starting Saturn Launcher...
+      </p>
+    </main>
+  );
 }
