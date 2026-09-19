@@ -3,6 +3,7 @@ import {
   BrowserOpenURL,
   EventsOn,
   EventsOff,
+  ClipboardSetText,
 } from '../../wailsjs/runtime/runtime';
 
 const isWails =
@@ -47,4 +48,24 @@ export function openExternalURL(url) {
   }
 
   window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+export async function copyText(text) {
+  if (!text) return false;
+
+  if (isWails) {
+    try {
+      return await ClipboardSetText(text);
+    } catch (error) {
+      console.warn('Could not write to the native clipboard: ', error);
+      return false;
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (error) {
+    console.warn('Could not write to the browser clipboard: ', error);
+    return false;
+  }
 }
