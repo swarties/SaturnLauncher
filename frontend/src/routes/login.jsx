@@ -4,7 +4,12 @@ import microsoftLight from '../assets/images/microsoft-light.svg';
 import microsoftDark from '../assets/images/microsoft-dark.svg';
 import { useEffect, useState } from 'react';
 import { authActions, useAuth } from '@/stores/auth';
-import { onBackendEvent, openExternalURL, startLogin } from '@/lib/backend';
+import {
+  copyText,
+  onBackendEvent,
+  openExternalURL,
+  startLogin,
+} from '@/lib/backend';
 
 export const Route = createFileRoute('/login')({
   component: RouteComponent,
@@ -19,11 +24,25 @@ function RouteComponent() {
   useEffect(() => {
     const stopListeningForCode = onBackendEvent(
       'login:send_received',
-      (payload) => {
+      async (payload) => {
         authActions.loginCode(payload);
+
+        const deviceCode = payload?.userCode ?? payload.user_code;
 
         const verificationUri =
           payload?.verificationUri ?? payload?.verification_uri;
+
+        if (deviceCode) {
+          const wasCopied = await copyText(deviceCode);
+
+          if (wasCopied) {
+            setCopied(true);
+
+            window.setTimeout(() => {
+              setCopied(false);
+            }, 3000);
+          }
+        }
 
         if (verificationUri) {
           openExternalURL(verificationUri);
@@ -61,20 +80,15 @@ function RouteComponent() {
   };
 
   const copyCode = async () => {
-    if (!userCode) return;
+    const wasCopied = await copyText(userCode);
 
-    try {
-      await navigator.clipboard.writeText(userCode);
-      setCopied(true);
+    if (!wasCopied) return;
 
-      window.setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    } catch {
-      authActions.loginError(
-        'Could not copy the code automatically. Please select it and copy it manually'
-      );
-    }
+    setCopied(true);
+
+    window.setTimeout(() => {
+      setCopied(false);
+    }, 2000);
   };
 
   if (error) {
