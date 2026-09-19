@@ -259,6 +259,7 @@ func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (*Mine
 
 func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (MinecraftPayload, AuthSession, error) {
 	var AuthInfo AuthSession
+	AuthInfo = microsoftaccesskeys
 	RefreshKey := microsoftaccesskeys.RefreshToken
 	body := url.Values{
 		"client_id":     {"000000004C12AE6F"},
@@ -266,7 +267,7 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 		"refresh_token": {RefreshKey},
 		"scope":         {"service::user.auth.xboxlive.com::MBI_SSL"},
 	}
-	resp, err := http.PostForm("https://login.live.com/oauth20_connect.srf", body)
+	resp, err := http.PostForm("https://login.live.com/oauth20_token.srf", body)
 	var newaccesskeys MicrosoftAccessToken
 	if err != nil {
 		return MinecraftPayload{}, AuthInfo, err
@@ -277,10 +278,14 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 		if err != nil {
 			return MinecraftPayload{}, AuthInfo, err
 		}
-		AuthInfo.RefreshToken = newaccesskeys.RefreshToken
+		if newaccesskeys.RefreshToken != "" {
+			AuthInfo.RefreshToken = newaccesskeys.RefreshToken
+		}
+
 	} else if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
-		return MinecraftPayload{}, AuthInfo, err
+		b, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return MinecraftPayload{}, AuthInfo, fmt.Errorf("token refresh failed HTTP %d: %s", resp.StatusCode, string(b))
 	}
 
 	// -------------------------------------------------

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -138,6 +139,10 @@ func (a *App) StartApp() {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
+		if strings.TrimSpace(NewAuthSession.RefreshToken) == "" {
+			wailsRuntime.EventsEmit(a.ctx, "auth:required", fmt.Errorf("refresh Key Is Empty"))
+			return
+		}
 		isDone, err := a.Auth.SaveKeysToJson(NewAuthSession)
 		if isDone != true {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
@@ -160,4 +165,4 @@ func (a *App) StartApp() {
 }
 
 // logout deletes the 2 .jsons and clears all the vals
-// AuthSession struct for unmarshalling json
+// AuthSession struct for unmarshalling JSON
