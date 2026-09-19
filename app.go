@@ -72,16 +72,16 @@ func (a *App) StartLogin() {
 			return
 		}
 
-		gameOwnership, err := a.Account.GetEntitlementInfo(*mctoken)
+		mcinfo, err := a.Auth.GetAccountInfo(*mctoken)
 		if err != nil {
-			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to retrieve EntitlementInfo: "+err.Error())
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to retrieve profile ."+err.Error())
 			return
 		}
-		OwnsJava := a.Account.HasJavaEdition(gameOwnership)
-		if OwnsJava == false {
-			wailsRuntime.EventsEmit(a.ctx, "login:error", "User does not own game")
+		if mcinfo.Error != "" || mcinfo.UUID == "" {
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "User does not own Minecraft Java Edition."+err.Error())
 			return
 		}
+
 		// 4. Save Refresh Session
 		if len(xbt.DisplayClaims.Xui) == 0 {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", "Missing UserHash from Xbox Live response")
@@ -95,15 +95,6 @@ func (a *App) StartLogin() {
 		_, err = a.Auth.SaveKeysToJson(session)
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to save session keys: "+err.Error())
-		}
-		mcinfo, err := a.Auth.GetAccountInfo(*mctoken)
-		if err != nil {
-			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to retrieve profile: "+err.Error())
-			return
-		}
-
-		if mcinfo.Error != "" || mcinfo.UUID == "" {
-			wailsRuntime.EventsEmit(a.ctx, "login:error", "No Minecraft Profile Found: Please create a username on minecraft.net first. ")
 			return
 		}
 
