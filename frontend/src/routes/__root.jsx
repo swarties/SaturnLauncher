@@ -5,7 +5,7 @@ import {
   useLocation,
   useNavigate,
 } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LineWobble } from 'ldrs/react';
 import 'ldrs/react/LineWobble.css';
 
@@ -45,6 +45,17 @@ function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { status, profile } = useAuth();
+  const [showStartupScreen, setShowStartupScreen] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowStartupScreen(false);
+    }, 1250);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'runtime' in window) {
@@ -85,7 +96,7 @@ function RootLayout() {
     });
   }, [location.pathname, navigate, status]);
 
-  if (status === 'unknown') return <StartupScreen />;
+  if (status === 'unknown' || showStartupScreen) return <StartupScreen />;
 
   //  return <Outlet />;
 
