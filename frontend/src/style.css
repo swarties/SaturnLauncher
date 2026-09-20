@@ -29,6 +29,7 @@
 }
 
 html, body, #root {
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
   -webkit-user-select: none;
   user-select: none;
   -webkit-user-drag: none;
