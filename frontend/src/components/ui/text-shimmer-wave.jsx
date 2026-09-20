@@ -1,4 +1,4 @@
-'use client';;
+'use client';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
@@ -13,11 +13,9 @@ export function TextShimmerWave({
   spread = 1,
   scaleDistance = 1.1,
   rotateYDistance = 10,
-  transition
+  transition,
 }) {
-  const MotionComponent = motion.create(
-    Component
-  );
+  const MotionComponent = motion.create(Component);
 
   return (
     <MotionComponent

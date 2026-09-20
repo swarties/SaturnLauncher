@@ -72,21 +72,26 @@ function RouteComponent() {
       case 2:
         return (
           <div className="flex h-full flex-col items-center justify-center">
-            <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)] leading-none font-thin">
-              Let&apos;s get started&nbsp;
-              <span className="pointer-events-none mx-[0.1em] inline-flex translate-y-[0.06em] items-center rounded-xl border border-[#8456D5]/70 bg-[#2E2046] px-[0.38em] py-[0.16em] align-[0.14em] font-mono text-[0.5em] leading-none font-thin tracking-[-0.04em] text-[#e5e3fc]">
+            <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)] leading-[1.05] font-thin">
+              Let&apos;s get started{' '}
+              <span
+                aria-label={`username: ${username}`}
+                className="pointer-events-none mx-[0.2em] inline-flex items-center rounded-[0.35em] bg-[#2F2F34] px-[0.5em] py-[0.16em] align-middle font-mono text-[0.5em] leading-none font-normal tracking-[-0.02em] text-[#D1CDF8] ring-1 ring-white/10 ring-inset"
+              >
                 {username}
               </span>
               , shall we?
             </h1>
+
             <Button
-              className="h-[clamp(3.25rem,3.7vw,4.25rem)] min-w-[clamp(9rem,10vw,11rem)] rounded-xl px-[clamp(1.25rem,1.6vw,1.9rem)] text-[clamp(1rem,1.2vw,1.35rem)] leading-none font-medium text-[#F1F0FD] shadow-[0_8px_22px_rgba(46,32,70,0.26)] transition-colors hover:bg-[#5D3C97] active:bg-[#412E66]"
+              variant="ghost"
+              className="group mt-[1.25vw] h-[clamp(2.75rem,3vw,3.25rem)] rounded-lg border border-[#8456D5]/35 bg-[#412E66]/10 px-[clamp(1.75rem,2.2vw,2.5rem)] text-[clamp(0.95rem,1.05vw,1.15rem)] leading-none font-normal tracking-[0.01em] text-[#D1CDF8] transition-colors hover:border-[#A18DEC]/60 hover:bg-[#412E66]/25 hover:text-[#F1F0FD] active:bg-[#2E2046]"
               onClick={onComplete}
             >
-              Welcome{' '}
+              Welcome
               <span
                 aria-hidden="true"
-                className="ml-[0.45em] text-[1.15em] leading-none"
+                className="ml-[0.5em] leading-none text-[#9171E3] transition-transform duration-200 group-hover:translate-x-[0.15em] group-hover:text-[#A18DEC]"
               >
                 →
               </span>
