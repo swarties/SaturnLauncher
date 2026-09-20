@@ -20,7 +20,8 @@ function getRedirectTarget(status, pathname) {
     return pathname === '/login' ? null : '/login';
   if (!hasOnboarded()) return pathname === '/onboarding' ? null : '/onboarding';
 
-  if (pathname === '/login' || pathname === '/onboarding') return '/home';
+  if (pathname === '/login' || pathname === '/onboarding' || pathname === '/')
+    return '/home';
 
   return null;
 }
@@ -102,8 +103,6 @@ function RootLayout() {
   }, [location.pathname, navigate, status]);
 
   if (status === 'unknown' || showStartupScreen) return <StartupScreen />;
-
-  //  return <Outlet />;
 
   return (
     <main

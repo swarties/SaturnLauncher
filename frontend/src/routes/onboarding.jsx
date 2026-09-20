@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
+import { AnimatePresence, motion } from 'motion/react';
 import { Button } from '@/components/ui/button.jsx';
 import { LineWobble } from 'ldrs/react';
 import 'ldrs/react/LineWobble.css';
@@ -26,17 +27,13 @@ function Load() {
 }
 
 function RouteComponent() {
+  const { profile } = useAuth();
+  const username = profile?.name ?? 'player';
   const [stage, setStage] = useState(0);
   // loadingInitial = 0
   // welcome = 1
   // onboarding = 2 // ...
   // homePage = 3
-
-  const { profile } = useAuth();
-
-  console.log('Saturn onboarding profile:', profile);
-
-  const username = profile?.name ?? 'player';
 
   useEffect(() => {
     if (stage === 0) {
@@ -52,26 +49,12 @@ function RouteComponent() {
     }
   }, [stage]);
 
-  switch (stage) {
-    case 0:
-      return (
-        <Fade
-          key="onboarding-stage-0"
-          duration={420}
-          up={50}
-          className="h-screen w-full"
-        >
-          <Load />
-        </Fade>
-      );
-    case 1:
-      return (
-        <Fade
-          key="onboarding-stage-1"
-          duration={420}
-          up={50}
-          className="h-screen w-full"
-        >
+  function StageContent({ stage, username, onComplete }) {
+    switch (stage) {
+      case 0:
+        return <Load />;
+      case 1:
+        return (
           <div className="flex h-screen items-center justify-center text-[clamp(1em,5vw,8vh)]">
             <h1>Welcome to </h1>
             <TextShimmerWave
@@ -85,47 +68,87 @@ function RouteComponent() {
               &nbsp;Saturn Launcher
             </TextShimmerWave>
           </div>
-        </Fade>
-      );
-    case 2:
-      return (
-        <Fade>
-          <div>
-            <h1>
-              Let&apos;s get started&nbsp;<span>{username}</span>, shall we?
+        );
+      case 2:
+        return (
+          <div className="flex h-full flex-col items-center justify-center">
+            <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)] leading-none font-thin">
+              Let&apos;s get started&nbsp;
+              <span className="pointer-events-none mx-[0.1em] inline-flex translate-y-[0.06em] items-center rounded-xl border border-[#8456D5]/70 bg-[#2E2046] px-[0.38em] py-[0.16em] align-[0.14em] font-mono text-[0.5em] leading-none font-thin tracking-[-0.04em] text-[#e5e3fc]">
+                {username}
+              </span>
+              , shall we?
             </h1>
-            <Button>Welcome →</Button>
+            <Button
+              className="h-[clamp(3.25rem,3.7vw,4.25rem)] min-w-[clamp(9rem,10vw,11rem)] rounded-xl px-[clamp(1.25rem,1.6vw,1.9rem)] text-[clamp(1rem,1.2vw,1.35rem)] leading-none font-medium text-[#F1F0FD] shadow-[0_8px_22px_rgba(46,32,70,0.26)] transition-colors hover:bg-[#5D3C97] active:bg-[#412E66]"
+              onClick={onComplete}
+            >
+              Welcome{' '}
+              <span
+                aria-hidden="true"
+                className="ml-[0.45em] text-[1.15em] leading-none"
+              >
+                →
+              </span>
+            </Button>
           </div>
-        </Fade>
-        // <div className="flex h-screen flex-col items-center justify-center">
-        //   <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)] font-thin">
-        //     Let's get started, shall we?
-        //   </h1>
-        //   <Button className="bg-[#412E66] text-[clamp(1rem,2vw,3rem)] font-thin hover:bg-[#2e2046]">
-        //     Welcome →
-        //   </Button>
-        // </div>
-      );
-    case 3:
-      return (
-        <div id="App" className={`flex h-screen items-center justify-center`}>
-          <h1>
-            Hi, Hello to my super cool app Saturn Launcher. Nice to meet you!
-          </h1>
-        </div>
-      );
+          // <div className="flex h-screen flex-col items-center justify-center">
+          //   <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)] font-thin">
+          //     Let's get started, shall we?
+          //   </h1>
+          //   <Button className="bg-[#412E66] text-[clamp(1rem,2vw,3rem)] font-thin hover:bg-[#2e2046]">
+          //     Welcome →
+          //   </Button>
+          // </div>
+        );
+      case 3:
+        return (
+          <div
+            id="App"
+            className={`flex h-screen flex-col items-center justify-center`}
+          >
+            <h1>
+              Hi, Hello to my super cool app Saturn Launcher. Nice to meet you!
+            </h1>
+          </div>
+        );
+      default:
+        return (
+          <div className="flex h-screen flex-col items-center justify-center">
+            <h1 className="py-[2em]">Error : Unknown Loading Stage</h1>
+            <LineWobble
+              size="100"
+              stroke="5"
+              bg-opacity="0.1"
+              speed="2.4"
+              color="#412E66"
+            />
+          </div>
+        );
+    }
   }
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center">
-      <h1 className="py-[2em]">Error : Unknown Loading Stage</h1>
-      <LineWobble
-        size="100"
-        stroke="5"
-        bg-opacity="0.1"
-        speed="2.4"
-        color="#412E66"
-      />
+    <div className="relative h-screen w-full overflow-hidden">
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={stage}
+          className="absolute inset-0 h-full w-full"
+          initial={{ x: '100%', opacity: 0.7, filter: 'blur(6px)' }} // filter: 'blur(6px)'
+          animate={{ x: '0', opacity: 1, filter: 'blur(0px)' }} // filter: 'blur(0px)'
+          exit={{ x: '-100%', opacity: 0.7, filter: 'blur(6px)' }} // filter: 'blur(6px)'
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.38, 1] }}
+        >
+          <StageContent
+            stage={stage}
+            username={username}
+            onComplete={() => {
+              setOnboarded();
+              setStage(3);
+            }}
+          ></StageContent>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
