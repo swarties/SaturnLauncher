@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button.jsx';
 import { LineWobble } from 'ldrs/react';
 import 'ldrs/react/LineWobble.css';
 import { hasOnboarded, setOnboarded } from '@/lib/onboarding';
+import { useAuth } from '@/stores/auth';
+import { TextShimmerWave } from '@/components/ui/text-shimmer-wave.jsx';
 
 export const Route = createFileRoute('/onboarding')({
   component: RouteComponent,
@@ -29,11 +31,18 @@ function RouteComponent() {
   // welcome = 1
   // onboarding = 2 // ...
   // homePage = 3
+
+  const { profile } = useAuth();
+
+  console.log('Saturn onboarding profile:', profile);
+
+  const username = profile?.name ?? 'player';
+
   useEffect(() => {
     if (stage === 0) {
       const Timer = setTimeout(() => {
         setStage(1);
-      }, 7500); // temp big but set to 3k in prod
+      }, 3000); // temp big but set to 3k in prod
       return () => clearTimeout(Timer);
     } else if (stage === 1 && !hasOnboarded()) {
       const Timer = setTimeout(() => {
@@ -45,24 +54,57 @@ function RouteComponent() {
 
   switch (stage) {
     case 0:
-      return <Load />;
+      return (
+        <Fade
+          key="onboarding-stage-0"
+          duration={420}
+          up={50}
+          className="h-screen w-full"
+        >
+          <Load />
+        </Fade>
+      );
     case 1:
       return (
-        <div className="flex h-screen items-center justify-center">
-          <h1>Welcome to </h1>
-          <h2>&nbsp;Saturn Launcher</h2>
-        </div>
+        <Fade
+          key="onboarding-stage-1"
+          duration={420}
+          up={50}
+          className="h-screen w-full"
+        >
+          <div className="flex h-screen items-center justify-center text-[clamp(1em,5vw,8vh)]">
+            <h1>Welcome to </h1>
+            <TextShimmerWave
+              className="[--base-color:#412e66] [--base-gradient-color:#a18dec]"
+              duration={0.45}
+              spread={0.5}
+              zDistance={0}
+              scaleDistance={1}
+              rotateYDistance={20}
+            >
+              &nbsp;Saturn Launcher
+            </TextShimmerWave>
+          </div>
+        </Fade>
       );
     case 2:
       return (
-        <div className="flex h-screen flex-col items-center justify-center">
-          <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)] font-thin">
-            Let's get started, shall we?
-          </h1>
-          <Button className="bg-[#412E66] text-[clamp(1rem,2vw,3rem)] font-thin hover:bg-[#2e2046]">
-            Welcome →
-          </Button>
-        </div>
+        <Fade>
+          <div>
+            <h1>
+              Let&apos;s get started&nbsp;<span>{username}</span>, shall we?
+            </h1>
+            <Button>Welcome →</Button>
+          </div>
+        </Fade>
+        // <div className="flex h-screen flex-col items-center justify-center">
+        //   <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)] font-thin">
+        //     Let's get started, shall we?
+        //   </h1>
+        //   <Button className="bg-[#412E66] text-[clamp(1rem,2vw,3rem)] font-thin hover:bg-[#2e2046]">
+        //     Welcome →
+        //   </Button>
+        // </div>
       );
     case 3:
       return (
