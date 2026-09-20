@@ -5,7 +5,7 @@ import {
   useLocation,
   useNavigate,
 } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { LineWobble } from 'ldrs/react';
 import 'ldrs/react/LineWobble.css';
 
@@ -44,8 +44,10 @@ export const Route = createRootRoute({
 function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+
   const { status, profile } = useAuth();
   const [showStartupScreen, setShowStartupScreen] = useState(true);
+  const startupStarted = useRef(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -77,7 +79,10 @@ function RootLayout() {
       authActions.authRequired();
     });
 
-    void startApp();
+    if (!startupStarted.current) {
+      startupStarted.current = true;
+      void startApp();
+    }
 
     return () => {
       unsubscribeAuthSuccess();
