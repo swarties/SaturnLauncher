@@ -3,11 +3,11 @@
 Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source Minecraft launcher!
 
 ## System Requirements:
-OS: Windows 10/11 (Requires WebView2; Comes with a regular Windows 11 install)
-CPU: 2+ cores
-RAM: 1GB of free RAM
-Storage: 50 MB of free storage
-Network: Required for login
+- OS: Windows 10/11 (Requires WebView2; Comes with a regular Windows 11 install)
+- CPU: 2+ cores
+- RAM: 1GB of free RAM
+- Storage: 50 MB of free storage
+- Network: Required for login
 
 ## Start Steps
 - Double-click the .exe or Linux binary file
