@@ -1,17 +1,17 @@
 # Saturn Launcher
 
-Our take on a lightweight, ad-free, minimalistic and blazingly fast open source Minecraft launcher!
+Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source Minecraft launcher!
 
 ## System Requirements:
-OS: Windows 10/11 (Requires webview2 most windows 11 installs come with it)
+OS: Windows 10/11 (Requires WebView2; Comes with a regular Windows 11 install)
 CPU: 2+ cores
-RAM: 1GB of free ram
+RAM: 1GB of free RAM
 Storage: 50 MB of free storage
 Network: Required for login
 
 ## Start Steps
-- Double click the .exe or linux binary file
-- Allow the exe through smart screen if applicable
+- Double-click the .exe or Linux binary file
+- Allow the .exe through SmartScreen if applicable
 
 ## Tech Stack
 Golang V1.27.1 for back-end
@@ -24,11 +24,11 @@ Using wailsIo V2.15.0
 
 ## Project State
 Microsoft and Minecraft authentication finished in both backend and frontend
-Launching app keeps refresh key and user hash always up to date
+Launching the app keeps the refresh key and user hash always up to date
 Onboarding is a work in progress
 
 ## Motivation
-Most launchers today are aesthetically unpleasing and filled with ads and too bloated. That's why we're working on a great alternative to those options
+Most launchers today are aesthetically unpleasing, are filled with ads, and are too bloated. That's why we're working on a great alternative to those options.
 
 
 ## Gallery
