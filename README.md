@@ -1,19 +1,42 @@
-# README
+# Saturn Launcher
 
-## About
+Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source Minecraft launcher!
 
-This is the official Wails React template.
+## System Requirements:
+- OS: Windows 10/11 (Requires WebView2; Comes with a regular Windows 11 install)
+- CPU: 2+ cores
+- RAM: 1GB of free RAM
+- Storage: 50 MB of free storage
+- Network: Required for login
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+## Start Steps
+- Double-click the .exe or Linux binary file
+- Allow the .exe through SmartScreen if applicable
 
-## Live Development
+## Tech Stack
+Golang V1.27.1 for back-end
+React front-end with Vite
+  - TanStack Router
+  - shadcn
+  - TailwindCSS v4
+Using wailsIo V2.15.0
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
 
-## Building
+## Project State
+Microsoft and Minecraft authentication finished in both backend and frontend
+Launching the app keeps the refresh key and user hash always up to date
+Onboarding is a work in progress
 
-To build a redistributable, production mode package, use `wails build`.
+## Motivation
+Most launchers today are aesthetically unpleasing, are filled with ads, and are too bloated. That's why we're working on a great alternative to those options.
+
+
+## Gallery
+
+Login Screen - <img width="1261" height="752" alt="image" src="https://github.com/user-attachments/assets/404b4d0a-b194-4131-b335-bf36ef63acc0" />
+Login Screen Step 2 - <img width="1267" height="758" alt="image" src="https://github.com/user-attachments/assets/4cf67352-6b9d-4763-83c7-b6284eaf985f" />
+Onboarding - <img width="1259" height="755" alt="image" src="https://github.com/user-attachments/assets/be79fbfe-587a-48fc-b177-c3a07b66c769" />
+Onboarding Step 2 - <img width="1264" height="756" alt="image" src="https://github.com/user-attachments/assets/ed26aabb-ce36-441f-8e25-e5875f8af1a7" />
+
+
+
