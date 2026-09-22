@@ -31,11 +31,11 @@ type Version struct {
 	SHA1 string `json:"sha1"`
 }
 
-func (d *Download) Downloader(destPath string, downloadUrl string) (bool, error) {
+func (d *Download) Downloader(destPath string, downloadUrl string) (*string, error) {
 	client := grab.NewClient()
 	req, err := grab.NewRequest(destPath, downloadUrl)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	fmt.Printf("Downloading %v...\n", req.URL())
@@ -58,11 +58,11 @@ Loop:
 	}
 	if err := resp.Err(); err != nil {
 		fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
-		return false, err
+		return nil, err
 	}
 
 	fmt.Printf("Download saved to ./%v \n", resp.Filename)
-	return true, nil
+	return &resp.Filename, nil
 }
 
 func (d *Download) GetVersionManifest() (*VersionManifest, error) {
@@ -72,8 +72,8 @@ func (d *Download) GetVersionManifest() (*VersionManifest, error) {
 		return nil, err
 	}
 	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
-	isDownloaded, err := d.Downloader(targetdir, "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
-	if err != nil || isDownloaded != true {
+	_, err = d.Downloader(targetdir, "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
+	if err != nil {
 		return nil, err
 	}
 	finaldir := filepath.Join(targetdir, "version_manifest_v2.json")
