@@ -1,6 +1,9 @@
 package main
 
-import "context"
+import (
+	"SaturnLauncher/backend/auth"
+	"context"
+)
 
 type Launch struct {
 	ctx context.Context
@@ -11,7 +14,7 @@ func NewLaunch() *Launch {
 }
 
 type LaunchData struct {
-	CurrentAccessToken MinecraftPayload `json:"access_token"`
-	Username           string           `json:"name"`
-	UUID               string           `json:"id"`
+	CurrentAccessToken auth.MinecraftPayload `json:"access_token"`
+	Username           string                `json:"name"`
+	UUID               string                `json:"id"`
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"SaturnLauncher/backend/auth"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,8 +16,8 @@ import (
 
 type App struct {
 	ctx               context.Context
-	Auth              *Auth
-	Account           *Account
+	Auth              *auth.Auth
+	Account           *auth.Account
 	ActiveAccessToken string
 	Launch            *Launch
 }
@@ -24,9 +25,10 @@ type App struct {
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{
-		Auth:    NewAuth(),
-		Account: NewAccount(),
-		Launch:  NewLaunch()}
+		Auth:    auth.NewAuth(),
+		Account: auth.NewAccount(),
+		Launch:  NewLaunch(),
+	}
 }
 
 // startup is called when the app starts. The context is saved
@@ -89,7 +91,7 @@ func (a *App) StartLogin() {
 			return
 		}
 
-		session := AuthSession{
+		session := auth.AuthSession{
 			RefreshToken: at.RefreshToken,
 			Uhs:          xbt.DisplayClaims.Xui[0].Uhs,
 		}
@@ -124,7 +126,7 @@ func (a *App) StartApp() {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
-		var Keys AuthSession
+		var Keys auth.AuthSession
 		err = json.Unmarshal(fileData, &Keys)
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
