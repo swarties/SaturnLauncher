@@ -140,6 +140,29 @@ func (i *InstanceManager) DeleteInstance(name string) (bool, error) {
 	return true, nil
 }
 
+func (i *InstanceManager) GetInstanceInfo(folderId string) (*Instance, error) {
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+
+	var inst Instance
+	jsonData, err := os.ReadFile(base)
+	if err != nil {
+		return nil, err
+	}
+	if len(jsonData) == 0 {
+		return nil, fmt.Errorf("JSON file is empty")
+	}
+	err = json.Unmarshal(jsonData, &inst)
+	if err != nil {
+		return nil, err
+	}
+	return &inst, nil
+}
+
 // CreateInstance  Func DONE
 // ListInstances   Func DONE (Note: Only returns folder names)
 // DeleteInstance  Func DONE (checks if instance folder exists then deletes it)
+// GetInstanceInfo Func DONE (returns the instance info in a struct type for later use) not meant to be called by the js
