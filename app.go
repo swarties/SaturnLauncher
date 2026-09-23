@@ -2,6 +2,8 @@ package main
 
 import (
 	"SaturnLauncher/backend/auth"
+	"SaturnLauncher/backend/download"
+	"SaturnLauncher/backend/instances"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -20,14 +22,18 @@ type App struct {
 	Account           *auth.Account
 	ActiveAccessToken string
 	Launch            *Launch
+	Download          *download.Download
+	InstanceManager   *instances.InstanceManager
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{
-		Auth:    auth.NewAuth(),
-		Account: auth.NewAccount(),
-		Launch:  NewLaunch(),
+		Auth:            auth.NewAuth(),
+		Account:         auth.NewAccount(),
+		Launch:          NewLaunch(),
+		Download:        download.NewDownload(),
+		InstanceManager: instances.NewInstanceManager(),
 	}
 }
 

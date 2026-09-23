@@ -78,11 +78,10 @@ func (d *Download) GetVersionManifest() (*VersionManifest, error) {
 	}
 	finaldir := filepath.Join(targetdir, "version_manifest_v2.json")
 	jsonFile, err := os.Open(finaldir)
-	defer jsonFile.Close()
 	if err != nil {
 		return nil, err
 	}
-
+	defer jsonFile.Close()
 	byteVal, err := io.ReadAll(jsonFile)
 	if err != nil {
 		return nil, err
@@ -93,7 +92,7 @@ func (d *Download) GetVersionManifest() (*VersionManifest, error) {
 	}
 
 	var filteredManifest VersionManifest
-	for _, ver := range filteredManifest.Versions {
+	for _, ver := range rawManifest.Versions {
 		if ver.Type != "release" {
 			continue
 		}
@@ -106,3 +105,5 @@ func (d *Download) GetVersionManifest() (*VersionManifest, error) {
 	return &filteredManifest, err
 
 }
+
+// get started on download when instance manager is completed
