@@ -107,6 +107,39 @@ func (i *InstanceManager) CreateInstance(name string, version string) (*Instance
 	return &NewInstance, nil
 }
 
+func (i *InstanceManager) ListInstances() ([]string, error) {
+	var instances []string
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances")
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return nil, err
+	}
+	for _, inst := range entries {
+		if inst.IsDir() {
+			instances = append(instances, inst.Name())
+		}
+	}
+	return instances, nil
+}
+
+func (i *InstanceManager) DeleteInstance(name string) (bool, error) {
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return false, err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances")
+	instanceDir := filepath.Join(base, name)
+	err = os.RemoveAll(instanceDir)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // CreateInstance  Func DONE
-// ListInstances   Func TBD	(array with all the folder names maybe read the instancejson and return its info ?)
-// DeleteInstances Func TBD (checks if instance folder exists then deletes it)
+// ListInstances   Func DONE (Note: Only returns folder names)
+// DeleteInstance  Func DONE (checks if instance folder exists then deletes it)
