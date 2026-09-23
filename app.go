@@ -41,6 +41,10 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	_, err := instances.NewInstanceManager().InitStorage()
+	if err != nil {
+		return
+	}
 }
 
 // StartLogin is run in js on the login page
