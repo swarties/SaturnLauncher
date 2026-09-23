@@ -104,6 +104,10 @@ function RootLayout() {
 
   if (status === 'unknown' || showStartupScreen) return <StartupScreen />;
 
+  // INFINITE ONBOARD LOOP !!!! VVVVVVVV
+
+  // localStorage.removeItem('saturn.onboarded');
+
   return (
     <main
       key={location.pathname}

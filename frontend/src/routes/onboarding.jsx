@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { Button } from '@/components/ui/button.jsx';
 import { LineWobble } from 'ldrs/react';
@@ -7,6 +7,7 @@ import 'ldrs/react/LineWobble.css';
 import { hasOnboarded, setOnboarded } from '@/lib/onboarding';
 import { useAuth } from '@/stores/auth';
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave.jsx';
+import { TextEffect } from '@/components/ui/text-effect.jsx';
 
 export const Route = createFileRoute('/onboarding')({
   component: RouteComponent,
@@ -76,7 +77,7 @@ function RouteComponent() {
               Let&apos;s get started{' '}
               <span
                 aria-label={`username: ${username}`}
-                className="pointer-events-none mx-[0.2em] inline-flex items-center rounded-[0.35em] bg-[#2F2F34] px-[0.5em] py-[0.16em] align-middle font-mono text-[0.5em] leading-none font-normal tracking-[-0.02em] text-[#D1CDF8] ring-1 ring-white/10 ring-inset"
+                className="pointer-events-none mx-[0.2em] inline-flex items-center rounded-[0.15em] bg-[#2F2F34] px-[0.5em] py-[0.6rem] align-middle font-mono text-[0.5em] leading-none font-thin tracking-[-0.02em] text-[#FFFFFF] ring-1 ring-white/10 ring-inset"
               >
                 {username}
               </span>
@@ -86,7 +87,7 @@ function RouteComponent() {
             <Button
               variant="ghost"
               className="group mt-[1.25vw] h-[clamp(2.75rem,3vw,3.25rem)] rounded-lg border border-[#8456D5]/35 bg-[#412E66]/10 px-[clamp(1.75rem,2.2vw,2.5rem)] text-[clamp(0.95rem,1.05vw,1.15rem)] leading-none font-normal tracking-[0.01em] text-[#D1CDF8] transition-colors hover:border-[#A18DEC]/60 hover:bg-[#412E66]/25 hover:text-[#F1F0FD] active:bg-[#2E2046]"
-              onClick={onComplete}
+              onClick={() => setStage(3)}
             >
               Welcome
               <span
@@ -97,14 +98,6 @@ function RouteComponent() {
               </span>
             </Button>
           </div>
-          // <div className="flex h-screen flex-col items-center justify-center">
-          //   <h1 className="py-[2vw] text-[clamp(1.5rem,4.5vw,5rem)] font-thin">
-          //     Let's get started, shall we?
-          //   </h1>
-          //   <Button className="bg-[#412E66] text-[clamp(1rem,2vw,3rem)] font-thin hover:bg-[#2e2046]">
-          //     Welcome →
-          //   </Button>
-          // </div>
         );
       case 3:
         return (
@@ -112,17 +105,41 @@ function RouteComponent() {
             id="App"
             className={`flex h-screen flex-col items-center justify-center`}
           >
-            <h1>
-              Hi, Hello to my super cool app Saturn Launcher. Nice to meet you!
-            </h1>
+            <TextEffect
+              per="word"
+              as="h1"
+              preset="blur"
+              delay={0.5}
+              className="pb-[1em] text-[clamp(1.5rem,4.5vw,5rem)] leading-[1.05] font-thin"
+            >
+              You're all set!
+            </TextEffect>
+            <Button
+              variant="ghost"
+              className="group mt-[1.25vw] h-[clamp(2.75rem,3vw,3.25rem)] rounded-lg border border-[#8456D5]/35 bg-[#412E66]/10 px-[clamp(1.75rem,2.2vw,2.5rem)] text-[clamp(0.95rem,1.05vw,1.15rem)] leading-none font-normal tracking-[0.01em] text-[#D1CDF8] transition-colors hover:border-[#A18DEC]/60 hover:bg-[#412E66]/25 hover:text-[#F1F0FD] active:bg-[#2E2046]"
+              onClick={onComplete}
+            >
+              Let's go
+              <span
+                aria-hidden="true"
+                className="ml-[0.5em] leading-none text-[#9171E3] transition-transform duration-200 group-hover:translate-x-[0.15em] group-hover:text-[#A18DEC]"
+              >
+                →
+              </span>
+            </Button>
           </div>
         );
       default:
         return (
           <div className="flex h-screen flex-col items-center justify-center">
-            <h1 className="py-[2em]">Error : Unknown Loading Stage</h1>
+            <h1 className="py-[2em] text-[clamp(0.5rem,1.5vw,2rem)]">
+              Error : Unknown Loading Stage
+            </h1>
+            <h1 className="pb-[2em] text-[clamp(0.5rem,1.5vw,2rem)]">
+              Please restart the app
+            </h1>
             <LineWobble
-              size="100"
+              size="120"
               stroke="5"
               bg-opacity="0.1"
               speed="2.4"
@@ -132,6 +149,8 @@ function RouteComponent() {
         );
     }
   }
+
+  const navigate = useNavigate();
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -149,7 +168,10 @@ function RouteComponent() {
             username={username}
             onComplete={() => {
               setOnboarded();
-              setStage(3);
+              void navigate({
+                to: '/home',
+                replace: true,
+              });
             }}
           ></StageContent>
         </motion.div>
