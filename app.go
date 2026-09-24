@@ -178,3 +178,25 @@ func (a *App) StartApp() {
 
 // logout deletes the 2 .jsons and clears all the vals
 // AuthSession struct for unmarshalling JSON
+
+func (a *App) GetGameFiles() {
+	manifest, err := a.Download.GetVersionManifest()
+	if err != nil {
+		return
+	}
+	err = a.Download.GetVersionInfo(*manifest, "26.3")
+	if err != nil {
+		return
+	}
+
+	err = a.Download.GetClientJar("26.3")
+	if err != nil {
+		return
+	}
+	err = a.Download.GetClientJar("26.3")
+	if err != nil {
+		return
+	}
+
+	fmt.Println("Debug func cuz no ui and download flow still needs libs + assets to run check files for client.jar and json file ")
+}

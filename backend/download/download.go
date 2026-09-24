@@ -33,6 +33,48 @@ type Version struct {
 	SHA1 string `json:"sha1"`
 }
 
+// very long struct incoming
+// copied and pasted from https://transform.tools/json-to-go
+
+type VersionInfo struct {
+	AssetIndex struct {
+		ID        string `json:"id"`
+		Sha1      string `json:"sha1"`
+		Size      int    `json:"size"`
+		TotalSize int    `json:"totalSize"`
+		URL       string `json:"url"`
+	} `json:"assetIndex"`
+	Downloads struct {
+		Client struct {
+			Sha1 string `json:"sha1"`
+			Size int    `json:"size"`
+			URL  string `json:"url"`
+		} `json:"client"`
+	} `json:"downloads"`
+	ID          string `json:"id"`
+	JavaVersion struct {
+		Component    string `json:"component"`
+		MajorVersion int    `json:"majorVersion"`
+	} `json:"javaVersion"`
+	Libraries []struct {
+		Downloads struct {
+			Artifact struct {
+				Path string `json:"path"`
+				Sha1 string `json:"sha1"`
+				Size int    `json:"size"`
+				URL  string `json:"url"`
+			} `json:"artifact"`
+		} `json:"downloads"`
+		Name  string `json:"name"`
+		Rules []struct {
+			Action string `json:"action"`
+			Os     struct {
+				Name string `json:"name"`
+			} `json:"os"`
+		} `json:"rules,omitempty"`
+	} `json:"libraries"`
+}
+
 func (d *Download) Downloader(destPath string, downloadUrl string) (*string, error) {
 	client := grab.NewClient()
 	req, err := grab.NewRequest(destPath, downloadUrl)
@@ -42,7 +84,9 @@ func (d *Download) Downloader(destPath string, downloadUrl string) (*string, err
 
 	fmt.Printf("Downloading %v...\n", req.URL())
 	resp := client.Do(req)
-	fmt.Printf("  %v\\n", resp.HTTPResponse.Status)
+	if resp.HTTPResponse != nil {
+		fmt.Printf("  %v\n", resp.HTTPResponse.Status)
+	}
 
 	t := time.NewTicker(500 * time.Millisecond)
 	defer t.Stop()
@@ -63,7 +107,7 @@ Loop:
 		return nil, err
 	}
 
-	fmt.Printf("Download saved to ./%v \n", resp.Filename)
+	fmt.Printf("Download saved to %v \n", resp.Filename)
 	return &resp.Filename, nil
 }
 
@@ -74,6 +118,10 @@ func (d *Download) GetVersionManifest() (*VersionManifest, error) {
 		return nil, err
 	}
 	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
+	err = os.MkdirAll(targetdir, 0o755)
+	if err != nil {
+		return nil, err
+	}
 	_, err = d.Downloader(targetdir, "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
 	if err != nil {
 		return nil, err
@@ -147,22 +195,72 @@ func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId st
 	if err != nil {
 		return err
 	}
-
-	filename, err := d.Downloader(destPath, versionUrl)
+	filePath := filepath.Join(destPath, versionId+".json")
+	_, err = d.Downloader(filePath, versionUrl)
 	if err != nil {
 		return err
 	}
-	fileloc := filepath.Join(destPath, *filename)
-	hash, err := d.GetFileSha1(fileloc)
+	hash, err := d.GetFileSha1(filePath)
 	if err != nil {
 		return err
 	}
 	if hash != versionSha1 {
-		err := os.Remove(fileloc)
+		err := os.Remove(filePath)
 		if err != nil {
 			return err
 		}
 		return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
 	}
+	return nil
+}
+
+func (d *Download) ParseVersionInfo(versionId string) (*VersionInfo, error) {
+	var data VersionInfo
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "versions", versionId)
+	filePath := filepath.Join(destPath, versionId+".json")
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(file, &data)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+func (d *Download) GetClientJar(versionId string) error {
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "versions", versionId)
+	filePath := filepath.Join(destPath, versionId+".jar")
+	versionInfo, err := d.ParseVersionInfo(versionId)
+	if err != nil {
+		return err
+	}
+	clientUrl := versionInfo.Downloads.Client.URL
+	clientSha1 := versionInfo.Downloads.Client.Sha1
+	_, err = d.Downloader(filePath, clientUrl)
+	if err != nil {
+		return err
+	}
+	hash, err := d.GetFileSha1(filePath)
+	if err != nil {
+		return err
+	}
+	if hash != clientSha1 {
+		err := os.Remove(filePath)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
+	}
+
 	return nil
 }
