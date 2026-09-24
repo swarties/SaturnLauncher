@@ -2,6 +2,8 @@ package download
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -105,5 +107,62 @@ func (d *Download) GetVersionManifest() (*VersionManifest, error) {
 	return &filteredManifest, err
 
 }
+func (d *Download) GetFileSha1(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	hasher := sha1.New()
+	_, err = io.Copy(hasher, file)
+	if err != nil {
+		return "", err
+	}
+	hashInBytes := hasher.Sum(nil)
+
+	return hex.EncodeToString(hashInBytes), nil
+}
 
 // get started on download when instance manager is completed
+
+func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId string) error {
+	var versionUrl string
+	var versionSha1 string
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	for _, ver := range filteredManifest.Versions {
+		if ver.ID == versionId {
+			versionUrl = ver.URL
+			versionSha1 = ver.SHA1
+			break
+		}
+	}
+	if versionUrl == "" {
+		return fmt.Errorf("couldnt find version url in the manifest. What did you even do... restart the launcher and it should fix the manifest")
+	}
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "versions", versionId)
+	err = os.MkdirAll(destPath, 0o755)
+	if err != nil {
+		return err
+	}
+
+	filename, err := d.Downloader(destPath, versionUrl)
+	if err != nil {
+		return err
+	}
+	fileloc := filepath.Join(destPath, *filename)
+	hash, err := d.GetFileSha1(fileloc)
+	if err != nil {
+		return err
+	}
+	if hash != versionSha1 {
+		err := os.Remove(fileloc)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
+	}
+	return nil
+}
