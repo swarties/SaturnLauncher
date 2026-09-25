@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/cavaliergopher/grab/v3"
@@ -167,7 +168,7 @@ func (d *Download) GetFileSha1(filePath string) (string, error) {
 		return "", err
 	}
 	hashInBytes := hasher.Sum(nil)
-
+	fmt.Println(hex.EncodeToString(hashInBytes))
 	return hex.EncodeToString(hashInBytes), nil
 }
 
@@ -262,5 +263,71 @@ func (d *Download) GetClientJar(versionId string) error {
 		return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
 	}
 
+	return nil
+}
+
+func (d *Download) GetLibraries(versionId string) error {
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	versionInfo, err := d.ParseVersionInfo(versionId)
+	if err != nil {
+		return err
+	}
+	osName := runtime.GOOS
+	for _, library := range versionInfo.Libraries {
+		if library.Downloads.Artifact.URL != "" {
+			if len(library.Rules) > 0 {
+				if library.Rules[0].Os.Name == osName {
+					destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
+					filePath := filepath.Join(destPath, library.Downloads.Artifact.Path)
+					err = os.MkdirAll(filepath.Dir(filePath), 0o755)
+					if err != nil {
+						return err
+					}
+					_, err = d.Downloader(filePath, library.Downloads.Artifact.URL)
+					expectedSha1 := library.Downloads.Artifact.Sha1
+					if err != nil {
+						return err
+					}
+					fileSha1, err := d.GetFileSha1(filePath)
+					if err != nil {
+						return err
+					}
+					if expectedSha1 != fileSha1 {
+						err := os.Remove(filePath)
+						if err != nil {
+							return err
+						}
+						return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
+					}
+				}
+			} else {
+				destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
+				filePath := filepath.Join(destPath, library.Downloads.Artifact.Path)
+				err = os.MkdirAll(filepath.Dir(filePath), 0o755)
+				if err != nil {
+					return err
+				}
+				_, err = d.Downloader(filePath, library.Downloads.Artifact.URL)
+				expectedSha1 := library.Downloads.Artifact.Sha1
+				if err != nil {
+					return err
+				}
+				fileSha1, err := d.GetFileSha1(filePath)
+				if err != nil {
+					return err
+				}
+				if expectedSha1 != fileSha1 {
+					err := os.Remove(filePath)
+					if err != nil {
+						return err
+					}
+					return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
+				}
+			}
+		}
+	}
 	return nil
 }
