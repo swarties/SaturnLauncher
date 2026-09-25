@@ -180,20 +180,21 @@ func (a *App) StartApp() {
 // AuthSession struct for unmarshalling JSON
 
 func (a *App) GetGameFiles() error {
+	version := "1.14"
 	manifest, err := a.Download.GetVersionManifest()
 	if err != nil {
 		return err
 	}
-	err = a.Download.GetVersionInfo(*manifest, "1.21.1")
+	err = a.Download.GetVersionInfo(*manifest, version)
 	if err != nil {
 		return err
 	}
 
-	err = a.Download.GetClientJar("1.21.1")
+	err = a.Download.GetClientJar(version)
 	if err != nil {
 		return err
 	}
-	err = a.Download.GetLibraries("1.21.1")
+	err = a.Download.GetLibraries(version)
 	fmt.Println("Debug func cuz no ui and download flow still needs assets to run check files for client.jar libs and json file ")
 	return nil
 }

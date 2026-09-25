@@ -65,9 +65,16 @@ type VersionInfo struct {
 				Size int    `json:"size"`
 				URL  string `json:"url"`
 			} `json:"artifact"`
+			Classifiers map[string]struct {
+				Path string `json:"path"`
+				Sha1 string `json:"sha1"`
+				Size int    `json:"size"`
+				URL  string `json:"url"`
+			} `json:"classifiers"`
 		} `json:"downloads"`
-		Name  string `json:"name"`
-		Rules []struct {
+		Natives map[string]string `json:"natives"`
+		Name    string            `json:"name"`
+		Rules   []struct {
 			Action string `json:"action"`
 			Os     struct {
 				Name string `json:"name"`
@@ -328,6 +335,37 @@ func (d *Download) GetLibraries(versionId string) error {
 				}
 			}
 		}
+		nativeName := library.Natives[osName]
+		if len(nativeName) > 0 {
+			native, ok := library.Downloads.Classifiers[nativeName]
+			if ok == true {
+				if len(native.URL) > 0 {
+					destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
+					filePath := filepath.Join(destPath, native.Path)
+					err = os.MkdirAll(filepath.Dir(filePath), 0o755)
+					if err != nil {
+						return err
+					}
+					_, err = d.Downloader(filePath, native.URL)
+					expectedSha1 := native.Sha1
+					if err != nil {
+						return err
+					}
+					fileSha1, err := d.GetFileSha1(filePath)
+					if err != nil {
+						return err
+					}
+					if expectedSha1 != fileSha1 {
+						err := os.Remove(filePath)
+						if err != nil {
+							return err
+						}
+						return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
+					}
+				}
+			}
+		}
+
 	}
 	return nil
 }
