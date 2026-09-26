@@ -530,3 +530,29 @@ func (d *Download) BatchDownloader(ac []AssetCandidate) ([]AssetCandidate, error
 	}
 	return failures, nil
 }
+
+func (d *Download) GetAssets(versionId string) error {
+	vInfo, err := d.ParseVersionInfo(versionId)
+	if err != nil {
+		return err
+	}
+	index, err := d.GetAssetIndex(vInfo)
+	if err != nil {
+		return err
+	}
+	assets, err := d.GetMissingAssets(*index)
+	if err != nil {
+		return err
+	}
+	if len(assets) == 0 {
+		return nil
+	}
+	failures, err := d.BatchDownloader(assets)
+	if err != nil {
+		return err
+	}
+	if len(failures) > 0 {
+		return fmt.Errorf("Failed to download %d assets", len(failures))
+	}
+	return nil
+}
