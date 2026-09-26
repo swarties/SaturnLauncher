@@ -195,6 +195,13 @@ func (a *App) GetGameFiles() error {
 		return err
 	}
 	err = a.Download.GetLibraries(version)
+	if err != nil {
+		return err
+	}
+	err = a.Download.GetAssets(version)
+	if err != nil {
+		return err
+	}
 	fmt.Println("Debug func cuz no ui and download flow still needs assets to run check files for client.jar libs and json file ")
 	return nil
 }
