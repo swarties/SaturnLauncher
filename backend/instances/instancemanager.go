@@ -35,6 +35,8 @@ func (i *InstanceManager) InitStorage() (*string, error) {
 	base := filepath.Join(appdatadir, "SaturnLauncher")
 
 	dirs := []string{
+		filepath.Join(base, "minecraft", "assets", "indexes"),
+		filepath.Join(base, "minecraft", "assets", "objects"),
 		filepath.Join(base, "minecraft", "versions"),
 		filepath.Join(base, "minecraft", "libraries"),
 		filepath.Join(base, "minecraft", "assets"),

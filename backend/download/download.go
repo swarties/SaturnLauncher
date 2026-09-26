@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -82,6 +83,23 @@ type VersionInfo struct {
 		} `json:"rules,omitempty"`
 	} `json:"libraries"`
 }
+
+type AssetIndex struct {
+	Objects map[string]AssetObject `json:"objects"`
+}
+
+type AssetObject struct {
+	Hash string `json:"hash"`
+	Size int    `json:"size"`
+}
+
+type AssetCandidate struct {
+	URL      string
+	DestPath string
+	Hash     string
+}
+
+const assetUrl = "https://resources.download.minecraft.net/"
 
 func (d *Download) Downloader(destPath string, downloadUrl string) (*string, error) {
 	client := grab.NewClient()
@@ -283,11 +301,11 @@ func (d *Download) GetLibraries(versionId string) error {
 		return err
 	}
 	osName := runtime.GOOS
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
 	for _, library := range versionInfo.Libraries {
 		if library.Downloads.Artifact.URL != "" {
 			if len(library.Rules) > 0 {
 				if library.Rules[0].Os.Name == osName {
-					destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
 					filePath := filepath.Join(destPath, library.Downloads.Artifact.Path)
 					err = os.MkdirAll(filepath.Dir(filePath), 0o755)
 					if err != nil {
@@ -311,7 +329,6 @@ func (d *Download) GetLibraries(versionId string) error {
 					}
 				}
 			} else {
-				destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
 				filePath := filepath.Join(destPath, library.Downloads.Artifact.Path)
 				err = os.MkdirAll(filepath.Dir(filePath), 0o755)
 				if err != nil {
@@ -340,7 +357,6 @@ func (d *Download) GetLibraries(versionId string) error {
 			native, ok := library.Downloads.Classifiers[nativeName]
 			if ok == true {
 				if len(native.URL) > 0 {
-					destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
 					filePath := filepath.Join(destPath, native.Path)
 					err = os.MkdirAll(filepath.Dir(filePath), 0o755)
 					if err != nil {
@@ -368,4 +384,100 @@ func (d *Download) GetLibraries(versionId string) error {
 
 	}
 	return nil
+}
+
+func (d *Download) GetAssetIndex(versionInfo *VersionInfo) (*AssetIndex, error) {
+	var assetIndex AssetIndex
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	idx := versionInfo.AssetIndex
+	assetIndexUrl := idx.URL
+	assetIndexSha1 := idx.Sha1
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "assets", "indexes", idx.ID+".json")
+	newSha1, err := d.GetFileSha1(destPath)
+	if !errors.Is(err, os.ErrNotExist) && newSha1 == assetIndexSha1 {
+		file, err := os.ReadFile(destPath)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(file, &assetIndex)
+		if err != nil {
+			return nil, err
+		}
+		return &assetIndex, nil
+	}
+	if err == nil && newSha1 != assetIndexSha1 {
+		err := os.Remove(destPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	filePath, err := d.Downloader(destPath, assetIndexUrl)
+	if err != nil {
+		return nil, err
+	}
+	newSha1, err = d.GetFileSha1(*filePath)
+	if err != nil {
+		return nil, err
+	}
+	if assetIndexSha1 != newSha1 {
+		err := os.Remove(*filePath)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("sha1 Mismatch error asset index file is corrupted")
+	}
+	// parsing
+	file, err := os.ReadFile(*filePath)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(file, &assetIndex)
+	if err != nil {
+		return nil, err
+	}
+	return &assetIndex, nil
+}
+
+func (d *Download) GetMissingAssets(index AssetIndex) ([]AssetCandidate, error) {
+	appdatadir, err := os.UserConfigDir()
+	var Candidates []AssetCandidate
+	if err != nil {
+		return nil, err
+	}
+
+	for _, i := range index.Objects {
+
+		hash := i.Hash
+		destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "assets", "objects", hash[:2], hash)
+		_, statErr := os.Stat(destPath)
+		if statErr != nil {
+			currentAssetUrl := assetUrl + hash[:2] + "/" + hash
+			var newCandidates AssetCandidate
+			newCandidates.DestPath = destPath
+			newCandidates.URL = currentAssetUrl
+			newCandidates.Hash = hash
+			Candidates = append(Candidates, newCandidates)
+			continue
+		}
+
+		fileHash, err := d.GetFileSha1(destPath)
+		if err != nil {
+			return nil, err
+		}
+		if fileHash != i.Hash {
+			currentAssetUrl := assetUrl + hash[:2] + "/" + hash
+			var newCandidates AssetCandidate
+			newCandidates.DestPath = destPath
+			newCandidates.URL = currentAssetUrl
+			newCandidates.Hash = hash
+			Candidates = append(Candidates, newCandidates)
+			continue
+		}
+
+	}
+
+	return Candidates, nil
 }
