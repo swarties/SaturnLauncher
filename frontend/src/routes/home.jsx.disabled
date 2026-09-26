@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button.jsx';
 import { useState } from 'react';
 import { GetGameFiles } from '../../wailsjs/go/main/App';
+import { GlassNavbar } from '@glinui/ui';
 
 export const Route = createFileRoute('/home')({
   component: RouteComponent,
@@ -30,6 +31,7 @@ function RouteComponent() {
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center gap-4">
+      <GlassNavbar className="flex h-14 items-center justify-between rounded-xl"></GlassNavbar>
       <h1>HI</h1>
       <h2>Helllo</h2>
       <Button onClick={handleDownload} disabled={isLoading}>
