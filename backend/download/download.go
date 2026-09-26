@@ -478,6 +478,55 @@ func (d *Download) GetMissingAssets(index AssetIndex) ([]AssetCandidate, error) 
 		}
 
 	}
+	dedupeMap := make(map[string]struct{})
+	var dedupeCandidates []AssetCandidate
+	for _, candidate := range Candidates {
+		if _, exists := dedupeMap[candidate.Hash]; exists {
+			continue
+		}
+		dedupeMap[candidate.Hash] = struct{}{}
+		dedupeCandidates = append(dedupeCandidates, candidate)
+	}
+	return dedupeCandidates, nil
+}
 
-	return Candidates, nil
+func (d *Download) BatchDownloader(ac []AssetCandidate) ([]AssetCandidate, error) {
+	client := grab.NewClient()
+	var requests []*grab.Request
+	var failures []AssetCandidate
+	for _, candidate := range ac {
+		req, err := grab.NewRequest(candidate.DestPath, candidate.URL)
+		if err != nil {
+			return nil, err
+		}
+		req.Tag = candidate
+		err = os.MkdirAll(filepath.Dir(candidate.DestPath), 0o755)
+		if err != nil {
+			return nil, err
+		}
+		requests = append(requests, req)
+	}
+	respb := client.DoBatch(6, requests...)
+
+	for resp := range respb {
+		candidate := resp.Request.Tag.(AssetCandidate)
+		if resp.Err() != nil {
+			failures = append(failures, candidate)
+			continue
+		}
+		hash, err := d.GetFileSha1(resp.Filename)
+		if err != nil {
+			failures = append(failures, candidate)
+			continue
+		}
+		if hash != candidate.Hash {
+			err := os.Remove(resp.Filename)
+			if err != nil {
+				fmt.Println("error deleting the file after a hash mismatch")
+			}
+			failures = append(failures, candidate)
+
+		}
+	}
+	return failures, nil
 }
