@@ -37,6 +37,7 @@ func (i *InstanceManager) InitStorage() (*string, error) {
 	dirs := []string{
 		filepath.Join(base, "minecraft", "assets", "indexes"),
 		filepath.Join(base, "minecraft", "assets", "objects"),
+		filepath.Join(base, "minecraft", "natives"),
 		filepath.Join(base, "minecraft", "versions"),
 		filepath.Join(base, "minecraft", "libraries"),
 		filepath.Join(base, "minecraft", "assets"),
@@ -82,7 +83,7 @@ func (i *InstanceManager) CreateInstance(name string, version string) (*Instance
 		filepath.Join(instanceDir, "saves"),
 		filepath.Join(instanceDir, "config"),
 		filepath.Join(instanceDir, "mods"),
-		filepath.Join(instanceDir, "ressourcepacks"),
+		filepath.Join(instanceDir, "resourcepacks"),
 		filepath.Join(instanceDir, "shaderpacks"),
 	}
 	for _, dir := range dirs {

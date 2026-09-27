@@ -21,7 +21,7 @@ func (p *Profile) GetPFP(mcinfo auth.MinecraftInfo) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	targetdir := filepath.Join(appdatadir, "SaturnLauncher", mcinfo.UUID+".png")
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher", "LauncherAssets", mcinfo.UUID+".png")
 	url := "https://mc-heads.net/avatar/" + mcinfo.UUID
 	d := &download.Download{}
 	filePath, err := d.Downloader(targetdir, url)
