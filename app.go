@@ -180,19 +180,19 @@ func (a *App) StartApp() {
 // logout deletes the 2 .jsons and clears all the vals
 // AuthSession struct for unmarshalling JSON
 
-func (a *App) GetGameFiles(versionId string) error {
-	if versionId == "" {
-		versionId = "1.21.1"
+func (a *App) GetGameFiles(version string) error {
+	if version == "" {
+		version = "1.21.1"
 	}
 	manifest, err := a.Download.GetVersionManifest()
 	if err != nil {
 		return err
 	}
-	err = a.Download.GetVersionInfo(*manifest, versionId)
+	err = a.Download.GetVersionInfo(*manifest, version)
 	if err != nil {
 		return err
 	}
-	vInfo, err := a.Download.ParseVersionInfo(versionId)
+	vInfo, err := a.Download.ParseVersionInfo(version)
 	if err != nil {
 		return err
 	}
