@@ -5,8 +5,15 @@ import {
   useLocation,
 } from '@tanstack/react-router';
 import { motion } from 'motion/react';
-import { useEffect, useRef } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  useLayoutEffect,
+  useCallback,
+} from 'react';
 import { GlassNavbar } from '@glinui/ui';
+import { useAuth } from '@/stores/auth';
 
 export const Route = createFileRoute('/_app')({
   component: AppLayout,
@@ -14,11 +21,19 @@ export const Route = createFileRoute('/_app')({
 
 const NAV_ITEMS = [
   { to: '/home', label: 'Home' },
+  { to: '/instances', label: 'Instances' },
+  { to: '/account', label: 'Account' },
   { to: '/settings', label: 'Settings' },
 ];
 
 const PAGE_ANIMATE = { x: '0', opacity: 1, filter: 'blur(0px)' };
 const PAGE_TRANSITION = { duration: 0.55, ease: [0.22, 1, 0.38, 1] };
+
+const PILL_TRANSITION = {
+  type: 'spring',
+  stiffness: 400,
+  damping: 35,
+};
 
 function getDirection(currentPath, prevPath) {
   if (currentPath === prevPath) return 'forward';
@@ -31,13 +46,17 @@ function getDirection(currentPath, prevPath) {
   return currentIndex > prevIndex ? 'forward' : 'backward';
 }
 
-function NavLink({ to, label }) {
+function NavLink({ to, label, index, onHover }) {
   return (
     <Link
       to={to}
-      className="text-foreground/60 hover:bg-saturn-900/30 hover:text-foreground rounded-sm px-3 py-2.5 text-sm font-thin tracking-wide transition-colors"
+      draggable={false}
+      data-nav-index={index}
+      data-tooltip={label}
+      onMouseEnter={onHover}
+      className="text-foreground/60 hover:text-foreground relative z-10 rounded-sm px-3 py-2.5 text-sm font-thin tracking-wide transition-colors select-none"
       activeProps={{
-        className: 'bg-saturn-900/60 text-foreground',
+        className: 'text-foreground',
       }}
     >
       {label}
@@ -45,9 +64,85 @@ function NavLink({ to, label }) {
   );
 }
 
+function NavBar({ pathname }) {
+  const navRef = useRef(null);
+  const [pill, setPill] = useState({ left: 0, width: 0, ready: false });
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+
+  const activeIndex = NAV_ITEMS.findIndex((item) => item.to === pathname);
+  const targetIndex = hoveredIndex ?? activeIndex;
+
+  const measure = useCallback(() => {
+    const nav = navRef.current;
+    if (!nav || targetIndex === -1) return;
+
+    const el = nav.querySelector(`[data-nav-index="${targetIndex}"]`);
+    if (!el) return;
+
+    const navRect = nav.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+
+    setPill({
+      left: elRect.left - navRect.left,
+      width: elRect.width,
+      ready: true,
+    });
+  }, [targetIndex]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure, pathname]);
+
+  useEffect(() => {
+    const fonts = document.fonts;
+    if (!fonts?.ready) return;
+
+    let cancelled = false;
+    fonts.ready.then(() => {
+      if (!cancelled) measure();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [measure]);
+
+  useEffect(() => {
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure]);
+
+  return (
+    <nav
+      ref={navRef}
+      onMouseLeave={() => setHoveredIndex(null)}
+      className="relative flex items-center gap-1 select-none"
+    >
+      {pill.ready && (
+        <motion.div
+          aria-hidden="true"
+          className="bg-saturn-900/60 pointer-events-none absolute inset-y-0 rounded-sm"
+          initial={false}
+          animate={{ left: pill.left, width: pill.width }}
+          transition={PILL_TRANSITION}
+        />
+      )}
+      {NAV_ITEMS.map((item, index) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          label={item.label}
+          index={index}
+          onHover={() => setHoveredIndex(index)}
+        />
+      ))}
+    </nav>
+  );
+}
+
 function AppLayout() {
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
+  const { profile } = useAuth();
 
   const direction = getDirection(location.pathname, prevPathRef.current);
 
@@ -66,16 +161,27 @@ function AppLayout() {
         <GlassNavbar
           size="md"
           disableScrollTracking
-          className="flex items-center justify-between gap-6 rounded-2xl px-4"
+          className="relative flex items-center justify-between gap-6 rounded-2xl px-4 select-none"
         >
           <span className="text-saturn-400 text-sm font-thin tracking-[0.2em] uppercase">
             Saturn
           </span>
-          <nav className="flex items-center gap-1">
-            {NAV_ITEMS.map((item) => (
-              <NavLink key={item.to} to={item.to} label={item.label} />
-            ))}
-          </nav>
+
+          {profile && (
+            <div className="border-saturn-700/40 bg-saturn-900/40 absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-sm border py-1.5 pr-3 pl-1">
+              <img
+                src={`https://mc-heads.net/avatar/${profile.id}`}
+                alt=""
+                draggable="false"
+                className="h-7 w-7 rounded-full"
+              />
+              <span className="text-saturn-100 text-sm font-thin tracking-wide">
+                {profile.name}
+              </span>
+            </div>
+          )}
+
+          <NavBar pathname={location.pathname}></NavBar>
         </GlassNavbar>
       </header>
 

@@ -14,6 +14,8 @@ import { authActions, useAuth, getAuthState } from '@/stores/auth';
 import { onBackendEvent, startApp } from '@/lib/backend';
 import { hasOnboarded } from '@/lib/onboarding';
 
+import { TooltipLayer } from '@/components/ui/tooltip-layer.jsx';
+
 function getRedirectTarget(status, pathname) {
   if (status === 'unknown') return null;
   if (status === 'unauthenticated')
@@ -111,6 +113,7 @@ function RootLayout() {
   return (
     <main className="min-h-screen w-full">
       <Outlet />
+      <TooltipLayer />
     </main>
   );
 }
