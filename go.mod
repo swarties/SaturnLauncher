@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/flytam/filenamify v1.2.0
-	github.com/wailsapp/wails/v2 v2.15.0
+	github.com/wailsapp/wails/v2 v2.16.0
 )
 
 require (
