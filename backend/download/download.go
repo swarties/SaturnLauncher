@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/cavaliergopher/grab/v3"
@@ -193,7 +194,6 @@ func (d *Download) GetFileSha1(filePath string) (string, error) {
 		return "", err
 	}
 	hashInBytes := hasher.Sum(nil)
-	fmt.Println(hex.EncodeToString(hashInBytes))
 	return hex.EncodeToString(hashInBytes), nil
 }
 
@@ -552,7 +552,56 @@ func (d *Download) GetAssets(versionId string) error {
 		return err
 	}
 	if len(failures) > 0 {
-		return fmt.Errorf("Failed to download %d assets", len(failures))
+		return fmt.Errorf("failed to download %d assets", len(failures))
 	}
 	return nil
+}
+
+func (d *Download) GetNatives(versionId string) ([]string, error) {
+	var natives []string
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	versionInfo, err := d.ParseVersionInfo(versionId)
+	if err != nil {
+		return nil, err
+	}
+	osName := runtime.GOOS
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
+	for _, lib := range versionInfo.Libraries {
+		nativeKey := lib.Natives[osName]
+		if nativeKey != "" {
+			classifiers := lib.Downloads.Classifiers[nativeKey]
+			if classifiers.Path == "" {
+				continue
+			} else {
+				nativePath := filepath.Join(destPath, classifiers.Path)
+				natives = append(natives, nativePath)
+			}
+		} else {
+			allowed := false
+			if strings.Contains(lib.Name, ":natives-") {
+				if len(lib.Rules) == 0 {
+					allowed = true
+				} else {
+					for _, r := range lib.Rules {
+						if r.Os.Name == osName {
+							allowed = r.Action == "allow"
+						}
+					}
+				}
+			}
+			if !allowed {
+				continue
+			}
+			if lib.Downloads.Artifact.Path == "" {
+				continue
+			}
+			natives = append(natives, filepath.Join(destPath, lib.Downloads.Artifact.Path))
+		}
+
+	}
+
+	return natives, nil
 }
