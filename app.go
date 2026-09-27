@@ -182,7 +182,7 @@ func (a *App) StartApp() {
 
 func (a *App) GetGameFiles(versionId string) error {
 	if versionId == "" {
-		versionId = "1.14"
+		versionId = "1.21.1"
 	}
 	manifest, err := a.Download.GetVersionManifest()
 	if err != nil {
@@ -212,6 +212,15 @@ func (a *App) GetGameFiles(versionId string) error {
 	if err != nil {
 		return err
 	}
+	javaPaths, err := a.Download.GetJava(*vInfo)
+	if err != nil {
+		return err
+	}
+	java, err := a.Download.EnsureJava(javaPaths, *vInfo)
+	if err != nil {
+		return err
+	}
+	fmt.Println("found suitable java version for minecraft. version is ", *java)
 	fmt.Println("TBD GET JVM THEN LAUNCH ")
 	return nil
 }

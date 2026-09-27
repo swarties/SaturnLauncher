@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -679,7 +681,7 @@ func (d *Download) GetJava(vInfo VersionInfo) ([]string, error) {
 	var javaVersions []string
 	javaHome := os.Getenv("JAVA_HOME")
 	if len(javaHome) == 0 {
-		fmt.Println("JavaHome is Empty")
+		fmt.Println("coudlnt find java in JAVA_HOME continuing search")
 	} else {
 		java := filepath.Join(javaHome, "bin", "java.exe")
 		javaVersions = append(javaVersions, java)
@@ -738,7 +740,49 @@ func (d *Download) GetJava(vInfo VersionInfo) ([]string, error) {
 		}
 	}
 	if len(javaVersions) == 0 {
-		return nil, fmt.Errorf("could not find any java.exe installed. please visit https://adoptium.net/temurin/releases/ . please install java version %s", vInfo.JavaVersion.MajorVersion)
+		return nil, fmt.Errorf("could not find any java.exe installed. please visit https://adoptium.net/temurin/releases/ . please install java version %d", vInfo.JavaVersion.MajorVersion)
 	}
 	return javaVersions, nil
+}
+
+func (d *Download) EnsureJava(javaVersions []string, vInfo VersionInfo) (*string, error) {
+	for _, java := range javaVersions {
+		cmd := exec.Command(java, "-XshowSettings:properties", "-version")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			continue
+		}
+		outputStr := string(out)
+		for line := range strings.SplitSeq(outputStr, "\n") {
+			if strings.Contains(line, "java.specification.version =") {
+				parts := strings.Split(line, "=")
+				if len(parts) == 2 {
+					version := strings.TrimSpace(parts[1])
+					var nversion string
+					if strings.Contains(version, "1.") {
+						nversion = strings.TrimPrefix(version, "1.")
+					} else {
+						v, err := strconv.Atoi(version)
+						if err != nil {
+							continue
+						}
+						if v >= vInfo.JavaVersion.MajorVersion {
+							return &java, nil
+						}
+					}
+					v, err := strconv.Atoi(nversion)
+					if err != nil {
+						continue
+					}
+					if v >= vInfo.JavaVersion.MajorVersion {
+						return &java, nil
+					}
+
+					continue
+				}
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("could not find a suitable java version. please install java version %d at https://adoptium.net/temurin/releases/", vInfo.JavaVersion.MajorVersion)
 }
