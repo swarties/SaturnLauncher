@@ -1,10 +1,15 @@
+import { useEffect, useState, useRef } from 'react';
+
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button.jsx';
-import { GetGameFiles } from '../../../wailsjs/go/main/App';
-import { useAuth } from '@/stores/auth';
-import { TextShimmerWave } from '@/components/ui/text-shimmer-wave';
 import { AnimatePresence, motion } from 'motion/react';
+
+import { Button } from '@/components/ui/button.jsx';
+import { TextShimmerWave } from '@/components/ui/text-shimmer-wave';
+import { VersionPicker } from '@/components/ui/version-picker';
+
+import { GetGameFiles } from '../../../wailsjs/go/main/App';
+
+import { useAuth } from '@/stores/auth';
 import { copyText } from '@/lib/backend';
 
 export const Route = createFileRoute('/_app/home')({
@@ -14,6 +19,8 @@ export const Route = createFileRoute('/_app/home')({
 function HomePage() {
   const { profile } = useAuth();
   const username = profile?.name ?? 'player';
+
+  const [version, setVersion] = useState('1.14');
 
   const [copiedUUID, setCopiedUUID] = useState(false);
 
@@ -45,17 +52,27 @@ function HomePage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState('');
+  const statusTimerRef = useRef(null);
 
-  const FINAL_STATUS =
-    'Client JAR and version JSON downloaded. Libraries/assets not handled yet.';
+  useEffect(() => {
+    return () => {
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+    };
+  }, []);
+
+  const FINAL_STATUS = 'Game files downloaded and verified.';
 
   const handleDownload = async () => {
+    if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     setIsLoading(true);
     setStatus('Downloading game files...');
 
     try {
-      await GetGameFiles();
+      await GetGameFiles(version);
       setStatus(FINAL_STATUS);
+      statusTimerRef.current = setTimeout(() => {
+        setStatus((s) => (s === FINAL_STATUS ? '' : s));
+      }, 5000);
     } catch (error) {
       console.error('Failed to download:', error);
       setStatus(`Error: ${error?.message ?? String(error)}`);
@@ -79,30 +96,30 @@ function HomePage() {
               {username}
             </p>
           </div>
-          {/* Centered actions */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              className="border-saturn-700/40 bg-saturn-900/20 text-saturn-200 hover:border-saturn-500/60 hover:bg-saturn-900/40 hover:text-saturn-100 h-11 rounded-lg px-6 font-thin"
-              onClick={handleDownload}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Downloading...' : 'Download Game Files'}
-            </Button>
-
-            <Button
-              variant="outline"
-              className="group border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-11 gap-2 rounded-lg border px-6 font-thin transition-colors"
-            >
-              Launch Minecraft
-              <span
-                aria-hidden="true"
-                className="text-saturn-300 transition-transform duration-200 group-hover:translate-x-1"
-              >
-                →
-              </span>
-            </Button>
+          {/* Top-right version picker */}
+          <div className="absolute top-6 right-6">
+            <VersionPicker value={version} onChange={setVersion} />
           </div>
+          <Button
+            variant="outline"
+            className="group border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-11 gap-2 rounded-lg border px-6 font-thin transition-colors"
+            onClick={handleDownload}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              'Downloading...'
+            ) : (
+              <>
+                Launch Minecraft
+                <span
+                  aria-hidden="true"
+                  className="text-saturn-300 transition-transform duration-200 group-hover:translate-x-1"
+                >
+                  →
+                </span>
+              </>
+            )}
+          </Button>
           <AnimatePresence>
             {status && (
               <motion.div

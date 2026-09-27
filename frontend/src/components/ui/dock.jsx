@@ -1,5 +1,11 @@
-'use client';;
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'motion/react';
+'use client';
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  AnimatePresence,
+} from 'motion/react';
 import {
   Children,
   cloneElement,
@@ -19,10 +25,7 @@ const DEFAULT_PANEL_HEIGHT = 64;
 
 const DockContext = createContext(undefined);
 
-function DockProvider({
-  children,
-  value
-}) {
+function DockProvider({ children, value }) {
   return <DockContext.Provider value={value}>{children}</DockContext.Provider>;
 }
 
@@ -40,7 +43,7 @@ function Dock({
   spring = { mass: 0.1, stiffness: 150, damping: 12 },
   magnification = DEFAULT_MAGNIFICATION,
   distance = DEFAULT_DISTANCE,
-  panelHeight = DEFAULT_PANEL_HEIGHT
+  panelHeight = DEFAULT_PANEL_HEIGHT,
 }) {
   const mouseX = useMotionValue(Infinity);
   const isHovered = useMotionValue(0);
@@ -58,7 +61,7 @@ function Dock({
         height: height,
         scrollbarWidth: 'none',
       }}
-      className='mx-2 flex max-w-full items-end overflow-x-auto'
+      className="mx-2 flex max-w-full items-end overflow-x-auto"
     >
       <motion.div
         onMouseMove={({ pageX }) => {
@@ -74,8 +77,8 @@ function Dock({
           className
         )}
         style={{ height: panelHeight }}
-        role='toolbar'
-        aria-label='Application dock'
+        role="toolbar"
+        aria-label="Application dock"
       >
         <DockProvider value={{ mouseX, spring, distance, magnification }}>
           {children}
@@ -85,11 +88,7 @@ function Dock({
   );
 }
 
-function DockItem({
-  children,
-  className,
-  onClick
-}) {
+function DockItem({ children, className, onClick }) {
   const ref = useRef(null);
 
   const { distance, magnification, mouseX, spring } = useDock();
@@ -122,8 +121,8 @@ function DockItem({
         className
       )}
       tabIndex={0}
-      role='button'
-      aria-haspopup='true'
+      role="button"
+      aria-haspopup="true"
       onClick={onClick}
     >
       {Children.map(children, (child) =>
@@ -133,11 +132,7 @@ function DockItem({
   );
 }
 
-function DockLabel({
-  children,
-  className,
-  ...rest
-}) {
+function DockLabel({ children, className, ...rest }) {
   const restProps = rest;
   const isHovered = restProps['isHovered'];
   const [isVisible, setIsVisible] = useState(false);
@@ -159,10 +154,10 @@ function DockLabel({
           exit={{ opacity: 0, y: 0 }}
           transition={{ duration: 0.2 }}
           className={cn(
-            'absolute -top-6 left-1/2 w-fit whitespace-pre rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white',
+            'absolute -top-6 left-1/2 w-fit rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs whitespace-pre text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white',
             className
           )}
-          role='tooltip'
+          role="tooltip"
           style={{ x: '-50%' }}
         >
           {children}
@@ -172,11 +167,7 @@ function DockLabel({
   );
 }
 
-function DockIcon({
-  children,
-  className,
-  ...rest
-}) {
+function DockIcon({ children, className, ...rest }) {
   const restProps = rest;
   const width = restProps['width'];
 

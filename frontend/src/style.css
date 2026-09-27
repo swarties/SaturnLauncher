@@ -21,7 +21,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   @keyframes fade-in-up {
-    from {opacity:0;
+    from {
+      opacity: 0;
     }
     to {
       opacity: 1;
@@ -29,14 +30,18 @@
   }
 }
 
-html, body, #root {
+html,
+body,
+#root {
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
   -webkit-user-select: none;
   user-select: none;
   -webkit-user-drag: none;
 }
 
-input, textarea, [contenteditable="true"] {
+input,
+textarea,
+[contenteditable='true'] {
   user-select: text;
   -webkit-user-select: text;
 }
@@ -78,7 +83,7 @@ input, textarea, [contenteditable="true"] {
 }
 
 @theme {
-  --color-saturn-50:  #f1f0fd;
+  --color-saturn-50: #f1f0fd;
   --color-saturn-100: #e5e3fc;
   --color-saturn-200: #d1cdf8;
   --color-saturn-300: #b7aef3;
