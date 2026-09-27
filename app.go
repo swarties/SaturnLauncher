@@ -45,6 +45,7 @@ func (a *App) startup(ctx context.Context) {
 	if err != nil {
 		return
 	}
+	wailsRuntime.WindowSetMinSize(ctx, 1000, 700)
 }
 
 // StartLogin is run in js on the login page
@@ -191,20 +192,23 @@ func (a *App) GetGameFiles(versionId string) error {
 	if err != nil {
 		return err
 	}
-
-	err = a.Download.GetClientJar(versionId)
+	vInfo, err := a.Download.ParseVersionInfo(versionId)
 	if err != nil {
 		return err
 	}
-	err = a.Download.GetLibraries(versionId)
+	err = a.Download.GetClientJar(*vInfo)
 	if err != nil {
 		return err
 	}
-	err = a.Download.GetAssets(versionId)
+	err = a.Download.GetLibraries(*vInfo)
 	if err != nil {
 		return err
 	}
-	err = a.Download.ExtractNatives(versionId)
+	err = a.Download.GetAssets(*vInfo)
+	if err != nil {
+		return err
+	}
+	err = a.Download.ExtractNatives(*vInfo)
 	if err != nil {
 		return err
 	}

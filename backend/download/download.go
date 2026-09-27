@@ -261,19 +261,15 @@ func (d *Download) ParseVersionInfo(versionId string) (*VersionInfo, error) {
 	return &data, nil
 }
 
-func (d *Download) GetClientJar(versionId string) error {
+func (d *Download) GetClientJar(vInfo VersionInfo) error {
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
 	}
-	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "versions", versionId)
-	filePath := filepath.Join(destPath, versionId+".jar")
-	versionInfo, err := d.ParseVersionInfo(versionId)
-	if err != nil {
-		return err
-	}
-	clientUrl := versionInfo.Downloads.Client.URL
-	clientSha1 := versionInfo.Downloads.Client.Sha1
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "versions", vInfo.ID)
+	filePath := filepath.Join(destPath, vInfo.ID+".jar")
+	clientUrl := vInfo.Downloads.Client.URL
+	clientSha1 := vInfo.Downloads.Client.Sha1
 	_, err = d.Downloader(filePath, clientUrl)
 	if err != nil {
 		return err
@@ -287,18 +283,14 @@ func (d *Download) GetClientJar(versionId string) error {
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
+		return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", vInfo.ID)
 	}
 
 	return nil
 }
 
-func (d *Download) GetLibraries(versionId string) error {
+func (d *Download) GetLibraries(versionInfo VersionInfo) error {
 	appdatadir, err := os.UserConfigDir()
-	if err != nil {
-		return err
-	}
-	versionInfo, err := d.ParseVersionInfo(versionId)
 	if err != nil {
 		return err
 	}
@@ -327,7 +319,7 @@ func (d *Download) GetLibraries(versionId string) error {
 						if err != nil {
 							return err
 						}
-						return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
+						return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionInfo.ID)
 					}
 				}
 			} else {
@@ -350,7 +342,7 @@ func (d *Download) GetLibraries(versionId string) error {
 					if err != nil {
 						return err
 					}
-					return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
+					return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionInfo.ID)
 				}
 			}
 		}
@@ -378,7 +370,7 @@ func (d *Download) GetLibraries(versionId string) error {
 						if err != nil {
 							return err
 						}
-						return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionId)
+						return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionInfo.ID)
 					}
 				}
 			}
@@ -533,12 +525,8 @@ func (d *Download) BatchDownloader(ac []AssetCandidate) ([]AssetCandidate, error
 	return failures, nil
 }
 
-func (d *Download) GetAssets(versionId string) error {
-	vInfo, err := d.ParseVersionInfo(versionId)
-	if err != nil {
-		return err
-	}
-	index, err := d.GetAssetIndex(vInfo)
+func (d *Download) GetAssets(vInfo VersionInfo) error {
+	index, err := d.GetAssetIndex(&vInfo)
 	if err != nil {
 		return err
 	}
@@ -559,16 +547,13 @@ func (d *Download) GetAssets(versionId string) error {
 	return nil
 }
 
-func (d *Download) GetNatives(versionId string) ([]string, error) {
+func (d *Download) GetNatives(vInfo VersionInfo) ([]string, error) {
 	var natives []string
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
 	}
-	versionInfo, err := d.ParseVersionInfo(versionId)
-	if err != nil {
-		return nil, err
-	}
+
 	osName := runtime.GOOS
 	osArchitecture := runtime.GOARCH
 	if osArchitecture == "amd64" {
@@ -577,7 +562,7 @@ func (d *Download) GetNatives(versionId string) ([]string, error) {
 		osArchitecture = "x86"
 	}
 	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
-	for _, lib := range versionInfo.Libraries {
+	for _, lib := range vInfo.Libraries {
 		nativeKey := lib.Natives[osName]
 		if strings.HasSuffix(lib.Name, "-arm64") {
 			continue
@@ -625,16 +610,16 @@ func (d *Download) GetNatives(versionId string) ([]string, error) {
 	return natives, nil
 }
 
-func (d *Download) ExtractNatives(versionId string) error {
+func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
 	}
-	nativesPath, err := d.GetNatives(versionId)
+	nativesPath, err := d.GetNatives(vInfo)
 	if err != nil {
 		return err
 	}
-	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "natives", versionId)
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "natives", vInfo.ID)
 	err = os.RemoveAll(destPath)
 	if err != nil {
 		return err
@@ -688,4 +673,72 @@ func (d *Download) ExtractNatives(versionId string) error {
 
 	}
 	return nil
+}
+
+func (d *Download) GetJava(vInfo VersionInfo) ([]string, error) {
+	var javaVersions []string
+	javaHome := os.Getenv("JAVA_HOME")
+	if len(javaHome) == 0 {
+		fmt.Println("JavaHome is Empty")
+	} else {
+		java := filepath.Join(javaHome, "bin", "java.exe")
+		javaVersions = append(javaVersions, java)
+	}
+	javaDir := "C:\\Program Files\\Java\\"
+	_, err := os.Stat(javaDir)
+	if err == nil {
+		dir, err := os.ReadDir(javaDir)
+		if err != nil {
+			return nil, err
+		}
+		for _, entries := range dir {
+			if entries.IsDir() {
+				if entries.Name() == "latest" {
+					javaLocation := filepath.Join(javaDir, entries.Name(), "jre-1.8", "bin", "java.exe")
+					javaVersions = append(javaVersions, javaLocation)
+					continue
+				}
+				javaLocation := filepath.Join(javaDir, entries.Name(), "bin", "java.exe")
+				javaVersions = append(javaVersions, javaLocation)
+			} else {
+				continue
+			}
+		}
+	}
+	adoptiumDir := "C:\\Program Files\\Eclipse Adoptium\\"
+	_, err = os.Stat(adoptiumDir)
+	if err == nil {
+		dir, err := os.ReadDir(adoptiumDir)
+		if err != nil {
+			return nil, err
+		}
+		for _, entries := range dir {
+			if entries.IsDir() {
+				javaLocation := filepath.Join(adoptiumDir, entries.Name(), "bin", "java.exe")
+				javaVersions = append(javaVersions, javaLocation)
+			} else {
+				continue
+			}
+		}
+	}
+	zuluDir := "C:\\Program Files\\Zulu\\"
+	_, err = os.Stat(zuluDir)
+	if err == nil {
+		dir, err := os.ReadDir(zuluDir)
+		if err != nil {
+			return nil, err
+		}
+		for _, entries := range dir {
+			if entries.IsDir() {
+				javaLocation := filepath.Join(zuluDir, entries.Name(), "bin", "java.exe")
+				javaVersions = append(javaVersions, javaLocation)
+			} else {
+				continue
+			}
+		}
+	}
+	if len(javaVersions) == 0 {
+		return nil, fmt.Errorf("could not find any java.exe installed. please visit https://adoptium.net/temurin/releases/ . please install java version %s", vInfo.JavaVersion.MajorVersion)
+	}
+	return javaVersions, nil
 }
