@@ -46,7 +46,7 @@ function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { status, profile } = useAuth();
+  const { status } = useAuth();
   const [showStartupScreen, setShowStartupScreen] = useState(true);
   const startupStarted = useRef(false);
 
@@ -109,14 +109,8 @@ function RootLayout() {
   // localStorage.removeItem('saturn.onboarded');
 
   return (
-    <main
-      key={location.pathname}
-      className="min-h-screen w-full"
-      style={{
-        animation: 'fade-in-up 350ms cubic-bezier(0.22, 1, 0.36, 1) both',
-      }}
-    >
-      <Outlet context={{ profile }} />
+    <main className="min-h-screen w-full">
+      <Outlet />
     </main>
   );
 }

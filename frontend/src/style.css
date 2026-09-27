@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import '@glinui/tokens/theme.css';
 @import '@fontsource-variable/jetbrains-mono';
 @import '@fontsource-variable/raleway';
 
@@ -74,6 +75,20 @@ input, textarea, [contenteditable="true"] {
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+}
+
+@theme {
+  --color-saturn-50:  #f1f0fd;
+  --color-saturn-100: #e5e3fc;
+  --color-saturn-200: #d1cdf8;
+  --color-saturn-300: #b7aef3;
+  --color-saturn-400: #a18dec;
+  --color-saturn-500: #9171e3;
+  --color-saturn-600: #8456d5;
+  --color-saturn-700: #7347bb;
+  --color-saturn-800: #5d3c97;
+  --color-saturn-900: #412e66;
+  --color-saturn-950: #2e2046;
 }
 
 .light {
