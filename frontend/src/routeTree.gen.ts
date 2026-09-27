@@ -13,7 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
+import { Route as AppInstancesRouteImport } from './routes/_app/instances'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,9 +37,19 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppAccountRoute = AppAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppHomeRoute = AppHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInstancesRoute = AppInstancesRouteImport.update({
+  id: '/instances',
+  path: '/instances',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -50,14 +62,18 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/account': typeof AppAccountRoute
   '/home': typeof AppHomeRoute
+  '/instances': typeof AppInstancesRoute
   '/settings': typeof AppSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/account': typeof AppAccountRoute
   '/home': typeof AppHomeRoute
+  '/instances': typeof AppInstancesRoute
   '/settings': typeof AppSettingsRoute
 }
 export interface FileRoutesById {
@@ -66,21 +82,39 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/_app/account': typeof AppAccountRoute
   '/_app/home': typeof AppHomeRoute
+  '/_app/instances': typeof AppInstancesRoute
   '/_app/settings': typeof AppSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/onboarding' | '/home' | '/settings'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/onboarding'
+    | '/account'
+    | '/home'
+    | '/instances'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/onboarding' | '/home' | '/settings'
+  to:
+    | '/'
+    | '/login'
+    | '/onboarding'
+    | '/account'
+    | '/home'
+    | '/instances'
+    | '/settings'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/login'
     | '/onboarding'
+    | '/_app/account'
     | '/_app/home'
+    | '/_app/instances'
     | '/_app/settings'
   fileRoutesById: FileRoutesById
 }
@@ -121,11 +155,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/account': {
+      id: '/_app/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AppAccountRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/home': {
       id: '/_app/home'
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof AppHomeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/instances': {
+      id: '/_app/instances'
+      path: '/instances'
+      fullPath: '/instances'
+      preLoaderRoute: typeof AppInstancesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings': {
@@ -139,12 +187,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAccountRoute: typeof AppAccountRoute
   AppHomeRoute: typeof AppHomeRoute
+  AppInstancesRoute: typeof AppInstancesRoute
   AppSettingsRoute: typeof AppSettingsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAccountRoute: AppAccountRoute,
   AppHomeRoute: AppHomeRoute,
+  AppInstancesRoute: AppInstancesRoute,
   AppSettingsRoute: AppSettingsRoute,
 }
 
