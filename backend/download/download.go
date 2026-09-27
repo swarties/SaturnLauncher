@@ -80,6 +80,7 @@ type VersionInfo struct {
 			Action string `json:"action"`
 			Os     struct {
 				Name string `json:"name"`
+				Arch string `json:"arch"`
 			} `json:"os"`
 		} `json:"rules,omitempty"`
 	} `json:"libraries"`
@@ -568,9 +569,24 @@ func (d *Download) GetNatives(versionId string) ([]string, error) {
 		return nil, err
 	}
 	osName := runtime.GOOS
+	osArchitecture := runtime.GOARCH
+	if osArchitecture == "amd64" {
+		osArchitecture = "x86_64"
+	} else if osArchitecture == "386" {
+		osArchitecture = "x86"
+	}
 	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
 	for _, lib := range versionInfo.Libraries {
 		nativeKey := lib.Natives[osName]
+		if strings.HasSuffix(lib.Name, "-arm64") {
+			continue
+		}
+		if strings.HasSuffix(lib.Name, "-x86") {
+			continue
+		}
+		if strings.HasSuffix(lib.Name, "-aarch_64") {
+			continue
+		}
 		if nativeKey != "" {
 			classifiers := lib.Downloads.Classifiers[nativeKey]
 			if classifiers.Path == "" {
@@ -588,6 +604,8 @@ func (d *Download) GetNatives(versionId string) ([]string, error) {
 					for _, r := range lib.Rules {
 						if r.Os.Name == osName {
 							allowed = r.Action == "allow"
+						} else {
+							continue
 						}
 					}
 				}
@@ -602,6 +620,11 @@ func (d *Download) GetNatives(versionId string) ([]string, error) {
 		}
 
 	}
-
+	// Does not support arm still downloads them add support later
 	return natives, nil
+}
+
+func (d *Download) ExtractNatives(versionId string, nativesPath []string) error {
+
+	return nil
 }
