@@ -1,6 +1,7 @@
 package download
 
 import (
+	"archive/zip"
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
@@ -624,7 +625,67 @@ func (d *Download) GetNatives(versionId string) ([]string, error) {
 	return natives, nil
 }
 
-func (d *Download) ExtractNatives(versionId string, nativesPath []string) error {
+func (d *Download) ExtractNatives(versionId string) error {
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	nativesPath, err := d.GetNatives(versionId)
+	if err != nil {
+		return err
+	}
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "natives", versionId)
+	err = os.RemoveAll(destPath)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(destPath, 0o755)
+	if err != nil {
+		return err
+	}
+	for _, natives := range nativesPath {
+		reader, err := zip.OpenReader(natives)
+		if err != nil {
+			return err
+		}
+		defer reader.Close()
+		for _, entry := range reader.File {
+			if entry.FileInfo().IsDir() {
+				continue
+			}
+			targetPath := filepath.Join(destPath, entry.Name)
+			targetPath = filepath.Clean(targetPath)
+			prefix := destPath + string(os.PathSeparator)
+			if !strings.HasPrefix(targetPath, prefix) {
+				continue
+			}
+			pFolder := filepath.Dir(targetPath)
+			err := os.MkdirAll(pFolder, 0o755)
+			if err != nil {
+				return err
+			}
+			fileReader, err := entry.Open()
+			if err != nil {
+				return err
+			}
+			file, err := os.Create(targetPath)
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(file, fileReader)
+			if err != nil {
+				return err
+			}
+			err = fileReader.Close()
+			if err != nil {
+				return err
+			}
+			err = file.Close()
+			if err != nil {
+				return err
+			}
+		}
 
+	}
 	return nil
 }
