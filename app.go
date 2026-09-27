@@ -179,33 +179,43 @@ func (a *App) StartApp() {
 // logout deletes the 2 .jsons and clears all the vals
 // AuthSession struct for unmarshalling JSON
 
-func (a *App) GetGameFiles() error {
-	version := "1.14"
+func (a *App) GetGameFiles(versionId string) error {
+	if versionId == "" {
+		versionId = "1.14"
+	}
 	manifest, err := a.Download.GetVersionManifest()
 	if err != nil {
 		return err
 	}
-	err = a.Download.GetVersionInfo(*manifest, version)
+	err = a.Download.GetVersionInfo(*manifest, versionId)
 	if err != nil {
 		return err
 	}
 
-	err = a.Download.GetClientJar(version)
+	err = a.Download.GetClientJar(versionId)
 	if err != nil {
 		return err
 	}
-	err = a.Download.GetLibraries(version)
+	err = a.Download.GetLibraries(versionId)
 	if err != nil {
 		return err
 	}
-	err = a.Download.GetAssets(version)
+	err = a.Download.GetAssets(versionId)
 	if err != nil {
 		return err
 	}
-	err = a.Download.ExtractNatives(version)
+	err = a.Download.ExtractNatives(versionId)
 	if err != nil {
 		return err
 	}
 	fmt.Println("TBD GET JVM THEN LAUNCH ")
 	return nil
+}
+
+func (a *App) GetVersions() ([]download.Version, error) {
+	manifest, err := a.Download.GetVersionManifest()
+	if err != nil {
+		return nil, err
+	}
+	return manifest.Versions, nil
 }
