@@ -46,6 +46,7 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	wailsRuntime.WindowSetMinSize(ctx, 1000, 700)
+	wailsRuntime.WindowSetMaxSize(ctx, 0, 0)
 }
 
 // StartLogin is run in js on the login page
