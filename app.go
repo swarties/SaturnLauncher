@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,6 +43,10 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	_, err := instances.NewInstanceManager().InitStorage()
+	if err != nil {
+		return
+	}
+	_, err = a.Download.GetVersionManifest()
 	if err != nil {
 		return
 	}
@@ -185,11 +190,38 @@ func (a *App) GetGameFiles(version string) error {
 	if version == "" {
 		version = "1.21.1"
 	}
-	manifest, err := a.Download.GetVersionManifest()
+	var manifest download.VersionManifest
+	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
 	}
-	err = a.Download.GetVersionInfo(*manifest, version)
+	base := filepath.Join(appdatadir, "SaturnLauncher")
+	jsonPath := filepath.Join(base, "version_manifest_v2.json")
+	jsonReader, err := os.Open(jsonPath)
+	defer jsonReader.Close()
+	if err != nil {
+		return err
+	}
+	bytes, err := io.ReadAll(jsonReader)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(bytes, &manifest)
+	if err != nil {
+		return err
+	}
+	var filteredManifest download.VersionManifest
+	for _, ver := range manifest.Versions {
+		if ver.Type != "release" {
+			continue
+		}
+		if ver.ID == "1.13.2" {
+			break
+		}
+		filteredManifest.Versions = append(filteredManifest.Versions, ver)
+	}
+
+	err = a.Download.GetVersionInfo(filteredManifest, version)
 	if err != nil {
 		return err
 	}
@@ -227,9 +259,35 @@ func (a *App) GetGameFiles(version string) error {
 }
 
 func (a *App) GetVersions() ([]download.Version, error) {
-	manifest, err := a.Download.GetVersionManifest()
+	var manifest download.VersionManifest
+	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
 	}
-	return manifest.Versions, nil
+	base := filepath.Join(appdatadir, "SaturnLauncher")
+	jsonPath := filepath.Join(base, "version_manifest_v2.json")
+	jsonReader, err := os.Open(jsonPath)
+	if err != nil {
+		return nil, err
+	}
+	defer jsonReader.Close()
+	bytes, err := io.ReadAll(jsonReader)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(bytes, &manifest)
+	if err != nil {
+		return nil, err
+	}
+	var filteredManifest download.VersionManifest
+	for _, ver := range manifest.Versions {
+		if ver.Type != "release" {
+			continue
+		}
+		if ver.ID == "1.13.2" {
+			break
+		}
+		filteredManifest.Versions = append(filteredManifest.Versions, ver)
+	}
+	return filteredManifest.Versions, nil
 }
