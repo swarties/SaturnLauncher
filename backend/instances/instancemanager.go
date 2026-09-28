@@ -3,14 +3,13 @@ package instances
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/fs"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/flytam/filenamify"
+	"github.com/google/uuid"
 )
 
 type InstanceManager struct {
@@ -24,6 +23,7 @@ func NewInstanceManager() *InstanceManager {
 type Instance struct {
 	Name        string    `json:"name"`
 	Version     string    `json:"version"`
+	Uuid        string    `json:"uuid"`
 	TimeCreated time.Time `json:"timecreated"`
 }
 
@@ -55,6 +55,8 @@ func (i *InstanceManager) InitStorage() (*string, error) {
 }
 
 func (i *InstanceManager) CreateInstance(name string, version string) (*Instance, error) {
+	id := uuid.New()
+	idString := id.String()
 	var NewInstance Instance
 	// setup appdata vars
 	appdatadir, err := os.UserConfigDir()
@@ -62,22 +64,8 @@ func (i *InstanceManager) CreateInstance(name string, version string) (*Instance
 		return nil, err
 	}
 	base := filepath.Join(appdatadir, "SaturnLauncher")
-	// sanitize the folder name
-	sanitized, err := filenamify.Filenamify(name, filenamify.Options{
-		Replacement: "-",
-		MaxLength:   100,
-	})
 	// if foldername is safe and exists return err
-	instanceDir := filepath.Join(base, "instances", sanitized)
-	_, err = os.Stat(instanceDir)
-	if err == nil {
-		return nil, fmt.Errorf("instance already exists")
-	}
-	// if foldername is safe and doesn't exist make a folder for the instance
-
-	if !errors.Is(err, fs.ErrNotExist) {
-		return nil, err
-	}
+	instanceDir := filepath.Join(base, "instances", idString)
 	dirs := []string{
 		instanceDir,
 		filepath.Join(instanceDir, "saves"),
@@ -96,6 +84,7 @@ func (i *InstanceManager) CreateInstance(name string, version string) (*Instance
 		Name:        name,
 		Version:     version,
 		TimeCreated: time.Now(),
+		Uuid:        idString,
 	}
 
 	jsonFile, err := json.MarshalIndent(NewInstance, "", "  ")
@@ -110,8 +99,8 @@ func (i *InstanceManager) CreateInstance(name string, version string) (*Instance
 	return &NewInstance, nil
 }
 
-func (i *InstanceManager) ListInstances() ([]string, error) {
-	var instances []string
+func (i *InstanceManager) ListInstances() ([]Instance, error) {
+	var instances []Instance
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
@@ -122,20 +111,32 @@ func (i *InstanceManager) ListInstances() ([]string, error) {
 		return nil, err
 	}
 	for _, inst := range entries {
+		var jsonFile Instance
 		if inst.IsDir() {
-			instances = append(instances, inst.Name())
+			jsonPath := filepath.Join(base, inst.Name(), "instance.json")
+			jsonReader, err := os.Open(jsonPath)
+			if err != nil {
+				continue
+			}
+			defer jsonReader.Close()
+			bytes, err := io.ReadAll(jsonReader)
+			if err != nil {
+				continue
+			}
+			err = json.Unmarshal(bytes, &jsonFile)
+			instances = append(instances, jsonFile)
 		}
 	}
 	return instances, nil
 }
 
-func (i *InstanceManager) DeleteInstance(name string) (bool, error) {
+func (i *InstanceManager) DeleteInstance(id string) (bool, error) {
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return false, err
 	}
 	base := filepath.Join(appdatadir, "SaturnLauncher", "instances")
-	instanceDir := filepath.Join(base, name)
+	instanceDir := filepath.Join(base, id)
 	err = os.RemoveAll(instanceDir)
 	if err != nil {
 		return false, err
