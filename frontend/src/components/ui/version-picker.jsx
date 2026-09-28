@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+
 import { AnimatePresence, motion } from 'motion/react';
 import { GetVersions } from '../../../wailsjs/go/main/App';
 
@@ -13,7 +15,9 @@ export function VersionPicker({ value, onChange }) {
   const [error, setError] = useState(/** @type {string | null} */ (null));
 
   const containerRef = useRef(null);
+  const triggerRef = useRef(null);
   const selectedRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
   useEffect(() => {
     let cancelled = false;
@@ -33,10 +37,23 @@ export function VersionPicker({ value, onChange }) {
     };
   }, []);
 
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right,
+    });
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onDown = (e) => {
-      if (!containerRef.current?.contains(e.target)) setOpen(false);
+      const el = /** @type {Node} */ (e.target);
+      if (containerRef.current?.contains(el)) return;
+      if (el instanceof Element && el.closest('[data-version-dropdown]'))
+        return;
+      setOpen(false);
     };
 
     const onKey = (e) => {
@@ -57,7 +74,10 @@ export function VersionPicker({ value, onChange }) {
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="bg-background flex h-11 min-w-28 items-stretch overflow-hidden rounded-md border border-white/8">
+      <div
+        ref={triggerRef}
+        className="bg-background flex h-11 min-w-28 items-stretch overflow-hidden rounded-md border border-white/8"
+      >
         <span className="text-saturn-200 hover:text-saturn-50 flex flex-1 items-center px-4 text-sm font-normal tracking-wide transition-colors hover:bg-white/5">
           {value}
         </span>
@@ -76,56 +96,68 @@ export function VersionPicker({ value, onChange }) {
           </span>
         </button>
       </div>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.15, ease: EASE }}
-            className="bg-background absolute top-full right-0 z-30 mt-2 max-h-72 w-48 overflow-y-auto rounded-md border border-white/8 shadow-lg shadow-black/60"
-          >
-            {loading && (
-              <p className="text-saturn-400 px-3.5 py-2.5 text-sm font-normal">
-                Loading...
-              </p>
-            )}
-            {error && (
-              <p className="px-3.5 py-2.5 text-sm font-normal text-red-400">
-                {error}
-              </p>
-            )}
-
-            {!loading &&
-              !error &&
-              /** @type {import('react').ReactNode} */ (
-                versions.map((v) => {
-                  const selected = v.id === value;
-                  return (
-                    <button
-                      key={v.id}
-                      ref={selected ? selectedRef : undefined}
-                      type="button"
-                      onClick={() => {
-                        onChange(v.id);
-                        setOpen(false);
-                      }}
-                      className={[
-                        'block w-full px-3.5 py-2.5 text-left text-sm font-normal tracking-wide transition-colors',
-                        selected
-                          ? 'text-saturn-100 bg-white/10'
-                          : 'text-saturn-400 hover:text-saturn-200 hover:bg-white/5',
-                      ].join(' ')}
-                    >
-                      {v.id}
-                    </button>
-                  );
+      {createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              data-version-dropdown
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15, ease: EASE }}
+              style={
+                /** @type {import('motion/react').MotionStyle} */ ({
+                  position: 'fixed',
+                  top: dropdownPos.top,
+                  right: dropdownPos.right,
                 })
+              }
+              className="bg-background z-60 max-h-72 w-48 overflow-y-auto rounded-md border border-white/8 shadow-lg shadow-black/60"
+            >
+              {loading && (
+                <p className="text-saturn-400 px-3.5 py-2.5 text-sm font-normal">
+                  Loading...
+                </p>
               )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {error && (
+                <p className="px-3.5 py-2.5 text-sm font-normal text-red-400">
+                  {error}
+                </p>
+              )}
+
+              {!loading &&
+                !error &&
+                /** @type {import('react').ReactNode} */ (
+                  versions.map((v) => {
+                    const selected = v.id === value;
+                    return (
+                      <button
+                        key={v.id}
+                        ref={selected ? selectedRef : undefined}
+                        type="button"
+                        onClick={() => {
+                          onChange(v.id);
+                          setOpen(false);
+                        }}
+                        className={[
+                          'block w-full px-3.5 py-2.5 text-left text-sm font-normal tracking-wide transition-colors',
+                          selected
+                            ? 'text-saturn-100 bg-white/10'
+                            : 'text-saturn-400 hover:text-saturn-200 hover:bg-white/5',
+                        ].join(' ')}
+                      >
+                        {v.id}
+                      </button>
+                    );
+                  })
+                )}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
