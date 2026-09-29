@@ -4,6 +4,7 @@ import (
 	"SaturnLauncher/backend/auth"
 	"SaturnLauncher/backend/download"
 	"SaturnLauncher/backend/instances"
+	"SaturnLauncher/backend/launch"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,7 +23,7 @@ type App struct {
 	Auth              *auth.Auth
 	Account           *auth.Account
 	ActiveAccessToken string
-	Launch            *Launch
+	Launch            *launch.Launch
 	Download          *download.Download
 	InstanceManager   *instances.InstanceManager
 }
@@ -32,7 +33,7 @@ func NewApp() *App {
 	return &App{
 		Auth:            auth.NewAuth(),
 		Account:         auth.NewAccount(),
-		Launch:          NewLaunch(),
+		Launch:          launch.NewLaunch(),
 		Download:        download.NewDownload(),
 		InstanceManager: instances.NewInstanceManager(),
 	}
@@ -229,6 +230,10 @@ func (a *App) GetGameFiles(version string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(vInfo.Arguments.Game)
+	fmt.Println(vInfo.Arguments.Jvm)
+	fmt.Println(vInfo.Arguments.Game[0])
+	fmt.Println(vInfo.Arguments.Jvm[0])
 	err = a.Download.GetClientJar(*vInfo)
 	if err != nil {
 		return err
@@ -253,8 +258,12 @@ func (a *App) GetGameFiles(version string) error {
 	if err != nil {
 		return err
 	}
+	classPath, err := a.Launch.ClasspathBuilder(*vInfo)
+	if err != nil {
+		return err
+	}
+	fmt.Println(classPath)
 	fmt.Println("found suitable java version for minecraft. version is ", *java)
-	fmt.Println("TBD GET JVM THEN LAUNCH ")
 	return nil
 }
 
