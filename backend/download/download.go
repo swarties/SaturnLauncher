@@ -79,13 +79,7 @@ type VersionInfo struct {
 		} `json:"downloads"`
 		Natives map[string]string `json:"natives"`
 		Name    string            `json:"name"`
-		Rules   []struct {
-			Action string `json:"action"`
-			Os     struct {
-				Name string `json:"name"`
-				Arch string `json:"arch"`
-			} `json:"os"`
-		} `json:"rules,omitempty"`
+		Rules   []Rule            `json:"rules,omitempty"`
 	} `json:"libraries"`
 }
 
@@ -105,6 +99,15 @@ type AssetCandidate struct {
 }
 
 const assetUrl = "https://resources.download.minecraft.net/"
+
+type Rule struct {
+	Action string `json:"action"`
+	Os     struct {
+		Name string `json:"name"`
+		Arch string `json:"arch"`
+	} `json:"os"`
+	Features map[string]bool `json:"features,omitempty"`
+}
 
 func (d *Download) Downloader(destPath string, downloadUrl string) (*string, error) {
 	client := grab.NewClient()
@@ -300,31 +303,16 @@ func (d *Download) GetLibraries(versionInfo VersionInfo) error {
 	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
 	for _, library := range versionInfo.Libraries {
 		if library.Downloads.Artifact.URL != "" {
-			if len(library.Rules) > 0 {
-				if library.Rules[0].Os.Name == osName {
-					filePath := filepath.Join(destPath, library.Downloads.Artifact.Path)
-					err = os.MkdirAll(filepath.Dir(filePath), 0o755)
-					if err != nil {
-						return err
-					}
-					_, err = d.Downloader(filePath, library.Downloads.Artifact.URL)
-					expectedSha1 := library.Downloads.Artifact.Sha1
-					if err != nil {
-						return err
-					}
-					fileSha1, err := d.GetFileSha1(filePath)
-					if err != nil {
-						return err
-					}
-					if expectedSha1 != fileSha1 {
-						err := os.Remove(filePath)
-						if err != nil {
-							return err
-						}
-						return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionInfo.ID)
-					}
-				}
-			} else {
+			if strings.HasSuffix(library.Name, "-arm64") {
+				continue
+			}
+			if strings.HasSuffix(library.Name, "-x86") {
+				continue
+			}
+			if strings.HasSuffix(library.Name, "-aarch_64") {
+				continue
+			}
+			if EnsureRules(library.Rules, nil) {
 				filePath := filepath.Join(destPath, library.Downloads.Artifact.Path)
 				err = os.MkdirAll(filepath.Dir(filePath), 0o755)
 				if err != nil {
@@ -557,12 +545,6 @@ func (d *Download) GetNatives(vInfo VersionInfo) ([]string, error) {
 	}
 
 	osName := runtime.GOOS
-	osArchitecture := runtime.GOARCH
-	if osArchitecture == "amd64" {
-		osArchitecture = "x86_64"
-	} else if osArchitecture == "386" {
-		osArchitecture = "x86"
-	}
 	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "libraries")
 	for _, lib := range vInfo.Libraries {
 		nativeKey := lib.Natives[osName]
@@ -584,29 +566,16 @@ func (d *Download) GetNatives(vInfo VersionInfo) ([]string, error) {
 				natives = append(natives, nativePath)
 			}
 		} else {
-			allowed := false
 			if strings.Contains(lib.Name, ":natives-") {
-				if len(lib.Rules) == 0 {
-					allowed = true
-				} else {
-					for _, r := range lib.Rules {
-						if r.Os.Name == osName {
-							allowed = r.Action == "allow"
-						} else {
-							continue
-						}
+				if EnsureRules(lib.Rules, nil) {
+					if lib.Downloads.Artifact.Path == "" {
+						continue
 					}
+					natives = append(natives, filepath.Join(destPath, lib.Downloads.Artifact.Path))
 				}
-			}
-			if !allowed {
-				continue
-			}
-			if lib.Downloads.Artifact.Path == "" {
-				continue
-			}
-			natives = append(natives, filepath.Join(destPath, lib.Downloads.Artifact.Path))
-		}
 
+			}
+		}
 	}
 	// Does not support arm still downloads them add support later
 	return natives, nil
@@ -785,4 +754,26 @@ func (d *Download) EnsureJava(javaVersions []string, vInfo VersionInfo) (*string
 	}
 
 	return nil, fmt.Errorf("could not find a suitable java version. please install java version %d at https://adoptium.net/temurin/releases/", vInfo.JavaVersion.MajorVersion)
+}
+
+func EnsureRules(rules []Rule, features map[string]bool) bool {
+	osName := runtime.GOOS
+	osArchitecture := runtime.GOARCH
+	if osArchitecture == "amd64" {
+		osArchitecture = "x86_64"
+	} else if osArchitecture == "386" {
+		osArchitecture = "x86"
+	}
+	allow := false
+	if len(rules) == 0 {
+		return true
+	}
+	for _, r := range rules {
+		if osName == r.Os.Name || r.Os.Name == "" {
+			if osArchitecture == r.Os.Arch || r.Os.Arch == "" {
+				allow = r.Action == "allow"
+			}
+		}
+	}
+	return allow
 }
