@@ -65,6 +65,7 @@ type VersionInfo struct {
 		} `json:"client"`
 	} `json:"downloads"`
 	ID          string `json:"id"`
+	MainClass   string `json:"mainClass"`
 	JavaVersion struct {
 		Component    string `json:"component"`
 		MajorVersion int    `json:"majorVersion"`
@@ -775,13 +776,22 @@ func EnsureRules(rules []Rule, features map[string]bool) bool {
 	if len(rules) == 0 {
 		return true
 	}
+NextRule:
 	for _, r := range rules {
-		if osName == r.Os.Name || r.Os.Name == "" {
-			if osArchitecture == r.Os.Arch || r.Os.Arch == "" {
-				allow = r.Action == "allow"
+		if osName != r.Os.Name && r.Os.Name != "" {
+			continue
+		}
+		if osArchitecture != r.Os.Arch && r.Os.Arch != "" {
+			continue
+		}
+		for name, want := range r.Features {
+			if features[name] != want {
+				continue NextRule
 			}
 		}
+		allow = r.Action == "allow"
 	}
+
 	return allow
 }
 

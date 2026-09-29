@@ -131,3 +131,7 @@ func resolve(s string, fargs map[string]string) (string, error) {
 		s = s[:start] + value + s[end+1:]
 	}
 }
+
+func (l *Launch) LaunchInstance() {
+
+}

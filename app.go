@@ -234,6 +234,30 @@ func (a *App) GetGameFiles(version string) error {
 	fmt.Println(vInfo.Arguments.Jvm)
 	fmt.Println(vInfo.Arguments.Game[0])
 	fmt.Println(vInfo.Arguments.Jvm[0])
+	fmt.Println(vInfo.MainClass)
+	placeholderMap, err := a.Launch.BuildArgs(auth.MinecraftInfo{
+		Username: "test",
+		UUID:     "0000",
+	}, "testfolder", "dummyclasspath", *vInfo, auth.MinecraftPayload{AccessToken: "testtoken"})
+	if err != nil {
+		return err
+	}
+	jvmArgs, err := a.Launch.CreateArgs(placeholderMap, vInfo.Arguments.Jvm)
+	if err != nil {
+		return err
+	}
+	gameArgs, err := a.Launch.CreateArgs(placeholderMap, vInfo.Arguments.Game)
+	if err != nil {
+		return err
+	}
+	fmt.Println("\n\n\n Java args \n\n\n")
+	for _, a := range jvmArgs {
+		fmt.Printf("%q\n", a)
+	}
+	fmt.Println("\n\n\n Game args \n\n\n")
+	for _, a := range gameArgs {
+		fmt.Printf("%q\n", a)
+	}
 	err = a.Download.GetClientJar(*vInfo)
 	if err != nil {
 		return err
