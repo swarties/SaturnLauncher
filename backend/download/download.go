@@ -41,8 +41,15 @@ type Version struct {
 
 // very long struct incoming
 // copied and pasted from https://transform.tools/json-to-go
-
+type Argument struct {
+	Rules []Rule   `json:"rules,omitempty"`
+	Value []string `json:"value"`
+}
 type VersionInfo struct {
+	Arguments struct {
+		Jvm  []Argument `json:"jvm"`
+		Game []Argument `json:"game"`
+	}
 	AssetIndex struct {
 		ID        string `json:"id"`
 		Sha1      string `json:"sha1"`
@@ -776,4 +783,49 @@ func EnsureRules(rules []Rule, features map[string]bool) bool {
 		}
 	}
 	return allow
+}
+
+func (a *Argument) UnmarshalJSON(data []byte) error {
+	if strings.HasPrefix(string(data), "\"") {
+		var str string
+		err := json.Unmarshal(data, &str)
+		if err != nil {
+			return err
+		}
+		a.Value = []string{str}
+		return nil
+	}
+	if strings.HasPrefix(string(data), "{") {
+		type temp struct {
+			Rules []Rule          `json:"rules"`
+			Value json.RawMessage `json:"value"`
+		}
+		var tempStruct temp
+		err := json.Unmarshal(data, &tempStruct)
+		if err != nil {
+			return err
+		}
+		a.Rules = tempStruct.Rules
+		if strings.HasPrefix(string(tempStruct.Value), "\"") {
+			var str string
+			err := json.Unmarshal(tempStruct.Value, &str)
+			if err != nil {
+				return err
+			}
+			a.Value = []string{str}
+			return nil
+		} else if strings.HasPrefix(string(tempStruct.Value), "[") {
+			var str []string
+			err := json.Unmarshal(tempStruct.Value, &str)
+			if err != nil {
+				return err
+			}
+			a.Value = str
+			return nil
+		} else {
+			return fmt.Errorf("coudlnt unmarshal json. json might've been tampered with")
+		}
+	}
+
+	return fmt.Errorf("coudlnt unmarshal json. json might've been tampered with")
 }
