@@ -188,5 +188,13 @@ func (l *Launch) LaunchInstance(folderId string, mcinfo auth.MinecraftInfo, mcpa
 	cmd.Dir = instDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	err = cmd.Wait()
+	if err != nil {
+		return fmt.Errorf("minecraft exited with error: %s", err)
+	}
+	return nil
 }

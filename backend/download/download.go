@@ -123,7 +123,7 @@ func (d *Download) Downloader(destPath string, downloadUrl string) (*string, err
 	if err != nil {
 		return nil, err
 	}
-
+	req.NoResume = true
 	fmt.Printf("Downloading %v...\n", req.URL())
 	resp := client.Do(req)
 	if resp.HTTPResponse != nil {
@@ -598,7 +598,20 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 	if err != nil {
 		return err
 	}
-	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "natives", vInfo.ID, "java")
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "natives", vInfo.ID)
+	for _, v := range vInfo.Arguments.Jvm {
+		for _, a := range v.Value {
+			if a == "-Djava.library.path=${natives_directory}/java" {
+				destPath = filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "natives", vInfo.ID, "java")
+			} else if a == "-Djava.library.path=${natives_directory}" {
+				destPath = filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "natives", vInfo.ID)
+			} else {
+				continue
+			}
+		}
+
+	}
+
 	err = os.RemoveAll(destPath)
 	if err != nil {
 		return err

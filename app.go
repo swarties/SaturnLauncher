@@ -263,7 +263,7 @@ func (a *App) GetGameFiles(version string) error {
 	fmt.Println(classPath)
 	fmt.Println("found suitable java version for minecraft. version is ", *java)
 
-	return a.LaunchGame("4d3ef7a1-c365-4773-b8a2-d2a857bc9445")
+	return a.LaunchGame("a8ae4e04-ce89-4edf-8657-c9ea608a88f8")
 }
 
 func (a *App) GetVersions() ([]download.Version, error) {
@@ -301,7 +301,7 @@ func (a *App) GetVersions() ([]download.Version, error) {
 }
 
 func (a *App) LaunchGame(folderId string) error {
-	folderId = "4d3ef7a1-c365-4773-b8a2-d2a857bc9445"
+	folderId = "a8ae4e04-ce89-4edf-8657-c9ea608a88f8"
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
