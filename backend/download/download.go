@@ -598,7 +598,7 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 	if err != nil {
 		return err
 	}
-	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "natives", vInfo.ID)
+	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "natives", vInfo.ID, "java")
 	err = os.RemoveAll(destPath)
 	if err != nil {
 		return err

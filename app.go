@@ -189,7 +189,7 @@ func (a *App) StartApp() {
 
 func (a *App) GetGameFiles(version string) error {
 	if version == "" {
-		version = "1.21.1"
+		version = "26.2"
 	}
 	var manifest download.VersionManifest
 	appdatadir, err := os.UserConfigDir()
@@ -230,34 +230,8 @@ func (a *App) GetGameFiles(version string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(vInfo.Arguments.Game)
-	fmt.Println(vInfo.Arguments.Jvm)
-	fmt.Println(vInfo.Arguments.Game[0])
-	fmt.Println(vInfo.Arguments.Jvm[0])
-	fmt.Println(vInfo.MainClass)
-	placeholderMap, err := a.Launch.BuildArgs(auth.MinecraftInfo{
-		Username: "test",
-		UUID:     "0000",
-	}, "testfolder", "dummyclasspath", *vInfo, auth.MinecraftPayload{AccessToken: "testtoken"})
-	if err != nil {
-		return err
-	}
-	jvmArgs, err := a.Launch.CreateArgs(placeholderMap, vInfo.Arguments.Jvm)
-	if err != nil {
-		return err
-	}
-	gameArgs, err := a.Launch.CreateArgs(placeholderMap, vInfo.Arguments.Game)
-	if err != nil {
-		return err
-	}
-	fmt.Println("\n\n\n Java args \n\n\n")
-	for _, a := range jvmArgs {
-		fmt.Printf("%q\n", a)
-	}
-	fmt.Println("\n\n\n Game args \n\n\n")
-	for _, a := range gameArgs {
-		fmt.Printf("%q\n", a)
-	}
+	fmt.Printf("MainClass = %q\n", vInfo.MainClass)
+
 	err = a.Download.GetClientJar(*vInfo)
 	if err != nil {
 		return err
@@ -288,7 +262,8 @@ func (a *App) GetGameFiles(version string) error {
 	}
 	fmt.Println(classPath)
 	fmt.Println("found suitable java version for minecraft. version is ", *java)
-	return nil
+
+	return a.LaunchGame("4d3ef7a1-c365-4773-b8a2-d2a857bc9445")
 }
 
 func (a *App) GetVersions() ([]download.Version, error) {
@@ -324,3 +299,34 @@ func (a *App) GetVersions() ([]download.Version, error) {
 	}
 	return filteredManifest.Versions, nil
 }
+
+func (a *App) LaunchGame(folderId string) error {
+	folderId = "4d3ef7a1-c365-4773-b8a2-d2a857bc9445"
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
+	filePath := filepath.Join(targetdir, "keys.json")
+	fileData, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	var Keys auth.AuthSession
+	err = json.Unmarshal(fileData, &Keys)
+	if err != nil {
+		return err
+	}
+	mcpayload, AuthSession, err := a.Auth.RefreshMinecraftToken(Keys)
+	if err != nil {
+		return err
+	}
+	mcinfo, err := a.Auth.GetAccountInfo(mcpayload)
+	if err != nil {
+		return err
+	}
+	return a.Launch.LaunchInstance(folderId, *mcinfo, mcpayload, AuthSession)
+}
+
+// Add a seperate launch game func for front end
+// add a game file checker instead of redownloading

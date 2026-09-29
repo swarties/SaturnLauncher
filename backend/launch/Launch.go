@@ -102,7 +102,12 @@ func (l *Launch) CreateArgs(fargs map[string]string, args []download.Argument) (
 		if !download.EnsureRules(a.Rules, nil) {
 			continue
 		}
-		nargs = append(nargs, a.Value...)
+		for _, v := range a.Value {
+			if v != "" {
+				nargs = append(nargs, v)
+			}
+		}
+
 	}
 	for i, arg := range nargs {
 		resolved, err := resolve(arg, fargs)
@@ -169,7 +174,7 @@ func (l *Launch) LaunchInstance(folderId string, mcinfo auth.MinecraftInfo, mcpa
 	if err != nil {
 		return err
 	}
-	fullargs := make([]string, 0+len(jvm)+1+len(game))
+	fullargs := make([]string, 0, len(jvm)+1+len(game))
 	fullargs = append(fullargs, jvm...)
 	fullargs = append(fullargs, verInfo.MainClass)
 	fullargs = append(fullargs, game...)
@@ -178,7 +183,7 @@ func (l *Launch) LaunchInstance(folderId string, mcinfo auth.MinecraftInfo, mcpa
 		return err
 	}
 	instDir := filepath.Join(appdata, "SaturnLauncher", "instances", folderId)
-
+	fmt.Printf("fullArgs = %q\n", fullargs)
 	cmd := exec.Command(*ensureJava, fullargs...)
 	cmd.Dir = instDir
 	cmd.Stdout = os.Stdout
