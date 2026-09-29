@@ -48,7 +48,12 @@ type XBLPayload struct {
 }
 
 type XSTSPayload struct {
-	Token string `json:"Token"`
+	Token         string `json:"Token"`
+	DisplayClaims struct {
+		Xui []struct {
+			Xid string `json:"xid"`
+		} `json:"xui"`
+	} `json:"DisplayClaims"`
 }
 
 type MinecraftPayload struct {
@@ -58,6 +63,7 @@ type MinecraftPayload struct {
 type AuthSession struct {
 	RefreshToken string `json:"RefreshToken"`
 	Uhs          string `json:"Uhs"`
+	Xuid         string `json:"xuid"`
 }
 
 type MinecraftInfo struct {
@@ -300,11 +306,16 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 	}
 
 	GetNewXSTSToken, err := a.GetXSTS(*GetNewXBLToken)
-	uhskey := GetNewXBLToken.DisplayClaims.Xui[0].Uhs
-	AuthInfo.Uhs = uhskey
 	if err != nil {
 		return MinecraftPayload{}, AuthInfo, err
 	}
+	if len(GetNewXSTSToken.DisplayClaims.Xui) == 0 {
+		return MinecraftPayload{}, AuthInfo, fmt.Errorf("missing xid in XSTS response")
+	}
+	uhskey := GetNewXBLToken.DisplayClaims.Xui[0].Uhs
+	xuiKey := GetNewXSTSToken.DisplayClaims.Xui[0].Xid
+	AuthInfo.Xuid = xuiKey
+	AuthInfo.Uhs = uhskey
 	// var NewMinecraftPayload MinecraftPayload
 	GetNewMinecraftAuth, err := a.GetMinecraftAuth(*GetNewXSTSToken, *GetNewXBLToken)
 	if err != nil {

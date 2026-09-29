@@ -3,9 +3,11 @@ package launch
 import (
 	"SaturnLauncher/backend/auth"
 	"SaturnLauncher/backend/download"
+	"SaturnLauncher/backend/instances"
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -56,7 +58,7 @@ func (l *Launch) ClasspathBuilder(info download.VersionInfo) (string, error) {
 	return strings.Join(artifacts, string(os.PathListSeparator)), nil
 }
 
-func (l *Launch) BuildArgs(mcinfo auth.MinecraftInfo, folderId string, classpath string, versionInfo download.VersionInfo, mcpayload auth.MinecraftPayload) (map[string]string, error) {
+func (l *Launch) BuildArgs(mcinfo auth.MinecraftInfo, folderId string, classpath string, versionInfo download.VersionInfo, mcpayload auth.MinecraftPayload, authinfo auth.AuthSession) (map[string]string, error) {
 	// i := instances.NewInstanceManager()
 	appdata, err := os.UserConfigDir()
 	if err != nil {
@@ -88,7 +90,7 @@ func (l *Launch) BuildArgs(mcinfo auth.MinecraftInfo, folderId string, classpath
 	args["auth_player_name"] = mcinfo.Username
 	args["auth_uuid"] = mcinfo.UUID
 	args["auth_access_token"] = mcpayload.AccessToken
-	args["auth_xuid"] = "0" // have to get later in auth.go in xsts func
+	args["auth_xuid"] = authinfo.Xuid // have to get later in auth.go in xsts func
 	args["clientid"] = "000000004C12AE6F"
 	args["user_type"] = "msa"
 	return args, nil
@@ -132,6 +134,54 @@ func resolve(s string, fargs map[string]string) (string, error) {
 	}
 }
 
-func (l *Launch) LaunchInstance() {
+func (l *Launch) LaunchInstance(folderId string, mcinfo auth.MinecraftInfo, mcpayload auth.MinecraftPayload, authinfo auth.AuthSession) error {
+	dl := download.NewDownload()
+	in := instances.NewInstanceManager()
+	instInfo, err := in.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	verInfo, err := dl.ParseVersionInfo(instInfo.Version)
+	if err != nil {
+		return err
+	}
+	java, err := dl.GetJava(*verInfo)
+	if err != nil {
+		return err
+	}
+	ensureJava, err := dl.EnsureJava(java, *verInfo)
+	if err != nil {
+		return err
+	}
+	classpath, err := l.ClasspathBuilder(*verInfo)
+	if err != nil {
+		return err
+	}
+	args, err := l.BuildArgs(mcinfo, folderId, classpath, *verInfo, mcpayload, authinfo)
+	if err != nil {
+		return err
+	}
+	jvm, err := l.CreateArgs(args, verInfo.Arguments.Jvm)
+	if err != nil {
+		return err
+	}
+	game, err := l.CreateArgs(args, verInfo.Arguments.Game)
+	if err != nil {
+		return err
+	}
+	fullargs := make([]string, 0+len(jvm)+1+len(game))
+	fullargs = append(fullargs, jvm...)
+	fullargs = append(fullargs, verInfo.MainClass)
+	fullargs = append(fullargs, game...)
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	instDir := filepath.Join(appdata, "SaturnLauncher", "instances", folderId)
 
+	cmd := exec.Command(*ensureJava, fullargs...)
+	cmd.Dir = instDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
