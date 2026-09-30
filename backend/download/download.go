@@ -678,12 +678,18 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 	return nil
 }
 
+// GetJava add linux support and more java locations to check
 func (d *Download) GetJava(vInfo VersionInfo) ([]string, error) {
+	osName := runtime.GOOS
 	var javaVersions []string
 	javaHome := os.Getenv("JAVA_HOME")
 	if len(javaHome) == 0 {
 		fmt.Println("coudlnt find java in JAVA_HOME continuing search")
 	} else {
+		if osName != "windows" {
+			java := filepath.Join(javaHome, "bin", "java")
+			javaVersions = append(javaVersions, java)
+		}
 		java := filepath.Join(javaHome, "bin", "java.exe")
 		javaVersions = append(javaVersions, java)
 	}
