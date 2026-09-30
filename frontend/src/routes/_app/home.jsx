@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave';
 import { VersionPicker } from '@/components/ui/version-picker';
 
-import { GetGameFiles } from '../../../wailsjs/go/main/App';
+import { StartGame } from '../../../wailsjs/go/main/App';
 
 import { useAuth } from '@/stores/auth';
 import { copyText } from '@/lib/backend';
@@ -68,7 +68,7 @@ function HomePage() {
     setStatus('Downloading game files...');
 
     try {
-      await GetGameFiles(version);
+      await StartGame(version);
       setStatus(FINAL_STATUS);
       statusTimerRef.current = setTimeout(() => {
         setStatus((s) => (s === FINAL_STATUS ? '' : s));

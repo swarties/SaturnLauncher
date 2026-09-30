@@ -3,11 +3,9 @@ package launch
 import (
 	"SaturnLauncher/backend/auth"
 	"SaturnLauncher/backend/download"
-	"SaturnLauncher/backend/instances"
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -139,6 +137,7 @@ func resolve(s string, fargs map[string]string) (string, error) {
 	}
 }
 
+/*
 func (l *Launch) LaunchInstance(folderId string, mcinfo auth.MinecraftInfo, mcpayload auth.MinecraftPayload, authinfo auth.AuthSession) error {
 	dl := download.NewDownload()
 	in := instances.NewInstanceManager()
@@ -198,3 +197,4 @@ func (l *Launch) LaunchInstance(folderId string, mcinfo auth.MinecraftInfo, mcpa
 	}
 	return nil
 }
+*/

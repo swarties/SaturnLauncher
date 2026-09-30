@@ -237,6 +237,10 @@ func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId st
 		return err
 	}
 	filePath := filepath.Join(destPath, versionId+".json")
+	stat, err := os.Stat(filePath)
+	if err == nil && stat.Size() > 0 {
+		return nil
+	}
 	_, err = d.Downloader(filePath, versionUrl)
 	if err != nil {
 		return err
@@ -283,6 +287,10 @@ func (d *Download) GetClientJar(vInfo VersionInfo) error {
 	filePath := filepath.Join(destPath, vInfo.ID+".jar")
 	clientUrl := vInfo.Downloads.Client.URL
 	clientSha1 := vInfo.Downloads.Client.Sha1
+	stat, err := os.Stat(filePath)
+	if err == nil && int(stat.Size()) == vInfo.Downloads.Client.Size {
+		return nil
+	}
 	_, err = d.Downloader(filePath, clientUrl)
 	if err != nil {
 		return err
@@ -326,22 +334,27 @@ func (d *Download) GetLibraries(versionInfo VersionInfo) error {
 				if err != nil {
 					return err
 				}
-				_, err = d.Downloader(filePath, library.Downloads.Artifact.URL)
-				expectedSha1 := library.Downloads.Artifact.Sha1
-				if err != nil {
-					return err
-				}
-				fileSha1, err := d.GetFileSha1(filePath)
-				if err != nil {
-					return err
-				}
-				if expectedSha1 != fileSha1 {
-					err := os.Remove(filePath)
+				stat, err := os.Stat(filePath)
+				needsDownload := err != nil || int(stat.Size()) != library.Downloads.Artifact.Size
+				if needsDownload {
+					_, err = d.Downloader(filePath, library.Downloads.Artifact.URL)
+					expectedSha1 := library.Downloads.Artifact.Sha1
 					if err != nil {
 						return err
 					}
-					return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionInfo.ID)
+					fileSha1, err := d.GetFileSha1(filePath)
+					if err != nil {
+						return err
+					}
+					if expectedSha1 != fileSha1 {
+						err := os.Remove(filePath)
+						if err != nil {
+							return err
+						}
+						return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", versionInfo.ID)
+					}
 				}
+
 			}
 		}
 		nativeName := library.Natives[osName]
@@ -353,6 +366,10 @@ func (d *Download) GetLibraries(versionInfo VersionInfo) error {
 					err = os.MkdirAll(filepath.Dir(filePath), 0o755)
 					if err != nil {
 						return err
+					}
+					stat, err := os.Stat(filePath)
+					if err == nil && int(stat.Size()) == native.Size {
+						continue
 					}
 					_, err = d.Downloader(filePath, native.URL)
 					expectedSha1 := native.Sha1
@@ -444,7 +461,7 @@ func (d *Download) GetMissingAssets(index AssetIndex) ([]AssetCandidate, error) 
 
 		hash := i.Hash
 		destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "assets", "objects", hash[:2], hash)
-		_, statErr := os.Stat(destPath)
+		info, statErr := os.Stat(destPath)
 		if statErr != nil {
 			currentAssetUrl := assetUrl + hash[:2] + "/" + hash
 			var newCandidates AssetCandidate
@@ -454,12 +471,7 @@ func (d *Download) GetMissingAssets(index AssetIndex) ([]AssetCandidate, error) 
 			Candidates = append(Candidates, newCandidates)
 			continue
 		}
-
-		fileHash, err := d.GetFileSha1(destPath)
-		if err != nil {
-			return nil, err
-		}
-		if fileHash != i.Hash {
+		if info.Size() != int64(i.Size) {
 			currentAssetUrl := assetUrl + hash[:2] + "/" + hash
 			var newCandidates AssetCandidate
 			newCandidates.DestPath = destPath
@@ -468,7 +480,6 @@ func (d *Download) GetMissingAssets(index AssetIndex) ([]AssetCandidate, error) 
 			Candidates = append(Candidates, newCandidates)
 			continue
 		}
-
 	}
 	dedupeMap := make(map[string]struct{})
 	var dedupeCandidates []AssetCandidate
