@@ -686,11 +686,11 @@ func (d *Download) GetJava(vInfo VersionInfo) ([]string, error) {
 	if len(javaHome) == 0 {
 		fmt.Println("coudlnt find java in JAVA_HOME continuing search")
 	} else {
-		if osName != "windows" {
-			java := filepath.Join(javaHome, "bin", "java")
-			javaVersions = append(javaVersions, java)
+		javabin := "java"
+		if osName == "windows" {
+			javabin = "java.exe"
 		}
-		java := filepath.Join(javaHome, "bin", "java.exe")
+		java := filepath.Join(javaHome, "bin", javabin)
 		javaVersions = append(javaVersions, java)
 	}
 	javaDir := "C:\\Program Files\\Java\\"
