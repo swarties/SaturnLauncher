@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'motion/react';
 
 import { Button } from '@/components/ui/button.jsx';
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave';
-import { VersionPicker } from '@/components/ui/version-picker';
 
 import { StartGame } from '../../../wailsjs/go/main/App';
 
@@ -68,7 +67,7 @@ function HomePage() {
     setStatus('Downloading game files...');
 
     try {
-      await StartGame(version);
+      await StartGame('1.14');
       setStatus(FINAL_STATUS);
       statusTimerRef.current = setTimeout(() => {
         setStatus((s) => (s === FINAL_STATUS ? '' : s));
@@ -95,10 +94,6 @@ function HomePage() {
             <p className="text-foreground text-4xl font-extralight tracking-tight">
               {username}
             </p>
-          </div>
-          {/* Top-right version picker */}
-          <div className="absolute top-6 right-6">
-            <VersionPicker value={version} onChange={setVersion} />
           </div>
           <Button
             variant="outline"

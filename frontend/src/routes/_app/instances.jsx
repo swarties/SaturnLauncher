@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 import { createFileRoute } from '@tanstack/react-router';
 import { motion } from 'motion/react';
@@ -12,35 +12,68 @@ import {
   MorphingDialogTitle,
   MorphingDialogDescription,
   MorphingDialogClose,
+  useMorphingDialog,
 } from '@/components/ui/morphing-dialog';
+
+import {
+  CreateInstance,
+  DeleteInstance,
+  ListInstances,
+} from '../../../wailsjs/go/main/App';
+import { onBackendEvent } from '@/lib/backend.js';
 
 export const Route = createFileRoute('/_app/instances')({
   component: InstancesPage,
 });
 
-/** @typedef {{ id: string, name: string, version: string, lastPlayed?: string }} Instance */
+/** @typedef {{ name: string, version: string, uuid: string, timecreated: string, minram: number, maxram: number }} McInstance */
 
 function InstancesPage() {
-  /** @type {[Instance[], Function]} */
-  const [instances] = useState([
-    // Uncomment to test the populated state:
-    { id: 'a1', name: 'Vanilla 1.21', version: '1.21', lastPlayed: 'Today' },
-    {
-      id: 'b2',
-      name: 'Modded Survival',
-      version: '1.20.4',
-      lastPlayed: 'Last week',
-    },
-    { id: 'c3', name: 'Skyblock Test', version: '1.19.2' },
-  ]);
-
+  const [instances, setInstances] = useState(/** @type {McInstance[]} */ ([]));
+  const [loadError, setLoadError] = useState(
+    /** @type {string | null} */ (null)
+  );
   const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = () => {
+      ListInstances()
+        .then((list) => {
+          if (cancelled) return;
+          setInstances(/** @type {McInstance[]} */ (list ?? []));
+          setLoadError(null);
+        })
+        .catch((e) => {
+          if (cancelled) return;
+          setLoadError(e?.message ?? String(e));
+        });
+    };
+
+    load();
+    const off = onBackendEvent('instance:changed', load);
+
+    return () => {
+      cancelled = true;
+      if (typeof off === 'function') off();
+    };
+  }, []);
+
+  const handleDelete = async (inst) => {
+    await DeleteInstance(inst.uuid);
+  };
 
   const isEmpty = instances.length === 0;
 
   return (
     <div className="flex h-full w-full flex-col p-6">
       <MorphingDialog open={creating} onOpenChange={setCreating}>
+        {loadError && (
+          <p className="text-muted-foreground mb-4 text-xs font-thin text-red-400">
+            Failed to load instances: {loadError}
+          </p>
+        )}
         {isEmpty ? (
           /* Empty state — everything centered */
           <div className="flex flex-1 flex-col items-center justify-center gap-8">
@@ -83,7 +116,11 @@ function InstancesPage() {
 
             <div className="grid auto-rows-min grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-5">
               {instances.map((inst) => (
-                <InstanceCard key={inst.id} instance={inst}></InstanceCard>
+                <InstanceCard
+                  key={inst.uuid}
+                  instance={inst}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           </>
@@ -108,40 +145,143 @@ function InstancesPage() {
 }
 
 /**
- * @param {{ instance: Instance }} props
+ * @param {{ instance: McInstance, onDelete: (inst: McInstance) => Promise<void> }} props
  */
-function InstanceCard({ instance }) {
+function InstanceCard({ instance, onDelete }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.38, 1] }}
-      className="border-saturn-950 hover:border-saturn-700/60 hover:bg-saturn-900/20 group flex min-h-48 cursor-pointer flex-col rounded-md border-2 p-5 transition-colors"
-    >
-      <p className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
-        {instance.version}
-      </p>
-      <p className="text-foreground mt-1 line-clamp-2 text-xl font-extralight tracking-tight">
-        {instance.name}
-      </p>
-      <div className="mt-auto flex items-center justify-between">
-        <span className="text-muted-foreground text-xs font-thin">
-          {instance.lastPlayed ?? 'Never played'}
-        </span>
-        <span
-          aria-hidden="true"
-          className="text-saturn-400 text-lg transition-transform group-hover:translate-x-0.5"
+    <MorphingDialog>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.38, 1] }}
+        className="border-saturn-950 hover:border-saturn-700/60 hover:bg-saturn-900/20 group relative flex min-h-48 cursor-pointer flex-col rounded-md border-2 p-5 transition-colors"
+      >
+        <MorphingDialogTrigger
+          aria-label={`Delete ${instance.name}`}
+          className="text-muted-foreground absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-sm text-2xl leading-none opacity-40 transition-[opacity,color] group-hover:opacity-100 hover:text-red-400"
         >
-          →
-        </span>
-      </div>
-    </motion.div>
+          ×
+        </MorphingDialogTrigger>
+        <p className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
+          {instance.version}
+        </p>
+        <p className="text-foreground mt-1 line-clamp-2 text-xl font-extralight tracking-tight">
+          {instance.name}
+        </p>
+        <div className="mt-auto flex items-center justify-between">
+          <span className="text-muted-foreground text-xs font-thin">
+            {formatCreated(instance.timecreated)}
+          </span>
+          <span
+            aria-hidden="true"
+            className="text-saturn-400 text-lg transition-transform group-hover:translate-x-0.5"
+          >
+            →
+          </span>
+        </div>
+      </motion.div>
+
+      <MorphingDialogContainer>
+        <MorphingDialogContent className="border-saturn-950 bg-background relative w-full max-w-sm rounded-md border-2 p-6">
+          <DeleteConfirmContent instance={instance} onDelete={onDelete} />
+        </MorphingDialogContent>
+      </MorphingDialogContainer>
+    </MorphingDialog>
   );
 }
 
+/**
+ * @param {{ instances: McInstance, onDelete: (inst: McInstance) => Promise<void>}} props
+ */
+
+function DeleteConfirmContent({ instance, onDelete }) {
+  const { setIsOpen } = useMorphingDialog();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(/** @type { string | null }*/ (null));
+
+  const handleConfirm = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onDelete(instance);
+      setIsOpen(false);
+    } catch (e) {
+      setError(e?.message ?? String(e));
+    }
+  };
+
+  return (
+    <>
+      <MorphingDialogTitle className="text-muted-foreground text-sm font-normal tracking-[0.2em] uppercase">
+        Delete Instance
+      </MorphingDialogTitle>
+      <MorphingDialogDescription className="text-muted-foreground mt-2 text-sm font-normal">
+        Are you sure you want to delete{' '}
+        <span className="text-foreground">{instance.name}</span>? This cannot be
+        undone.
+      </MorphingDialogDescription>
+      {error && <p className="mt-3 text-xs font-thin text-red-400">{error}</p>}
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setIsOpen(false)}
+          disabled={busy}
+          className="border-saturn-950 hover:border-saturn-700/60 hover:bg-saturn-900/20 text-muted-foreground h-10 rounded-md border-2 px-4 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={busy}
+          className="h-10 rounded-md border border-red-900/60 bg-red-950/40 px-6 text-sm font-thin text-red-200 transition-colors hover:border-red-700/60 hover:bg-red-950/60 hover:text-red-100 disabled:pointer-events-none disabled:opacity-40"
+        >
+          {busy ? 'Deleting...' : 'Delete'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
+ * @param {string} iso
+ */
+
+function formatCreated(iso) {
+  if (!iso) return '—';
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return '—';
+  const days = Math.floor((Date.now() - then.getTime()) / 86_400_000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return then.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 function CreateInstanceForm() {
+  const { setIsOpen } = useMorphingDialog();
   const [name, setName] = useState('');
   const [version, setVersion] = useState('1.14');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(/** @type { string | null } */ (null));
+
+  const handleCreate = async () => {
+    if (!name.trim() || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await CreateInstance(name.trim(), version);
+      setIsOpen(false);
+    } catch (e) {
+      setError(e?.message ?? String(e));
+      setSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -164,21 +304,22 @@ function CreateInstanceForm() {
           </span>
           <VersionPicker value={version} onChange={setVersion} />
         </div>
+        {error && <p className="text-xs font-thin text-red-400">{error}</p>}
       </div>
 
       <div className="mt-6 flex justify-end gap-3">
         <MorphingDialogClose className="border-saturn-950 hover:border-saturn-700/60 hover:bg-saturn-900/20 text-muted-foreground h-10 rounded-md border-2 px-4 text-sm font-thin transition-colors">
           Cancel
         </MorphingDialogClose>
+        <button
+          type="button"
+          onClick={handleCreate}
+          disabled={!name.trim() || submitting}
+          className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-10 rounded-md border px-6 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
+        >
+          {submitting ? 'Creating...' : 'Create'}
+        </button>
       </div>
-      <button
-        type="button"
-        /* TODO: call CreateInstance(name, version) once the binding exists */
-        disabled={!name.trim()}
-        className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-10 rounded-md border px-6 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
-      >
-        Create
-      </button>
     </>
   );
 }
