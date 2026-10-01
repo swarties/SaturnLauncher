@@ -189,7 +189,7 @@ func (a *App) StartApp() {
 // AuthSession struct for unmarshalling JSON
 
 func (a *App) StartGame(folderId string) error {
-	folderId = "a8ae4e04-ce89-4edf-8657-c9ea608a88f8" // remove the hardcoded folderId when the frontend passes us the folderId
+	folderId = "162cd4e1-73a5-4b89-a90e-92355995e052" // remove the hardcoded folderId when the frontend passes us the folderId
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
@@ -293,6 +293,10 @@ func (a *App) StartGame(folderId string) error {
 	if err != nil {
 		return err
 	}
+	jvm = append([]string{
+		fmt.Sprintf("-Xms%dM", instInfo.MinRam),
+		fmt.Sprintf("-Xmx%dM", instInfo.MaxRam),
+	}, jvm...)
 	game, err := a.Launch.CreateArgs(args, vInfo.Arguments.Game)
 	if err != nil {
 		return err
@@ -353,4 +357,58 @@ func (a *App) GetVersions() ([]download.Version, error) {
 		filteredManifest.Versions = append(filteredManifest.Versions, ver)
 	}
 	return filteredManifest.Versions, nil
+}
+
+// init instancemanager
+func (a *App) ListInstances() ([]instances.Instance, error) {
+	return a.InstanceManager.ListInstances()
+}
+
+func (a *App) CreateInstance(name string, version string) (*instances.Instance, error) {
+	inst, err := a.InstanceManager.CreateInstance(name, version)
+	if err != nil {
+		return nil, err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return inst, err
+}
+
+func (a *App) DeleteInstance(id string) (bool, error) {
+	instance, err := a.InstanceManager.DeleteInstance(id)
+	if err != nil {
+		return false, err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return instance, nil
+}
+
+func (a *App) GetInstanceInfo(folderId string) (*instances.Instance, error) {
+	info, err := a.InstanceManager.GetInstanceInfo(folderId)
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+func (a *App) UpdateMem(folderId string, minram, maxram int) error {
+	err := a.InstanceManager.UpdateMemory(folderId, minram, maxram)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+
+func (a *App) Logout() {
+	// update when multi account gets added
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		wailsRuntime.EventsEmit(a.ctx, "auth:required")
+		return
+	}
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
+	_ = os.Remove(filepath.Join(targetdir, "keys.json"))
+	_ = os.Remove(filepath.Join(targetdir, "userinfo.json"))
+	a.ActiveAccessToken = ""
+	wailsRuntime.EventsEmit(a.ctx, "auth:required")
 }

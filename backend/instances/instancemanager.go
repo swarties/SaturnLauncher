@@ -21,10 +21,12 @@ func NewInstanceManager() *InstanceManager {
 }
 
 type Instance struct {
-	Name        string    `json:"name"`
-	Version     string    `json:"version"`
-	Uuid        string    `json:"uuid"`
-	TimeCreated time.Time `json:"timecreated"`
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Uuid        string `json:"uuid"`
+	TimeCreated string `json:"timecreated"`
+	MinRam      int    `json:"minram"`
+	MaxRam      int    `json:"maxram"`
 }
 
 func (i *InstanceManager) InitStorage() (*string, error) {
@@ -80,11 +82,14 @@ func (i *InstanceManager) CreateInstance(name string, version string) (*Instance
 			return nil, err
 		}
 	}
+
 	NewInstance = Instance{
 		Name:        name,
 		Version:     version,
-		TimeCreated: time.Now(),
+		TimeCreated: time.Now().Format(time.RFC3339),
 		Uuid:        idString,
+		MinRam:      2048,
+		MaxRam:      4096,
 	}
 
 	jsonFile, err := json.MarshalIndent(NewInstance, "", "  ")
@@ -164,6 +169,25 @@ func (i *InstanceManager) GetInstanceInfo(folderId string) (*Instance, error) {
 		return nil, err
 	}
 	return &inst, nil
+}
+
+func (i *InstanceManager) UpdateMemory(folderId string, minram, maxram int) error {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	inst.MaxRam = maxram
+	inst.MinRam = minram
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	data, err := json.MarshalIndent(inst, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(base, data, 0o600)
 }
 
 // CreateInstance  Func DONE
