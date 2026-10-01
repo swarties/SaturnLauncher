@@ -5,7 +5,7 @@ import { motion } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/stores/auth';
-import { copyText, openExternalURL } from '@/lib/backend';
+import { copyText, logout, openExternalURL } from '@/lib/backend';
 
 export const Route = createFileRoute('/_app/account')({
   component: AccountPage,
@@ -34,6 +34,18 @@ function AccountPage() {
   };
 
   const handleUuidLeave = () => setUuidHover(false);
+
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    try {
+      await logout();
+    } catch (e) {
+      console.error('Logout failed:', e);
+      setLoggingOut(false);
+    }
+  };
 
   useEffect(() => {
     const onBlur = () => setCopiedUUID(false);
@@ -87,7 +99,7 @@ function AccountPage() {
                     .filter(Boolean)
                     .join(' ')}
                 >
-                  {copiedUUID ? 'Copied UUID!' : profile.id}
+                  {copiedUUID ? 'Copied UUID!' : profile?.id}
                 </button>
               </div>
             </div>
@@ -107,10 +119,11 @@ function AccountPage() {
             </Button>
             <Button
               variant="outline"
-              /* TODO : wire onClick to Logout() once it exists on the App struct*/
-              className="h-12 justify-start gap-2 rounded-lg border-red-900/40 bg-red-950/20 px-6 font-thin text-red-300 hover:border-red-700/60 hover:bg-red-950/40 hover:text-red-200"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="h-12 justify-start gap-2 rounded-lg border-red-900/40 bg-red-950/20 px-6 font-thin text-red-300 hover:border-red-700/60 hover:bg-red-950/40 hover:text-red-200 disabled:pointer-events-none disabled:opacity-40"
             >
-              Log Out
+              {loggingOut ? 'Logging out...' : 'Log Out'}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"

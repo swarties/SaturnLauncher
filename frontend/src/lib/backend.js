@@ -1,4 +1,4 @@
-import { StartApp, StartLogin } from '../../wailsjs/go/main/App';
+import { Logout, StartApp, StartLogin } from '../../wailsjs/go/main/App';
 import {
   BrowserOpenURL,
   EventsOn,
@@ -23,6 +23,14 @@ export function startLogin() {
     return;
   }
   return StartLogin();
+}
+
+export function logout() {
+  if (!isWails) {
+    console.warn("Saturn isn't running inside Wails. Logout was skipped");
+    return;
+  }
+  return Logout();
 }
 
 export function onBackendEvent(eventName, callback) {

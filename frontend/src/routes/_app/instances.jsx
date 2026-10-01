@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 import { createFileRoute } from '@tanstack/react-router';
 import { motion } from 'motion/react';
@@ -70,7 +70,7 @@ function InstancesPage() {
     <div className="flex h-full w-full flex-col p-6">
       <MorphingDialog open={creating} onOpenChange={setCreating}>
         {loadError && (
-          <p className="text-muted-foreground mb-4 text-xs font-thin text-red-400">
+          <p className="mb-4 text-xs font-thin text-red-400">
             Failed to load instances: {loadError}
           </p>
         )}
@@ -129,10 +129,10 @@ function InstancesPage() {
         {/* Dialog — same content for both states */}
         <MorphingDialogContainer>
           <MorphingDialogContent className="border-saturn-950 bg-background relative w-full max-w-md rounded-md border-2 p-6">
-            <MorphingDialogTitle className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase">
+            <MorphingDialogTitle className="text-muted-foreground text-sm font-normal tracking-[0.2em] uppercase">
               New Instance
             </MorphingDialogTitle>
-            <MorphingDialogDescription className="text-muted-foreground mt-1 text-xs font-thin">
+            <MorphingDialogDescription className="text-muted-foreground mt-1 text-sm font-normal">
               Name your instance and pick a version.
             </MorphingDialogDescription>
 

@@ -58,5 +58,5 @@ export const authActions = {
         : { status: 'unauthenticated' }
     ),
 
-  authRequired: () => setState({ status: 'unauthenticated' }),
+  authRequired: () => setState({ status: 'unauthenticated', profile: null }),
 };
