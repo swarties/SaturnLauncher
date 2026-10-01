@@ -189,7 +189,6 @@ func (a *App) StartApp() {
 // AuthSession struct for unmarshalling JSON
 
 func (a *App) StartGame(folderId string) error {
-	folderId = "162cd4e1-73a5-4b89-a90e-92355995e052" // remove the hardcoded folderId when the frontend passes us the folderId
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
