@@ -62,7 +62,7 @@ function AccountPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.38, 1] }}
-          className="border-saturn-950 flex-8 rounded-md border-2 p-8"
+          className="flex-8 rounded-md border-2 border-(--surface-border) p-8"
         >
           <p className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase">
             Account
@@ -104,13 +104,13 @@ function AccountPage() {
               </div>
             </div>
           </div>
-          <div className="border-saturn-950/60 mt-8 grid grid-cols-1 gap-3 border-t pt-6 sm:grid-cols-2">
+          <div className="mt-8 grid grid-cols-1 gap-3 border-t border-(--divider) pt-6 sm:grid-cols-2">
             <Button
               variant="outline"
               onClick={() =>
                 openExternalURL('https://www.minecraft.net/en-us/msaprofile')
               }
-              className="border-saturn-700/40 bg-saturn-900/20 text-saturn-200 hover:border-saturn-500/60 hover:bg-saturn-900/40 hover:text-saturn-100 h-12 justify-start rounded-lg px-6 font-thin"
+              className="h-12 justify-start rounded-lg border-(--chip-border) bg-(--chip-bg) px-6 font-thin text-(--chip-fg) hover:border-(--chip-border-hover) hover:bg-(--chip-bg-hover) hover:text-(--chip-fg-hover)"
             >
               Manage on minecraft.net{' '}
               <span aria-hidden="true" className="text-saturn-400 ml-auto">
@@ -144,15 +144,15 @@ function AccountPage() {
         </motion.div>
         <button
           type="button"
-          className="border-saturn-950 hover:border-saturn-700/60 hover:bg-saturn-900/20 group flex min-h-48 flex-4 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 transition-colors md:min-h-0"
+          className="group flex min-h-48 flex-4 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-(--surface-border) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) md:min-h-0"
         >
           <span
             aria-hidden="true"
-            className="text-saturn-500 group-hover:text-saturn-300 text-9xl leading-none font-extralight transition-colors"
+            className="text-saturn-500 text-9xl leading-none font-extralight transition-colors group-hover:text-(--saturn-fg-strong)"
           >
             +
           </span>
-          <span className="text-muted-foreground group-hover:text-saturn-200 text-sm font-thin tracking-[0.2em] uppercase transition-colors">
+          <span className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase transition-colors group-hover:text-(--saturn-fg)">
             Add Account
           </span>
         </button>

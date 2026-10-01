@@ -85,7 +85,7 @@ function HomePage() {
       {/* LEFT COLLUMN */}
       <div className="grid h-full w-full grid-rows-[65fr_35fr] gap-y-5">
         {/* Hero card */}
-        <div className="border-saturn-950 relative flex h-full w-full flex-col items-center justify-center gap-10 rounded-md border-2 px-6">
+        <div className="relative flex h-full w-full flex-col items-center justify-center gap-10 rounded-md border-2 border-(--surface-border) px-6">
           {/* Top-left greeting */}
           <div className="absolute top-6 left-6 flex flex-col items-start gap-1">
             <p className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase">
@@ -146,13 +146,13 @@ function HomePage() {
           </AnimatePresence>
         </div>
 
-        <div className="border-saturn-950 flex h-full w-full flex-col items-center justify-center gap-10 rounded-md border-2 px-6">
+        <div className="flex h-full w-full flex-col items-center justify-center gap-10 rounded-md border-2 border-(--surface-border) px-6">
           <p>placeholder but cooler</p>
         </div>
       </div>
       <div className="grid h-full w-full grid-rows-[auto_1fr] gap-y-5">
         {/* Top: Player Pane — sized by the render */}
-        <div className="border-saturn-950 @container flex w-full items-stretch gap-4 rounded-md border-2 p-6">
+        <div className="@container flex w-full items-stretch gap-4 rounded-md border-2 border-(--surface-border) p-6">
           <div className="flex min-w-0 flex-1 flex-col items-start justify-center gap-1">
             <p className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase">
               Player Pane
@@ -195,7 +195,7 @@ function HomePage() {
         </div>
 
         {/* Bottom: HELLO */}
-        <div className="border-saturn-950 flex items-center justify-center rounded-md border-2">
+        <div className="flex items-center justify-center rounded-md border-2 border-(--surface-border)">
           <h1 className="text-5xl font-extrabold">Placeholder</h1>
         </div>
       </div>

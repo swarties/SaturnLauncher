@@ -128,7 +128,7 @@ function InstancesPage() {
 
         {/* Dialog — same content for both states */}
         <MorphingDialogContainer>
-          <MorphingDialogContent className="border-saturn-950 bg-background relative w-full max-w-md rounded-md border-2 p-6">
+          <MorphingDialogContent className="bg-background relative w-full max-w-md rounded-md border-2 border-(--surface-border) p-6">
             <MorphingDialogTitle className="text-muted-foreground text-sm font-normal tracking-[0.2em] uppercase">
               New Instance
             </MorphingDialogTitle>
@@ -154,7 +154,7 @@ function InstanceCard({ instance, onDelete }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.38, 1] }}
-        className="border-saturn-950 hover:border-saturn-700/60 hover:bg-saturn-900/20 group relative flex min-h-48 cursor-pointer flex-col rounded-md border-2 p-5 transition-colors"
+        className="group relative flex min-h-48 cursor-pointer flex-col rounded-md border-2 border-(--surface-border) p-5 transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
       >
         <MorphingDialogTrigger
           aria-label={`Delete ${instance.name}`}
@@ -182,7 +182,7 @@ function InstanceCard({ instance, onDelete }) {
       </motion.div>
 
       <MorphingDialogContainer>
-        <MorphingDialogContent className="border-saturn-950 bg-background relative w-full max-w-sm rounded-md border-2 p-6">
+        <MorphingDialogContent className="bg-background relative w-full max-w-sm rounded-md border-2 border-(--surface-border) p-6">
           <DeleteConfirmContent instance={instance} onDelete={onDelete} />
         </MorphingDialogContent>
       </MorphingDialogContainer>
@@ -227,7 +227,7 @@ function DeleteConfirmContent({ instance, onDelete }) {
           type="button"
           onClick={() => setIsOpen(false)}
           disabled={busy}
-          className="border-saturn-950 hover:border-saturn-700/60 hover:bg-saturn-900/20 text-muted-foreground h-10 rounded-md border-2 px-4 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
+          className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
         >
           Cancel
         </button>
@@ -295,7 +295,7 @@ function CreateInstanceForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="My Instance"
-            className="bg-background text-foreground placeholder:text-muted-foreground/50 focus:border-saturn-500/60 h-11 rounded-md border border-white/8 px-4 text-sm font-normal transition-colors outline-none"
+            className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
           />
         </label>
         <div className="flex flex-col gap-2">
@@ -308,7 +308,7 @@ function CreateInstanceForm() {
       </div>
 
       <div className="mt-6 flex justify-end gap-3">
-        <MorphingDialogClose className="border-saturn-950 hover:border-saturn-700/60 hover:bg-saturn-900/20 text-muted-foreground h-10 rounded-md border-2 px-4 text-sm font-thin transition-colors">
+        <MorphingDialogClose className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)">
           Cancel
         </MorphingDialogClose>
         <button

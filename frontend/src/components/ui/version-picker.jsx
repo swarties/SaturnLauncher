@@ -76,9 +76,9 @@ export function VersionPicker({ value, onChange }) {
     <div ref={containerRef} className="relative">
       <div
         ref={triggerRef}
-        className="bg-background flex h-11 min-w-28 items-stretch overflow-hidden rounded-md border border-white/8"
+        className="bg-background flex h-11 min-w-28 items-stretch overflow-hidden rounded-md border border-(--hairline)"
       >
-        <span className="text-saturn-200 hover:text-saturn-50 flex flex-1 items-center px-4 text-sm font-normal tracking-wide transition-colors hover:bg-white/5">
+        <span className="flex flex-1 items-center px-4 text-sm font-normal tracking-wide text-(--saturn-fg) transition-colors hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)">
           {value}
         </span>
         <button
@@ -86,7 +86,7 @@ export function VersionPicker({ value, onChange }) {
           onClick={() => setOpen((o) => !o)}
           aria-label="Select version"
           aria-expanded={open}
-          className="text-saturn-400 hover:text-saturn-100 flex items-center px-3.5 transition-colors hover:bg-white/10"
+          className="flex items-center px-3.5 text-(--saturn-fg-muted) transition-colors hover:bg-(--surface-active) hover:text-(--saturn-fg-strong)"
         >
           <span
             aria-hidden="true"
@@ -114,10 +114,10 @@ export function VersionPicker({ value, onChange }) {
                   right: dropdownPos.right,
                 })
               }
-              className="bg-background z-60 max-h-72 w-48 overflow-y-auto rounded-md border border-white/8 shadow-lg shadow-black/60"
+              className="bg-background z-60 max-h-72 w-48 overflow-y-auto rounded-md border border-(--hairline) shadow-lg shadow-black/60"
             >
               {loading && (
-                <p className="text-saturn-400 px-3.5 py-2.5 text-sm font-normal">
+                <p className="px-3.5 py-2.5 text-sm font-normal text-(--saturn-fg-muted)">
                   Loading...
                 </p>
               )}
@@ -144,8 +144,8 @@ export function VersionPicker({ value, onChange }) {
                         className={[
                           'block w-full px-3.5 py-2.5 text-left text-sm font-normal tracking-wide transition-colors',
                           selected
-                            ? 'text-saturn-100 bg-white/10'
-                            : 'text-saturn-400 hover:text-saturn-200 hover:bg-white/5',
+                            ? 'bg-(--surface-active) text-(--saturn-fg-strong)'
+                            : 'text-(--saturn-fg-muted) hover:bg-(--surface-hover) hover:text-(--saturn-fg)',
                         ].join(' ')}
                       >
                         {v.id}

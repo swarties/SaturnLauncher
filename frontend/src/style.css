@@ -96,6 +96,106 @@ textarea,
   --color-saturn-950: #2e2046;
 }
 
+:root, .dark {
+  --background: oklch(0.145 0.008 326);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.212 0.019 322.12);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.212 0.019 322.12);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.438 0.218 303.724);
+  --primary-foreground: oklch(0.977 0.014 308.299);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.263 0.024 320.12);
+  --muted-foreground: oklch(0.711 0.019 323.02);
+  --accent: oklch(0.263 0.024 320.12);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.542 0.034 322.5);
+  --chart-1: oklch(0.785 0.115 274.713);
+  --chart-2: oklch(0.585 0.233 277.117);
+  --chart-3: oklch(0.511 0.262 276.966);
+  --chart-4: oklch(0.457 0.24 277.023);
+  --chart-5: oklch(0.398 0.195 277.366);
+  --sidebar: oklch(0.212 0.019 322.12);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.627 0.265 303.9);
+  --sidebar-primary-foreground: oklch(0.977 0.014 308.299);
+  --sidebar-accent: oklch(0.263 0.024 320.12);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.542 0.034 322.5);
+
+  /* === Saturn mode-aware surface tokens — DARK defaults === */
+  --surface-border: var(--color-saturn-950);
+  --surface-border-hover: color-mix(
+          in oklch,
+          var(--color-saturn-700) 60%,
+          transparent
+  );
+  --surface-hover: color-mix(
+          in oklch,
+          var(--color-saturn-900) 20%,
+          transparent
+  );
+  --surface-active: color-mix(
+          in oklch,
+          var(--color-saturn-900) 40%,
+          transparent
+  );
+  --hairline: rgb(255 255 255 / 8%);
+  --divider: color-mix(in oklch, var(--color-saturn-950) 60%, transparent);
+  --backdrop: color-mix(in oklch, var(--color-saturn-950) 70%, transparent);
+
+  --nav-pill: color-mix(in oklch, var(--color-saturn-900) 60%, transparent);
+  --nav-account-bg: color-mix(
+          in oklch,
+          var(--color-saturn-900) 40%,
+          transparent
+  );
+  --nav-account-border: color-mix(
+          in oklch,
+          var(--color-saturn-700) 40%,
+          transparent
+  );
+  --nav-account-fg: var(--color-saturn-100);
+
+  --chip-border: color-mix(
+          in oklch,
+          var(--color-saturn-700) 40%,
+          transparent
+  );
+  --chip-bg: color-mix(in oklch, var(--color-saturn-900) 20%, transparent);
+  --chip-fg: var(--color-saturn-200);
+  --chip-border-hover: color-mix(
+          in oklch,
+          var(--color-saturn-500) 60%,
+          transparent
+  );
+  --chip-bg-hover: color-mix(
+          in oklch,
+          var(--color-saturn-900) 40%,
+          transparent
+  );
+  --chip-fg-hover: var(--color-saturn-100);
+
+  --saturn-fg: var(--color-saturn-200);
+  --saturn-fg-hover: var(--color-saturn-50);
+  --saturn-fg-muted: var(--color-saturn-400);
+  --saturn-fg-strong: var(--color-saturn-100);
+
+  --orb-1: color-mix(in oklch, var(--color-saturn-800) 15%, transparent);
+  --orb-2: color-mix(in oklch, var(--color-saturn-900) 30%, transparent);
+  --orb-3: color-mix(in oklch, var(--color-saturn-950) 50%, transparent);
+
+  --code-bg: var(--color-saturn-950);
+  --code-border: var(--color-saturn-900);
+  --code-fg: var(--color-saturn-100);
+}
+
 .light {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0.008 326);
@@ -129,40 +229,72 @@ textarea,
   --sidebar-accent-foreground: oklch(0.212 0.019 322.12);
   --sidebar-border: oklch(0.922 0.005 325.62);
   --sidebar-ring: oklch(0.711 0.019 323.02);
-}
 
-:root {
-  --background: oklch(0.145 0.008 326);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.212 0.019 322.12);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.212 0.019 322.12);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.438 0.218 303.724);
-  --primary-foreground: oklch(0.977 0.014 308.299);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.263 0.024 320.12);
-  --muted-foreground: oklch(0.711 0.019 323.02);
-  --accent: oklch(0.263 0.024 320.12);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.542 0.034 322.5);
-  --chart-1: oklch(0.785 0.115 274.713);
-  --chart-2: oklch(0.585 0.233 277.117);
-  --chart-3: oklch(0.511 0.262 276.966);
-  --chart-4: oklch(0.457 0.24 277.023);
-  --chart-5: oklch(0.398 0.195 277.366);
-  --sidebar: oklch(0.212 0.019 322.12);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.627 0.265 303.9);
-  --sidebar-primary-foreground: oklch(0.977 0.014 308.299);
-  --sidebar-accent: oklch(0.263 0.024 320.12);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.542 0.034 322.5);
+  /* === Saturn mode-aware surface tokens — LIGHT overrides === */
+  --surface-border: var(--color-saturn-300);
+  --surface-border-hover: color-mix(
+          in oklch,
+          var(--color-saturn-500) 50%,
+          transparent
+  );
+  --surface-hover: color-mix(
+          in oklch,
+          var(--color-saturn-200) 40%,
+          transparent
+  );
+  --surface-active: color-mix(
+          in oklch,
+          var(--color-saturn-200) 60%,
+          transparent
+  );
+  --hairline: rgb(0 0 0 / 8%);
+  --divider: color-mix(in oklch, var(--color-saturn-300) 60%, transparent);
+  --backdrop: color-mix(in oklch, var(--color-saturn-950) 40%, transparent);
+
+  --nav-pill: color-mix(in oklch, var(--color-saturn-200) 60%, transparent);
+  --nav-account-bg: color-mix(
+          in oklch,
+          var(--color-saturn-100) 80%,
+          transparent
+  );
+  --nav-account-border: color-mix(
+          in oklch,
+          var(--color-saturn-300) 60%,
+          transparent
+  );
+  --nav-account-fg: var(--color-saturn-950);
+
+  --chip-border: color-mix(
+          in oklch,
+          var(--color-saturn-300) 80%,
+          transparent
+  );
+  --chip-bg: color-mix(in oklch, var(--color-saturn-100) 80%, transparent);
+  --chip-fg: var(--color-saturn-800);
+  --chip-border-hover: color-mix(
+          in oklch,
+          var(--color-saturn-500) 60%,
+          transparent
+  );
+  --chip-bg-hover: color-mix(
+          in oklch,
+          var(--color-saturn-200) 70%,
+          transparent
+  );
+  --chip-fg-hover: var(--color-saturn-950);
+
+  --saturn-fg: var(--color-saturn-800);
+  --saturn-fg-hover: var(--color-saturn-950);
+  --saturn-fg-muted: var(--color-saturn-600);
+  --saturn-fg-strong: var(--color-saturn-900);
+
+  --orb-1: color-mix(in oklch, var(--color-saturn-300) 60%, transparent);
+  --orb-2: color-mix(in oklch, var(--color-saturn-400) 40%, transparent);
+  --orb-3: color-mix(in oklch, var(--color-saturn-500) 30%, transparent);
+
+  --code-bg: var(--color-saturn-100);
+  --code-border: var(--color-saturn-300);
+  --code-fg: var(--color-saturn-950);
 }
 
 @layer base {

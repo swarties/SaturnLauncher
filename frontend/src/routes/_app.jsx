@@ -120,7 +120,7 @@ function NavBar({ pathname }) {
       {pill.ready && (
         <motion.div
           aria-hidden="true"
-          className="bg-saturn-900/60 pointer-events-none absolute inset-y-0 rounded-sm"
+          className="pointer-events-none absolute inset-y-0 rounded-sm bg-(--nav-pill)"
           initial={false}
           animate={{ left: pill.left, width: pill.width }}
           transition={PILL_TRANSITION}
@@ -153,9 +153,9 @@ function AppLayout() {
   return (
     <div className="bg-background relative flex h-screen w-full flex-col overflow-hidden">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="bg-saturn-800/15 absolute -top-48 left-1/2 h-144 w-4xl -translate-x-1/2 rounded-full blur-[120px]" />
-        <div className="bg-saturn-900/30 absolute -right-32 bottom-0 h-112 w-160 rounded-full blur-[100px]" />
-        <div className="bg-saturn-950/50 absolute top-1/3 -left-32 h-96 w-lg rounded-full blur-[90px]" />
+        <div className="absolute -top-48 left-1/2 h-144 w-4xl -translate-x-1/2 rounded-full bg-(--orb-1) blur-[120px]" />
+        <div className="absolute -right-32 bottom-0 h-112 w-160 rounded-full bg-(--orb-2) blur-[100px]" />
+        <div className="absolute top-1/3 -left-32 h-96 w-lg rounded-full bg-(--orb-3) blur-[90px]" />
       </div>
       <header className="relative z-10 px-4 pt-4">
         <GlassNavbar
@@ -168,14 +168,14 @@ function AppLayout() {
           </span>
 
           {profile && (
-            <div className="border-saturn-700/40 bg-saturn-900/40 absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-sm border py-1.5 pr-3 pl-1">
+            <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-sm border border-(--nav-account-border) bg-(--nav-account-bg) py-1.5 pr-3 pl-1">
               <img
                 src={`https://mc-heads.net/avatar/${profile.id}`}
                 alt=""
                 draggable="false"
                 className="h-7 w-7 rounded-full"
               />
-              <span className="text-saturn-100 text-sm font-thin tracking-wide">
+              <span className="text-sm font-thin tracking-wide text-(--nav-account-fg)">
                 {profile.name}
               </span>
             </div>
