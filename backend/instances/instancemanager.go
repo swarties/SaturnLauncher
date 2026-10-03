@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/google/uuid"
@@ -188,6 +190,32 @@ func (i *InstanceManager) UpdateMemory(folderId string, minram, maxram int) erro
 		return err
 	}
 	return os.WriteFile(base, data, 0o600)
+}
+
+func (i *InstanceManager) OpenInstanceFolder(folderId string) error {
+	osName := runtime.GOOS
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId)
+	if osName == "windows" {
+		cmd := exec.Command("explorer", base)
+		err := cmd.Start()
+		if err != nil {
+			return err
+		}
+	} else if osName == "linux" {
+		cmd := exec.Command("xdg-open", base)
+		err := cmd.Start()
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("couldn't open the instance folder")
+	}
+
+	return nil
 }
 
 // CreateInstance  Func DONE

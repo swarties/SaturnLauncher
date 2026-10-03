@@ -411,3 +411,12 @@ func (a *App) Logout() {
 	a.ActiveAccessToken = ""
 	wailsRuntime.EventsEmit(a.ctx, "auth:required")
 }
+
+func (a *App) OpenInstanceFolder(folderId string) error {
+	err := a.InstanceManager.OpenInstanceFolder(folderId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
