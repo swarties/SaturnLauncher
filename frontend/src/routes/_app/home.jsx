@@ -85,7 +85,7 @@ function HomePage() {
 
   return (
     <div className="grid h-full w-full grid-cols-[70fr_30fr] gap-5 p-6">
-      {/* LEFT COLLUMN */}
+      {/* LEFT COLUMN */}
       <div className="grid h-full w-full grid-rows-[65fr_35fr] gap-y-5">
         {/* Hero card */}
         <div className="relative flex h-full w-full flex-col items-center justify-center gap-10 rounded-md border-2 border-(--surface-border) px-6">
@@ -153,8 +153,9 @@ function HomePage() {
           <p>placeholder but cooler</p>
         </div>
       </div>
+
       <div className="grid h-full w-full grid-rows-[auto_1fr] gap-y-5">
-        {/* Top: Player Pane — sized by the render */}
+        {/* Player Pane */}
         <div className="@container flex w-full items-stretch gap-4 rounded-md border-2 border-(--surface-border) p-6">
           <div className="flex min-w-0 flex-1 flex-col items-start justify-center gap-1">
             <p className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase">
@@ -197,7 +198,7 @@ function HomePage() {
           />
         </div>
 
-        {/* Bottom: Instance selector */}
+        {/* Instance selector */}
         <div className="flex min-h-0 flex-col rounded-md border-2 border-(--surface-border) p-6">
           <InstanceSelector onSelectionChange={setSelectedInstance} />
         </div>

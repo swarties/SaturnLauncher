@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 
 import { ListInstances } from '../../../wailsjs/go/main/App';
 import { onBackendEvent } from '@/lib/backend';
@@ -8,21 +8,11 @@ import { useAuth } from '@/stores/auth';
 
 const VIEW_MODES = ['spaced', 'cramped'];
 const DEFAULT_VIEW_MODE = 'spaced';
-
-// Pre-measurement guess for row height, in CSS pixels. Only used to compute
-// how many ghost slots fit before a real row has been measured. Not styling.
 const ROW_HEIGHT_FALLBACK = { spaced: 62, cramped: 30 };
-const LIST_GAP = 6; // matches gap-1.5 on the rows container
-const LIST_PADDING = 16; // matches p-2 top + bottom on the rows container
+const LIST_GAP = 6;
+const LIST_PADDING = 16;
 
 /**
- * Instance picker for the Home page. Self-contained: fetches the list,
- * reconciles the persisted selection against what actually exists, and
- * notifies the parent whenever the effective selection changes.
- *
- * Persistence keys are scoped per-account: `saturn.activeInstance.{uuid}`
- * and `saturn.instanceView.{uuid}`. Ready for multi-account later.
- *
  * @param {{ onSelectionChange: (instance: McInstance | null) => void }} props
  */
 export function InstanceSelector({ onSelectionChange }) {
@@ -118,31 +108,31 @@ export function InstanceSelector({ onSelectionChange }) {
     window.localStorage.setItem(`saturn.instanceView.${scopeKey}`, viewMode);
   }, [viewMode, scopeKey]);
 
-  useEffect(() => {
-    const el = contentRef.current?.querySelector('[data-instance-row]');
-    if (!el) return;
-    setRowHeight(el.getBoundingClientRect().height);
-  }, [instances, viewMode]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     const scroll = scrollRef.current;
     const content = contentRef.current;
     if (!scroll || !content) return;
 
-    const rowH = rowHeight || ROW_HEIGHT_FALLBACK[viewMode];
+    const firstRow = content.querySelector('[data-instance-row]');
+    const measured = firstRow
+      ? Math.round(firstRow.getBoundingClientRect().height)
+      : 0;
 
-    const measure = () => {
-      const available = scroll.clientHeight - LIST_PADDING;
-      const used = content.getBoundingClientRect().height;
-      const remaining = Math.max(0, available - used - LIST_GAP - 4);
-      setGhostCount(Math.floor(remaining / (rowH + LIST_GAP)));
-    };
+    if (measured && measured !== rowHeight) {
+      setRowHeight(measured);
+    }
 
-    measure();
-    const obs = new ResizeObserver(measure);
-    obs.observe(scroll);
-    obs.observe(content);
-    return () => obs.disconnect();
+    const rowH = measured || ROW_HEIGHT_FALLBACK[viewMode];
+    const available = scroll.clientHeight - LIST_PADDING;
+    const used = content.getBoundingClientRect().height;
+    const remaining = Math.max(0, available - used - LIST_GAP - 4);
+
+    const nextCount =
+      instances.length === 0
+        ? 0
+        : Math.max(0, Math.floor(remaining / (rowH + LIST_GAP)));
+
+    setGhostCount((prev) => (prev === nextCount ? prev : nextCount));
   }, [instances, viewMode, rowHeight]);
 
   const countLabel = loading
@@ -150,7 +140,7 @@ export function InstanceSelector({ onSelectionChange }) {
     : `${instances.length} ${instances.length === 1 ? 'instance' : 'instances'}`;
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden [contain:size]">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -184,7 +174,7 @@ export function InstanceSelector({ onSelectionChange }) {
           )}
 
           {!error && !loading && (
-            <div className="relative flex flex-col gap-1.5 p-2">
+            <div className="flex min-h-full flex-col gap-1.5 p-2">
               <div ref={contentRef} className="flex flex-col gap-1.5">
                 {instances.map((inst) => (
                   <InstanceRow
@@ -206,7 +196,7 @@ export function InstanceSelector({ onSelectionChange }) {
               )}
 
               {instances.length === 0 && (
-                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4">
+                <div className="flex flex-1 items-center justify-center p-4">
                   <p className="text-muted-foreground text-center text-xs font-thin">
                     No instances yet. Create one in the Instances tab.
                   </p>
@@ -216,7 +206,7 @@ export function InstanceSelector({ onSelectionChange }) {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -244,9 +234,6 @@ function SkeletonRow({ viewMode }) {
 }
 
 /**
- * Empty tile matching a real row's dimensions, with skeleton blocks inside.
- * Reads as "this row could exist", not "the list has ended".
- *
  * @param {{ viewMode: 'spaced' | 'cramped' }} props
  */
 function GhostRow({ viewMode }) {
