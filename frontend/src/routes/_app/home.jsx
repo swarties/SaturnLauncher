@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
 
 import { Button } from '@/components/ui/button.jsx';
+import { InstanceSelector } from '@/components/ui/instance-selector.jsx';
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave';
 
 import { StartGame } from '../../../wailsjs/go/main/App';
@@ -18,8 +19,9 @@ export const Route = createFileRoute('/_app/home')({
 function HomePage() {
   const { profile } = useAuth();
   const username = profile?.name ?? 'player';
-
-  const [version, setVersion] = useState('1.14');
+  const [selectedInstance, setSelectedInstance] = useState(
+    /** @type {import('@/components/ui/instance-selector.jsx').McInstance | null} */ null
+  );
 
   const [copiedUUID, setCopiedUUID] = useState(false);
 
@@ -62,12 +64,13 @@ function HomePage() {
   const FINAL_STATUS = 'Game files downloaded and verified.';
 
   const handleDownload = async () => {
+    if (!selectedInstance) return;
     if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     setIsLoading(true);
     setStatus('Downloading game files...');
 
     try {
-      await StartGame('1.14');
+      await StartGame(selectedInstance.uuid);
       setStatus(FINAL_STATUS);
       statusTimerRef.current = setTimeout(() => {
         setStatus((s) => (s === FINAL_STATUS ? '' : s));
@@ -99,7 +102,7 @@ function HomePage() {
             variant="outline"
             className="group border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-11 gap-2 rounded-lg border px-6 font-thin transition-colors"
             onClick={handleDownload}
-            disabled={isLoading}
+            disabled={isLoading || !selectedInstance}
           >
             {isLoading ? (
               'Downloading...'
@@ -194,9 +197,9 @@ function HomePage() {
           />
         </div>
 
-        {/* Bottom: HELLO */}
-        <div className="flex items-center justify-center rounded-md border-2 border-(--surface-border)">
-          <h1 className="text-5xl font-extrabold">Placeholder</h1>
+        {/* Bottom: Instance selector */}
+        <div className="flex min-h-0 flex-col rounded-md border-2 border-(--surface-border) p-6">
+          <InstanceSelector onSelectionChange={setSelectedInstance} />
         </div>
       </div>
     </div>
