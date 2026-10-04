@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { motion, LayoutGroup } from 'motion/react';
 
 import { ListInstances } from '../../../wailsjs/go/main/App';
 import { onBackendEvent } from '@/lib/backend';
@@ -30,8 +31,6 @@ export function InstanceSelector({ onSelectionChange }) {
   const [error, setError] = useState(/** @type {string | null} */ (null));
 
   const scrollRef = useRef(null);
-  const contentRef = useRef(null);
-  const [rowHeight, setRowHeight] = useState(0);
   const [ghostCount, setGhostCount] = useState(0);
 
   const onSelectionChangeRef = useRef(onSelectionChange);
@@ -110,30 +109,23 @@ export function InstanceSelector({ onSelectionChange }) {
 
   useLayoutEffect(() => {
     const scroll = scrollRef.current;
-    const content = contentRef.current;
-    if (!scroll || !content) return;
+    if (!scroll) return;
 
-    const firstRow = content.querySelector('[data-instance-row]');
-    const measured = firstRow
-      ? Math.round(firstRow.getBoundingClientRect().height)
-      : 0;
-
-    if (measured && measured !== rowHeight) {
-      setRowHeight(measured);
-    }
-
-    const rowH = measured || ROW_HEIGHT_FALLBACK[viewMode];
+    const rowH = ROW_HEIGHT_FALLBACK[viewMode];
     const available = scroll.clientHeight - LIST_PADDING;
-    const used = content.getBoundingClientRect().height;
-    const remaining = Math.max(0, available - used - LIST_GAP - 4);
+    const usedRows =
+      instances.length === 0
+        ? 0
+        : instances.length * rowH + (instances.length - 1) * LIST_GAP;
+    const remaining = Math.max(0, available - usedRows);
 
     const nextCount =
       instances.length === 0
         ? 0
-        : Math.max(0, Math.floor(remaining / (rowH + LIST_GAP)));
+        : Math.max(0, Math.floor((remaining + LIST_GAP) / (rowH + LIST_GAP)));
 
     setGhostCount((prev) => (prev === nextCount ? prev : nextCount));
-  }, [instances, viewMode, rowHeight]);
+  }, [instances, viewMode]);
 
   const countLabel = loading
     ? 'Loading...'
@@ -156,7 +148,10 @@ export function InstanceSelector({ onSelectionChange }) {
 
       {/* List */}
       <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-(--hairline)">
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+        <div
+          ref={scrollRef}
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+        >
           {error && (
             <div className="flex h-full items-center justify-center p-4">
               <p className="text-center text-xs font-thin text-red-400">
@@ -175,17 +170,19 @@ export function InstanceSelector({ onSelectionChange }) {
 
           {!error && !loading && (
             <div className="flex min-h-full flex-col gap-1.5 p-2">
-              <div ref={contentRef} className="flex flex-col gap-1.5">
-                {instances.map((inst) => (
-                  <InstanceRow
-                    key={inst.uuid}
-                    instance={inst}
-                    selected={inst.uuid === selectedUuid}
-                    viewMode={viewMode}
-                    onSelect={() => setSelectedUuid(inst.uuid)}
-                  />
-                ))}
-              </div>
+              <LayoutGroup>
+                <div className="flex flex-col gap-1.5">
+                  {instances.map((inst) => (
+                    <InstanceRow
+                      key={inst.uuid}
+                      instance={inst}
+                      selected={inst.uuid === selectedUuid}
+                      viewMode={viewMode}
+                      onSelect={() => setSelectedUuid(inst.uuid)}
+                    />
+                  ))}
+                </div>
+              </LayoutGroup>
 
               {ghostCount > 0 && (
                 <div aria-hidden="true" className="flex flex-col gap-1.5">
@@ -259,48 +256,51 @@ function GhostRow({ viewMode }) {
   );
 }
 
+const LAYOUT_TRANSITION = { type: 'spring', stiffness: 500, damping: 40 };
+
 /**
  * @param {{ instance: McInstance, selected: boolean, viewMode: 'spaced' | 'cramped', onSelect: () => void }} props
  */
 function InstanceRow({ instance, selected, viewMode, onSelect }) {
   const base = [
-    'w-full rounded-md text-left transition-colors',
+    'w-full min-w-0 max-w-full overflow-hidden rounded-md text-left transition-colors',
     selected ? 'bg-(--surface-active)' : 'hover:bg-(--surface-hover)',
   ].join(' ');
 
+  const modeClass =
+    viewMode === 'spaced'
+      ? 'flex flex-col gap-1 p-3'
+      : 'flex items-baseline gap-3 p-2';
+
   const nameClass = [
-    'text-sm font-extralight tracking-tight',
+    'text-sm font-extralight tracking-tight truncate',
     selected ? 'text-(--saturn-fg-strong)' : 'text-foreground',
   ].join(' ');
 
-  if (viewMode === 'spaced') {
-    return (
-      <button
-        type="button"
-        data-instance-row
-        onClick={onSelect}
-        className={`${base} p-3`}
-      >
-        <p className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
-          {instance.version}
-        </p>
-        <p className={`mt-1 line-clamp-1 ${nameClass}`}>{instance.name}</p>
-      </button>
-    );
-  }
-
   return (
-    <button
+    <motion.button
       type="button"
+      layout
+      transition={LAYOUT_TRANSITION}
       data-instance-row
       onClick={onSelect}
-      className={`${base} flex items-baseline gap-3 p-2`}
+      className={`${base} ${modeClass}`}
     >
-      <span className="text-muted-foreground shrink-0 text-xs font-thin tracking-[0.2em] uppercase">
+      <motion.span
+        layout="position"
+        transition={LAYOUT_TRANSITION}
+        className="text-muted-foreground shrink-0 text-xs font-thin tracking-[0.2em] uppercase"
+      >
         {instance.version}
-      </span>
-      <span className={`truncate ${nameClass}`}>{instance.name}</span>
-    </button>
+      </motion.span>
+      <motion.span
+        className={nameClass}
+        layout="position"
+        transition={LAYOUT_TRANSITION}
+      >
+        {instance.name}
+      </motion.span>
+    </motion.button>
   );
 }
 

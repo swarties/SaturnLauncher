@@ -185,7 +185,7 @@ function HomePage() {
                   .filter(Boolean)
                   .join(' ')}
               >
-                {copiedUUID ? 'Copied UUID!' : profile.id}
+                {copiedUUID ? 'Copied UUID!' : profile?.id}
               </button>
             </div>
           </div>

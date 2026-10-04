@@ -126,13 +126,23 @@ export function TooltipLayer() {
       setTip(null);
     };
 
+    const handleDown = () => {
+      clearShowTimer();
+      clearHideTimer();
+      pendingTriggerRef.current = null;
+      currentTriggerRef.current = null;
+      setTip(null);
+    };
+
     document.addEventListener('mouseover', handleOver);
     document.addEventListener('mouseout', handleOut);
+    document.addEventListener('mousedown', handleDown);
     window.addEventListener('blur', handleBlur);
 
     return () => {
       document.removeEventListener('mouseover', handleOver);
       document.removeEventListener('mouseout', handleOut);
+      document.removeEventListener('mousedown', handleDown);
       window.removeEventListener('blur', handleBlur);
       clearShowTimer();
       clearHideTimer();

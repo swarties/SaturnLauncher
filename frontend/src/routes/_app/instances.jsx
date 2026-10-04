@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { motion } from 'motion/react';
 
 import { VersionPicker } from '@/components/ui/version-picker.jsx';
@@ -154,31 +154,39 @@ function InstanceCard({ instance, onDelete }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.38, 1] }}
-        className="group relative flex min-h-48 cursor-pointer flex-col rounded-md border-2 border-(--surface-border) p-5 transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
+        className="group relative flex min-h-48 flex-col rounded-md border-2 border-(--surface-border) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
       >
         <MorphingDialogTrigger
           aria-label={`Delete ${instance.name}`}
-          className="text-muted-foreground absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-sm text-2xl leading-none opacity-40 transition-[opacity,color] group-hover:opacity-100 hover:text-red-400"
+          className="text-muted-foreground absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-sm text-2xl leading-none opacity-40 transition-[opacity,color] group-hover:opacity-100 hover:text-red-400"
         >
           ×
         </MorphingDialogTrigger>
-        <p className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
-          {instance.version}
-        </p>
-        <p className="text-foreground mt-1 line-clamp-2 text-xl font-extralight tracking-tight">
-          {instance.name}
-        </p>
-        <div className="mt-auto flex items-center justify-between">
-          <span className="text-muted-foreground text-xs font-thin">
-            {formatCreated(instance.timecreated)}
-          </span>
-          <span
-            aria-hidden="true"
-            className="text-saturn-400 text-lg transition-transform group-hover:translate-x-0.5"
-          >
-            →
-          </span>
-        </div>
+
+        <Link
+          to="/instances/$uuid"
+          params={{ uuid: instance.uuid }}
+          draggable={false}
+          className="flex flex-1 cursor-pointer flex-col rounded-md p-5"
+        >
+          <p className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
+            {instance.version}
+          </p>
+          <p className="text-foreground mt-1 line-clamp-2 text-xl font-extralight tracking-tight">
+            {instance.name}
+          </p>
+          <div className="mt-auto flex items-center justify-between pt-6">
+            <span className="text-muted-foreground text-xs font-thin">
+              {formatCreated(instance.timecreated)}
+            </span>
+            <span
+              aria-hidden="true"
+              className="text-saturn-400 text-lg transition-transform group-hover:translate-x-0.5"
+            >
+              →
+            </span>
+          </div>
+        </Link>
       </motion.div>
 
       <MorphingDialogContainer>

@@ -96,7 +96,8 @@ textarea,
   --color-saturn-950: #2e2046;
 }
 
-:root, .dark {
+:root,
+.dark {
   --background: oklch(0.145 0.008 326);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.212 0.019 322.12);
@@ -132,19 +133,19 @@ textarea,
   /* === Saturn mode-aware surface tokens — DARK defaults === */
   --surface-border: var(--color-saturn-950);
   --surface-border-hover: color-mix(
-          in oklch,
-          var(--color-saturn-700) 60%,
-          transparent
+    in oklch,
+    var(--color-saturn-700) 60%,
+    transparent
   );
   --surface-hover: color-mix(
-          in oklch,
-          var(--color-saturn-900) 20%,
-          transparent
+    in oklch,
+    var(--color-saturn-900) 20%,
+    transparent
   );
   --surface-active: color-mix(
-          in oklch,
-          var(--color-saturn-900) 40%,
-          transparent
+    in oklch,
+    var(--color-saturn-900) 40%,
+    transparent
   );
   --hairline: rgb(255 255 255 / 8%);
   --divider: color-mix(in oklch, var(--color-saturn-950) 60%, transparent);
@@ -152,14 +153,14 @@ textarea,
 
   --nav-pill: color-mix(in oklch, var(--color-saturn-900) 60%, transparent);
   --nav-account-bg: color-mix(
-          in oklch,
-          var(--color-saturn-900) 40%,
-          transparent
+    in oklch,
+    var(--color-saturn-900) 40%,
+    transparent
   );
   --nav-account-border: color-mix(
-          in oklch,
-          var(--color-saturn-700) 40%,
-          transparent
+    in oklch,
+    var(--color-saturn-700) 40%,
+    transparent
   );
   --nav-account-fg: var(--color-saturn-100);
   --nav-link-fg: color-mix(in oklch, var(--foreground) 60%, transparent);
@@ -172,22 +173,18 @@ textarea,
   --danger-bg-hover: color-mix(in oklch, #450a0a 40%, transparent);
   --danger-fg-hover: #fecaca;
 
-  --chip-border: color-mix(
-          in oklch,
-          var(--color-saturn-700) 40%,
-          transparent
-  );
+  --chip-border: color-mix(in oklch, var(--color-saturn-700) 40%, transparent);
   --chip-bg: color-mix(in oklch, var(--color-saturn-900) 20%, transparent);
   --chip-fg: var(--color-saturn-200);
   --chip-border-hover: color-mix(
-          in oklch,
-          var(--color-saturn-500) 60%,
-          transparent
+    in oklch,
+    var(--color-saturn-500) 60%,
+    transparent
   );
   --chip-bg-hover: color-mix(
-          in oklch,
-          var(--color-saturn-900) 40%,
-          transparent
+    in oklch,
+    var(--color-saturn-900) 40%,
+    transparent
   );
   --chip-fg-hover: var(--color-saturn-100);
 
@@ -242,19 +239,19 @@ textarea,
   /* === Saturn mode-aware surface tokens — LIGHT overrides === */
   --surface-border: var(--color-saturn-300);
   --surface-border-hover: color-mix(
-          in oklch,
-          var(--color-saturn-500) 50%,
-          transparent
+    in oklch,
+    var(--color-saturn-500) 50%,
+    transparent
   );
   --surface-hover: color-mix(
-          in oklch,
-          var(--color-saturn-200) 40%,
-          transparent
+    in oklch,
+    var(--color-saturn-200) 40%,
+    transparent
   );
   --surface-active: color-mix(
-          in oklch,
-          var(--color-saturn-200) 60%,
-          transparent
+    in oklch,
+    var(--color-saturn-200) 60%,
+    transparent
   );
   --hairline: rgb(0 0 0 / 8%);
   --divider: color-mix(in oklch, var(--color-saturn-300) 60%, transparent);
@@ -262,14 +259,14 @@ textarea,
 
   --nav-pill: color-mix(in oklch, var(--color-saturn-200) 60%, transparent);
   --nav-account-bg: color-mix(
-          in oklch,
-          var(--color-saturn-100) 80%,
-          transparent
+    in oklch,
+    var(--color-saturn-100) 80%,
+    transparent
   );
   --nav-account-border: color-mix(
-          in oklch,
-          var(--color-saturn-300) 60%,
-          transparent
+    in oklch,
+    var(--color-saturn-300) 60%,
+    transparent
   );
   --nav-account-fg: var(--color-saturn-950);
   --nav-link-fg: color-mix(in oklch, var(--foreground) 80%, transparent);
@@ -282,22 +279,18 @@ textarea,
   --danger-bg-hover: #fee2e2;
   --danger-fg-hover: #7f1d1d;
 
-  --chip-border: color-mix(
-          in oklch,
-          var(--color-saturn-300) 80%,
-          transparent
-  );
+  --chip-border: color-mix(in oklch, var(--color-saturn-300) 80%, transparent);
   --chip-bg: var(--color-saturn-100);
   --chip-fg: var(--color-saturn-800);
   --chip-border-hover: color-mix(
-          in oklch,
-          var(--color-saturn-500) 60%,
-          transparent
+    in oklch,
+    var(--color-saturn-500) 60%,
+    transparent
   );
   --chip-bg-hover: color-mix(
-          in oklch,
-          var(--color-saturn-200) 70%,
-          transparent
+    in oklch,
+    var(--color-saturn-200) 70%,
+    transparent
   );
   --chip-fg-hover: var(--color-saturn-950);
 
@@ -316,11 +309,35 @@ textarea,
 }
 
 .light .font-thin {
-  font-weight: 275;  /* was 250 */
+  font-weight: 275; /* was 250 */
 }
 
 .light .font-extralight {
   font-weight: 300;
+}
+
+.saturn-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--hairline);
+  outline: none;
+  cursor: pointer;
+}
+
+.saturn-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--foreground);
+  transition: transform 150ms ease;
+}
+
+.saturn-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
 }
 
 @layer base {
