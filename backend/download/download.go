@@ -88,6 +88,7 @@ type VersionInfo struct {
 		Natives map[string]string `json:"natives"`
 		Name    string            `json:"name"`
 		Rules   []Rule            `json:"rules,omitempty"`
+		URL     string            `json:"url"`
 	} `json:"libraries"`
 }
 
@@ -355,6 +356,23 @@ func (d *Download) GetLibraries(versionInfo VersionInfo) error {
 					}
 				}
 
+			}
+		} else if library.URL != "" {
+			mavPath, err := MavenPath(library.Name)
+			if err != nil {
+				return err
+			}
+			newPath := filepath.Join(destPath, mavPath)
+			err = os.MkdirAll(filepath.Dir(newPath), 0o755)
+			if err != nil {
+				return err
+			}
+			_, err = os.Stat(newPath)
+			if err != nil {
+				_, err := d.Downloader(newPath, library.URL+mavPath)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		nativeName := library.Natives[osName]
@@ -847,6 +865,19 @@ NextRule:
 	}
 
 	return allow
+}
+
+func MavenPath(name string) (string, error) {
+	result := strings.Split(name, ":")
+	if len(result) != 3 {
+		return "", fmt.Errorf("invalid format")
+	}
+	group := result[0]
+	artifact := result[1]
+	version := result[2]
+	group = strings.ReplaceAll(group, ".", "/")
+	path := group + "/" + artifact + "/" + version + "/" + artifact + "-" + version + ".jar"
+	return path, nil
 }
 
 func (a *Argument) UnmarshalJSON(data []byte) error {
