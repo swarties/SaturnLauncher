@@ -302,6 +302,12 @@ function CreateInstanceForm() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              if (e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              void handleCreate();
+            }}
             placeholder="My Instance"
             className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
           />

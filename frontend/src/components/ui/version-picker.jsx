@@ -16,6 +16,7 @@ export function VersionPicker({ value, onChange }) {
 
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
+  const chevronRef = useRef(null);
   const selectedRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
@@ -57,14 +58,18 @@ export function VersionPicker({ value, onChange }) {
     };
 
     const onKey = (e) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        e.stopImmediatePropagation();
+        setOpen(false);
+        chevronRef.current?.blur();
+      }
     };
     document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
+    document.addEventListener('keydown', onKey, true);
 
     return () => {
       document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('keydown', onKey, true);
     };
   }, [open]);
 
@@ -82,11 +87,12 @@ export function VersionPicker({ value, onChange }) {
           {value}
         </span>
         <button
+          ref={chevronRef}
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-label="Select version"
           aria-expanded={open}
-          className="flex items-center px-3.5 text-(--saturn-fg-muted) transition-colors hover:bg-(--surface-active) hover:text-(--saturn-fg-strong)"
+          className="flex items-center px-3.5 text-(--saturn-fg-muted) transition-colors outline-none hover:bg-(--surface-active) hover:text-(--saturn-fg-strong) focus-visible:bg-(--surface-active) focus-visible:text-(--saturn-fg-strong)"
         >
           <span
             aria-hidden="true"
