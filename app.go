@@ -426,7 +426,6 @@ func (a *App) SetActiveAccount(uuid string) error {
 		return err
 	}
 	wailsRuntime.EventsEmit(a.ctx, "account:changed")
-	wailsRuntime.EventsEmit(a.ctx, "auth:success")
 	return nil
 }
 
