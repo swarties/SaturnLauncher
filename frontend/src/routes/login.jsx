@@ -108,7 +108,7 @@ function RouteComponent() {
       </div>
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-6">
-        <span className="text-saturn-400 text-sm font-thin tracking-[0.2em] uppercase">
+        <span className="text-sm font-thin tracking-[0.2em] text-(--saturn-fg-muted) uppercase">
           Saturn
         </span>
         <motion.div

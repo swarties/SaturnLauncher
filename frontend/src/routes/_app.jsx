@@ -54,7 +54,7 @@ function NavLink({ to, label, index, onHover }) {
       data-nav-index={index}
       data-tooltip={label}
       onMouseEnter={onHover}
-      className="text-foreground/60 hover:text-foreground relative z-10 rounded-sm px-3 py-2.5 text-sm font-thin tracking-wide transition-colors select-none"
+      className="relative z-10 rounded-sm px-3 py-2.5 text-sm font-thin tracking-wide text-(--nav-link-fg) transition-colors select-none hover:text-(--nav-link-fg-hover)"
       activeProps={{
         className: 'text-foreground',
       }}
@@ -163,7 +163,8 @@ function AppLayout() {
           disableScrollTracking
           className="relative flex items-center justify-between gap-6 rounded-2xl px-4 select-none"
         >
-          <span className="text-saturn-400 text-sm font-thin tracking-[0.2em] uppercase">
+          <span className="text-sm font-thin tracking-[0.2em] text-(--saturn-fg-muted) uppercase">
+            {' '}
             Saturn
           </span>
 

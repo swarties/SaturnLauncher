@@ -162,6 +162,15 @@ textarea,
           transparent
   );
   --nav-account-fg: var(--color-saturn-100);
+  --nav-link-fg: color-mix(in oklch, var(--foreground) 60%, transparent);
+  --nav-link-fg-hover: var(--foreground);
+
+  --danger-border: color-mix(in oklch, #7f1d1d 40%, transparent);
+  --danger-bg: color-mix(in oklch, #450a0a 20%, transparent);
+  --danger-fg: #fca5a5;
+  --danger-border-hover: color-mix(in oklch, #b91c1c 60%, transparent);
+  --danger-bg-hover: color-mix(in oklch, #450a0a 40%, transparent);
+  --danger-fg-hover: #fecaca;
 
   --chip-border: color-mix(
           in oklch,
@@ -208,7 +217,7 @@ textarea,
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.96 0.003 325.6);
-  --muted-foreground: oklch(0.542 0.034 322.5);
+  --muted-foreground: oklch(0.42 0.03 322.5);
   --accent: oklch(0.96 0.003 325.6);
   --accent-foreground: oklch(0.212 0.019 322.12);
   --destructive: oklch(0.577 0.245 27.325);
@@ -263,13 +272,22 @@ textarea,
           transparent
   );
   --nav-account-fg: var(--color-saturn-950);
+  --nav-link-fg: color-mix(in oklch, var(--foreground) 80%, transparent);
+  --nav-link-fg-hover: var(--foreground);
+
+  --danger-border: #fca5a5;
+  --danger-bg: #fef2f2;
+  --danger-fg: #b91c1c;
+  --danger-border-hover: #ef4444;
+  --danger-bg-hover: #fee2e2;
+  --danger-fg-hover: #7f1d1d;
 
   --chip-border: color-mix(
           in oklch,
           var(--color-saturn-300) 80%,
           transparent
   );
-  --chip-bg: color-mix(in oklch, var(--color-saturn-100) 80%, transparent);
+  --chip-bg: var(--color-saturn-100);
   --chip-fg: var(--color-saturn-800);
   --chip-border-hover: color-mix(
           in oklch,
@@ -295,6 +313,14 @@ textarea,
   --code-bg: var(--color-saturn-100);
   --code-border: var(--color-saturn-300);
   --code-fg: var(--color-saturn-950);
+}
+
+.light .font-thin {
+  font-weight: 275;  /* was 250 */
+}
+
+.light .font-extralight {
+  font-weight: 300;
 }
 
 @layer base {

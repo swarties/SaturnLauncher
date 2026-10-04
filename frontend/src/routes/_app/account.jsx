@@ -121,7 +121,7 @@ function AccountPage() {
               variant="outline"
               onClick={handleLogout}
               disabled={loggingOut}
-              className="h-12 justify-start gap-2 rounded-lg border-red-900/40 bg-red-950/20 px-6 font-thin text-red-300 hover:border-red-700/60 hover:bg-red-950/40 hover:text-red-200 disabled:pointer-events-none disabled:opacity-40"
+              className="h-12 justify-start gap-2 rounded-lg border-(--danger-border) bg-(--danger-bg) px-6 font-thin text-(--danger-fg) hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover) disabled:pointer-events-none disabled:opacity-40"
             >
               {loggingOut ? 'Logging out...' : 'Log Out'}
               <svg
