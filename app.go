@@ -130,6 +130,7 @@ func (a *App) StartLogin() {
 
 func (a *App) StartApp() {
 	go func() {
+		a.ActiveAccessToken = ""
 		Keys, err := a.Auth.GetActiveAccount()
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
@@ -137,7 +138,7 @@ func (a *App) StartApp() {
 		}
 		mctoken, NewAuthSession, err := a.Auth.RefreshMinecraftToken(*Keys)
 		if err != nil {
-			_, _ = a.Auth.DeleteAccount(Keys.UUID)
+			_ = a.DeleteAccount(Keys.UUID)
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
@@ -162,9 +163,6 @@ func (a *App) StartApp() {
 		return
 	}()
 }
-
-// logout deletes the 2 .jsons and clears all the vals
-// AuthSession struct for unmarshalling JSON
 
 func (a *App) StartGame(folderId string) error {
 	appdatadir, err := os.UserConfigDir()
@@ -290,8 +288,7 @@ func (a *App) StartGame(folderId string) error {
 	}
 
 	go func() {
-		err = cmd.Wait()
-		if err != nil {
+		if err := cmd.Wait(); err != nil {
 			fmt.Printf("minecraft exited with error: %s\n", err)
 		}
 
@@ -374,16 +371,18 @@ func (a *App) UpdateMem(folderId string, minram, maxram int) error {
 }
 
 func (a *App) Logout() {
-	// update when multi account gets added
-	appdatadir, err := os.UserConfigDir()
+	a.ActiveAccessToken = ""
+	account, err := a.GetActiveAccount()
 	if err != nil {
 		wailsRuntime.EventsEmit(a.ctx, "auth:required")
 		return
 	}
-	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
-	_ = os.Remove(filepath.Join(targetdir, "keys.json"))
-	_ = os.Remove(filepath.Join(targetdir, "userinfo.json"))
-	a.ActiveAccessToken = ""
+	err = a.DeleteAccount(account.UUID)
+	if err != nil {
+		wailsRuntime.EventsEmit(a.ctx, "auth:required")
+		return
+	}
+
 	wailsRuntime.EventsEmit(a.ctx, "auth:required")
 }
 
@@ -418,6 +417,6 @@ func (a *App) DeleteAccount(uuid string) error {
 	if err != nil {
 		return err
 	}
-
+	wailsRuntime.EventsEmit(a.ctx, "account:changed")
 	return nil
 }
