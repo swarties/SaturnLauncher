@@ -3,6 +3,7 @@ package main
 import (
 	"SaturnLauncher/backend/auth"
 	"SaturnLauncher/backend/download"
+	"SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/launch"
 	"context"
@@ -27,6 +28,7 @@ type App struct {
 	Launch            *launch.Launch
 	Download          *download.Download
 	InstanceManager   *instances.InstanceManager
+	Fabric            *fabric.Fabric
 }
 
 // NewApp creates a new App application struct
@@ -37,6 +39,7 @@ func NewApp() *App {
 		Launch:          launch.NewLaunch(),
 		Download:        download.NewDownload(),
 		InstanceManager: instances.NewInstanceManager(),
+		Fabric:          fabric.NewFabric(),
 	}
 }
 
@@ -423,6 +426,7 @@ func (a *App) SetActiveAccount(uuid string) error {
 		return err
 	}
 	wailsRuntime.EventsEmit(a.ctx, "account:changed")
+	wailsRuntime.EventsEmit(a.ctx, "auth:success")
 	return nil
 }
 
