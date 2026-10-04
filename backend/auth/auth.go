@@ -330,34 +330,6 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 	return *GetNewMinecraftAuth, AuthInfo, nil
 }
 
-// SaveKeysToJson save and encrypt data to json file func ?
-//func (a *Auth) SaveKeysToJson(data AuthSession) (bool, error) {
-//	appdatadir, err := os.UserConfigDir()
-//	if err != nil {
-//		return false, err
-//	}
-//	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
-//	filePath := filepath.Join(targetdir, "keys.json")
-//	Jsonbytes, err := json.Marshal(data)
-//	if err != nil {
-//		return false, err
-//	}
-//
-//	err = os.MkdirAll(targetdir, 0755)
-//	if err != nil {
-//		return false, err
-//	}
-//
-//	err = os.WriteFile(filePath, Jsonbytes, 0644)
-//	if err != nil {
-//		return false, err
-//	}
-//	fmt.Printf("Successfully Saved The Keys To: %s\n", filePath)
-//	return true, nil
-//}
-
-// get user info func for app.go to use mctoken var
-
 func (a *Auth) GetAccountInfo(mctoken MinecraftPayload) (*MinecraftInfo, error) {
 	accesstoken := mctoken.AccessToken
 	req, err := http.NewRequest("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
@@ -384,34 +356,6 @@ func (a *Auth) GetAccountInfo(mctoken MinecraftPayload) (*MinecraftInfo, error) 
 
 	return &mcinfo, err
 }
-
-// make a SaveAccountInfo func similar to SaveKeysToJson for when launching the launcher after initial login
-/*
-func (a *Auth) SaveAccountInfo(info MinecraftInfo) (bool, error) {
-
-	appdatadir, err := os.UserConfigDir()
-	if err != nil {
-		return false, err
-	}
-	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
-	filePath := filepath.Join(targetdir, "userinfo.json")
-	Jsonbytes, err := json.MarshalIndent(info, "", " ")
-	if err != nil {
-		return false, err
-	}
-	err = os.MkdirAll(targetdir, 0755)
-	if err != nil {
-		return false, err
-	}
-
-	err = os.WriteFile(filePath, Jsonbytes, 0644)
-	if err != nil {
-		return false, err
-	}
-	fmt.Printf("Successfully Saved The Accounts Info To: %s\n", filePath)
-	return true, nil
-}
-*/
 
 func (a *Auth) SaveAndActivateAccount(session AuthSession) error {
 	var activeJson Active

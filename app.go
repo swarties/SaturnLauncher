@@ -228,19 +228,23 @@ func (a *App) StartGame(folderId string) error {
 	if err != nil {
 		return err
 	}
-
+	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Downloading Client Jar")
 	err = a.Download.GetClientJar(*vInfo)
 	if err != nil {
 		return err
 	}
+
+	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Downloading Libraries")
 	err = a.Download.GetLibraries(*vInfo)
 	if err != nil {
 		return err
 	}
+	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Downloading Game Assets")
 	err = a.Download.GetAssets(*vInfo)
 	if err != nil {
 		return err
 	}
+	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Extracting Natives")
 	err = a.Download.ExtractNatives(*vInfo)
 	if err != nil {
 		return err
@@ -253,6 +257,7 @@ func (a *App) StartGame(folderId string) error {
 	if err != nil {
 		return err
 	}
+	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Done!")
 	classpath, err := a.Launch.ClasspathBuilder(*vInfo)
 	if err != nil {
 		return err
@@ -284,9 +289,10 @@ func (a *App) StartGame(folderId string) error {
 	cmd.Stderr = os.Stderr
 	err = cmd.Start()
 	if err != nil {
+		wailsRuntime.EventsEmit(a.ctx, "game:error", err.Error())
 		return err
 	}
-
+	wailsRuntime.EventsEmit(a.ctx, "game:start", "Game Launching....")
 	go func() {
 		if err := cmd.Wait(); err != nil {
 			fmt.Printf("minecraft exited with error: %s\n", err)
