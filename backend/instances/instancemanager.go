@@ -46,6 +46,7 @@ func (i *InstanceManager) InitStorage() (*string, error) {
 		filepath.Join(base, "minecraft", "libraries"),
 		filepath.Join(base, "minecraft", "assets"),
 		filepath.Join(base, "instances"),
+		filepath.Join(base, "accounts"),
 	}
 
 	for _, dir := range dirs {
@@ -54,7 +55,6 @@ func (i *InstanceManager) InitStorage() (*string, error) {
 			return nil, err
 		}
 	}
-
 	return &base, nil
 }
 
