@@ -693,61 +693,85 @@ func (d *Download) GetJava(vInfo VersionInfo) ([]string, error) {
 		java := filepath.Join(javaHome, "bin", javabin)
 		javaVersions = append(javaVersions, java)
 	}
-	javaDir := "C:\\Program Files\\Java\\"
-	_, err := os.Stat(javaDir)
-	if err == nil {
-		dir, err := os.ReadDir(javaDir)
-		if err != nil {
-			return nil, err
-		}
-		for _, entries := range dir {
-			if entries.IsDir() {
-				if entries.Name() == "latest" {
-					javaLocation := filepath.Join(javaDir, entries.Name(), "jre-1.8", "bin", "java.exe")
+	if osName == "windows" {
+		javaDir := "C:\\Program Files\\Java\\"
+		_, err := os.Stat(javaDir)
+		if err == nil {
+			dir, err := os.ReadDir(javaDir)
+			if err != nil {
+				return nil, err
+			}
+			for _, entries := range dir {
+				if entries.IsDir() {
+					if entries.Name() == "latest" {
+						javaLocation := filepath.Join(javaDir, entries.Name(), "jre-1.8", "bin", "java.exe")
+						javaVersions = append(javaVersions, javaLocation)
+						continue
+					}
+					javaLocation := filepath.Join(javaDir, entries.Name(), "bin", "java.exe")
 					javaVersions = append(javaVersions, javaLocation)
+				} else {
 					continue
 				}
-				javaLocation := filepath.Join(javaDir, entries.Name(), "bin", "java.exe")
-				javaVersions = append(javaVersions, javaLocation)
-			} else {
-				continue
 			}
 		}
-	}
-	adoptiumDir := "C:\\Program Files\\Eclipse Adoptium\\"
-	_, err = os.Stat(adoptiumDir)
-	if err == nil {
-		dir, err := os.ReadDir(adoptiumDir)
-		if err != nil {
-			return nil, err
-		}
-		for _, entries := range dir {
-			if entries.IsDir() {
-				javaLocation := filepath.Join(adoptiumDir, entries.Name(), "bin", "java.exe")
-				javaVersions = append(javaVersions, javaLocation)
-			} else {
-				continue
+		adoptiumDir := "C:\\Program Files\\Eclipse Adoptium\\"
+		_, err = os.Stat(adoptiumDir)
+		if err == nil {
+			dir, err := os.ReadDir(adoptiumDir)
+			if err != nil {
+				return nil, err
+			}
+			for _, entries := range dir {
+				if entries.IsDir() {
+					javaLocation := filepath.Join(adoptiumDir, entries.Name(), "bin", "java.exe")
+					javaVersions = append(javaVersions, javaLocation)
+				} else {
+					continue
+				}
 			}
 		}
-	}
-	zuluDir := "C:\\Program Files\\Zulu\\"
-	_, err = os.Stat(zuluDir)
-	if err == nil {
-		dir, err := os.ReadDir(zuluDir)
-		if err != nil {
-			return nil, err
-		}
-		for _, entries := range dir {
-			if entries.IsDir() {
-				javaLocation := filepath.Join(zuluDir, entries.Name(), "bin", "java.exe")
-				javaVersions = append(javaVersions, javaLocation)
-			} else {
-				continue
+		zuluDir := "C:\\Program Files\\Zulu\\"
+		_, err = os.Stat(zuluDir)
+		if err == nil {
+			dir, err := os.ReadDir(zuluDir)
+			if err != nil {
+				return nil, err
 			}
+			for _, entries := range dir {
+				if entries.IsDir() {
+					javaLocation := filepath.Join(zuluDir, entries.Name(), "bin", "java.exe")
+					javaVersions = append(javaVersions, javaLocation)
+				} else {
+					continue
+				}
+			}
+		}
+	} else if osName == "linux" {
+		javaDir := "/usr/lib/jvm"
+		_, err := os.Stat(javaDir)
+		if err == nil {
+			dir, err := os.ReadDir(javaDir)
+			if err != nil {
+				return nil, err
+			}
+			for _, d := range dir {
+				if d.IsDir() {
+					javaLocation := filepath.Join(javaDir, d.Name(), "bin", "java")
+					javaVersions = append(javaVersions, javaLocation)
+				} else {
+					continue
+				}
+			}
+		}
+		javaDir = "/usr/bin/java"
+		_, err = os.Stat(javaDir)
+		if err == nil {
+			javaVersions = append(javaVersions, javaDir)
 		}
 	}
 	if len(javaVersions) == 0 {
-		return nil, fmt.Errorf("could not find any java.exe installed. please visit https://adoptium.net/temurin/releases/ . please install java version %d", vInfo.JavaVersion.MajorVersion)
+		return nil, fmt.Errorf("could not find any java executables installed. please visit https://adoptium.net/temurin/releases/ and install java version %d", vInfo.JavaVersion.MajorVersion)
 	}
 	return javaVersions, nil
 }
