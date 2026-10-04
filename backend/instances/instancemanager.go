@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 type InstanceManager struct {
@@ -29,6 +30,9 @@ type Instance struct {
 	TimeCreated string `json:"timecreated"`
 	MinRam      int    `json:"minram"`
 	MaxRam      int    `json:"maxram"`
+}
+type Ram struct {
+	TotalRamMB int
 }
 
 func (i *InstanceManager) InitStorage() (*string, error) {
@@ -218,7 +222,13 @@ func (i *InstanceManager) OpenInstanceFolder(folderId string) error {
 	return nil
 }
 
-// CreateInstance  Func DONE
-// ListInstances   Func DONE (Note: Only returns folder names)
-// DeleteInstance  Func DONE (checks if instance folder exists then deletes it)
-// GetInstanceInfo Func DONE (returns the instance info in a struct type for later use) not meant to be called by the js
+func (i *InstanceManager) GetTotalRam() (*Ram, error) {
+	var ram Ram
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		return nil, err
+	}
+	ram.TotalRamMB = int(v.Total / (1024 * 1024))
+
+	return &ram, nil
+}

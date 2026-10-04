@@ -420,3 +420,11 @@ func (a *App) DeleteAccount(uuid string) error {
 	wailsRuntime.EventsEmit(a.ctx, "account:changed")
 	return nil
 }
+
+func (a *App) GetTotalRam() (*instances.Ram, error) {
+	ram, err := a.InstanceManager.GetTotalRam()
+	if err != nil {
+		return nil, err
+	}
+	return ram, nil
+}
