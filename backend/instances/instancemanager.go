@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -231,4 +232,26 @@ func (i *InstanceManager) GetTotalRam() (*Ram, error) {
 	ram.TotalRamMB = int(v.Total / (1024 * 1024))
 
 	return &ram, nil
+}
+
+func (i *InstanceManager) RenameInstance(folderId, name string) error {
+	if strings.TrimSpace(name) == "" {
+		return fmt.Errorf("instance name cannot be empty")
+	}
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	inst.Name = name
+	data, err := json.MarshalIndent(inst, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(base, data, 0o600)
 }

@@ -369,6 +369,14 @@ func (a *App) UpdateMem(folderId string, minram, maxram int) error {
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
 }
+func (a *App) RenameInstance(folderId, name string) error {
+	err := a.InstanceManager.RenameInstance(folderId, name)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
 
 func (a *App) Logout() {
 	a.ActiveAccessToken = ""
