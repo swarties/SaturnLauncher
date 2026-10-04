@@ -61,6 +61,8 @@ type MinecraftPayload struct {
 }
 
 type AuthSession struct {
+	Username     string `json:"username"`
+	UUID         string `json:"uuid"`
 	RefreshToken string `json:"RefreshToken"`
 	Uhs          string `json:"Uhs"`
 	Xuid         string `json:"xuid"`
@@ -71,6 +73,10 @@ type MinecraftInfo struct {
 	UUID         string `json:"id"`
 	Error        string `json:"error"`
 	ErrorMessage string `json:"errorMessage"`
+}
+
+type Active struct {
+	UUID string `json:"id"`
 }
 
 func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
@@ -325,30 +331,30 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 }
 
 // SaveKeysToJson save and encrypt data to json file func ?
-func (a *Auth) SaveKeysToJson(data AuthSession) (bool, error) {
-	appdatadir, err := os.UserConfigDir()
-	if err != nil {
-		return false, err
-	}
-	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
-	filePath := filepath.Join(targetdir, "keys.json")
-	Jsonbytes, err := json.Marshal(data)
-	if err != nil {
-		return false, err
-	}
-
-	err = os.MkdirAll(targetdir, 0755)
-	if err != nil {
-		return false, err
-	}
-
-	err = os.WriteFile(filePath, Jsonbytes, 0644)
-	if err != nil {
-		return false, err
-	}
-	fmt.Printf("Successfully Saved The Keys To: %s\n", filePath)
-	return true, nil
-}
+//func (a *Auth) SaveKeysToJson(data AuthSession) (bool, error) {
+//	appdatadir, err := os.UserConfigDir()
+//	if err != nil {
+//		return false, err
+//	}
+//	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
+//	filePath := filepath.Join(targetdir, "keys.json")
+//	Jsonbytes, err := json.Marshal(data)
+//	if err != nil {
+//		return false, err
+//	}
+//
+//	err = os.MkdirAll(targetdir, 0755)
+//	if err != nil {
+//		return false, err
+//	}
+//
+//	err = os.WriteFile(filePath, Jsonbytes, 0644)
+//	if err != nil {
+//		return false, err
+//	}
+//	fmt.Printf("Successfully Saved The Keys To: %s\n", filePath)
+//	return true, nil
+//}
 
 // get user info func for app.go to use mctoken var
 
@@ -380,7 +386,7 @@ func (a *Auth) GetAccountInfo(mctoken MinecraftPayload) (*MinecraftInfo, error) 
 }
 
 // make a SaveAccountInfo func similar to SaveKeysToJson for when launching the launcher after initial login
-
+/*
 func (a *Auth) SaveAccountInfo(info MinecraftInfo) (bool, error) {
 
 	appdatadir, err := os.UserConfigDir()
@@ -404,4 +410,153 @@ func (a *Auth) SaveAccountInfo(info MinecraftInfo) (bool, error) {
 	}
 	fmt.Printf("Successfully Saved The Accounts Info To: %s\n", filePath)
 	return true, nil
+}
+*/
+
+func (a *Auth) SaveAndActivateAccount(session AuthSession) error {
+	var activeJson Active
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher", "accounts")
+	filePath := filepath.Join(targetdir, session.UUID+".json")
+	activePath := filepath.Join(targetdir, "active.json")
+	activeJson.UUID = session.UUID
+
+	Jsonbytes, err := json.MarshalIndent(session, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(filePath, Jsonbytes, 0600)
+	if err != nil {
+		return err
+	}
+	Jsonbytes, err = json.MarshalIndent(activeJson, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(activePath, Jsonbytes, 0600)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *Auth) GetActiveAccount() (*AuthSession, error) {
+	var session AuthSession
+	var active Active
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher", "accounts")
+	activePath := filepath.Join(targetdir, "active.json")
+	file, err := os.ReadFile(activePath)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(file, &active)
+	if err != nil {
+		return nil, err
+	}
+	accountdir := filepath.Join(appdatadir, "SaturnLauncher", "accounts", active.UUID+".json")
+	file, err = os.ReadFile(accountdir)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(file, &session)
+	if err != nil {
+		return nil, err
+	}
+	return &session, nil
+}
+
+func (a *Auth) ListAccounts() ([]AuthSession, error) {
+	var AccountList []AuthSession
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher", "accounts")
+	dir, err := os.ReadDir(targetdir)
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range dir {
+		var auth AuthSession
+		if d.Name() == "active.json" {
+			continue
+		}
+		dirName := filepath.Join(targetdir, d.Name())
+		file, err := os.ReadFile(dirName)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(file, &auth)
+		if err != nil {
+			return nil, err
+		}
+		AccountList = append(AccountList, auth)
+	}
+
+	return AccountList, nil
+}
+
+func (a *Auth) DeleteAccount(uuid string) (bool, error) {
+	var active Active
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return false, err
+	}
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher", "accounts")
+	activePath := filepath.Join(targetdir, "active.json")
+	dirName := filepath.Join(targetdir, uuid+".json")
+	file, err := os.ReadFile(activePath)
+	if err != nil {
+		return false, err
+	}
+	err = json.Unmarshal(file, &active)
+	if err != nil {
+		return false, err
+	}
+	if active.UUID == uuid {
+		err := os.WriteFile(activePath, []byte("{}"), 0600)
+		if err != nil {
+			return false, err
+		}
+	}
+	_, err = os.Stat(dirName)
+	if err != nil {
+		return false, err
+	}
+	err = os.RemoveAll(dirName)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (a *Auth) SetActiveAccount(uuid string) error {
+	var active Active
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	targetdir := filepath.Join(appdatadir, "SaturnLauncher", "accounts", "active.json")
+	_, err = os.Stat(targetdir)
+	if err != nil {
+		return err
+	}
+	active.UUID = uuid
+	Jsonbytes, err := json.MarshalIndent(active, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(targetdir, Jsonbytes, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
 }

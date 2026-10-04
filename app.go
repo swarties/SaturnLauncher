@@ -111,18 +111,15 @@ func (a *App) StartLogin() {
 		}
 
 		session := auth.AuthSession{
+			Username:     mcinfo.Username,
+			UUID:         mcinfo.UUID,
 			RefreshToken: at.RefreshToken,
 			Uhs:          xbt.DisplayClaims.Xui[0].Uhs,
+			Xuid:         xsts.DisplayClaims.Xui[0].Xid,
 		}
-		_, err = a.Auth.SaveKeysToJson(session)
+		err = a.Auth.SaveAndActivateAccount(session)
 		if err != nil {
-			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to save session keys: "+err.Error())
-			return
-		}
-
-		_, err = a.Auth.SaveAccountInfo(*mcinfo)
-		if err != nil {
-			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed to save account information "+err.Error())
+			wailsRuntime.EventsEmit(a.ctx, "login:error", "Failed save the account ."+err.Error())
 			return
 		}
 		// 5. Notify frontend on completion
@@ -133,30 +130,14 @@ func (a *App) StartLogin() {
 
 func (a *App) StartApp() {
 	go func() {
-		appdatadir, err := os.UserConfigDir()
+		Keys, err := a.Auth.GetActiveAccount()
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
-		targetdir := filepath.Join(appdatadir, "SaturnLauncher")
-		filePath := filepath.Join(targetdir, "keys.json")
-		fileData, err := os.ReadFile(filePath)
+		mctoken, NewAuthSession, err := a.Auth.RefreshMinecraftToken(*Keys)
 		if err != nil {
-			wailsRuntime.EventsEmit(a.ctx, "auth:required")
-			return
-		}
-		var Keys auth.AuthSession
-		err = json.Unmarshal(fileData, &Keys)
-		if err != nil {
-			wailsRuntime.EventsEmit(a.ctx, "auth:required")
-			return
-		}
-
-		mctoken, NewAuthSession, err := a.Auth.RefreshMinecraftToken(Keys)
-		if err != nil {
-			_ = os.Remove(filepath.Join(targetdir, "keys.json"))
-			_ = os.Remove(filepath.Join(targetdir, "userinfo.json"))
-
+			_, _ = a.Auth.DeleteAccount(Keys.UUID)
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
@@ -164,8 +145,8 @@ func (a *App) StartApp() {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required", fmt.Errorf("refresh Key Is Empty"))
 			return
 		}
-		isDone, err := a.Auth.SaveKeysToJson(NewAuthSession)
-		if isDone != true {
+		err = a.Auth.SaveAndActivateAccount(NewAuthSession)
+		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
@@ -176,10 +157,7 @@ func (a *App) StartApp() {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
-		_, err = a.Auth.SaveAccountInfo(*mcinfo)
-		if err != nil {
-			fmt.Println("Warning: Could not save updated account info")
-		}
+
 		wailsRuntime.EventsEmit(a.ctx, "auth:success", mcinfo)
 		return
 	}()
@@ -193,18 +171,15 @@ func (a *App) StartGame(folderId string) error {
 	if err != nil {
 		return err
 	}
-	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
-	filePath := filepath.Join(targetdir, "keys.json")
-	fileData, err := os.ReadFile(filePath)
+	Keys, err := a.Auth.GetActiveAccount()
 	if err != nil {
 		return err
 	}
-	var Keys auth.AuthSession
-	err = json.Unmarshal(fileData, &Keys)
+	mcpayload, Session, err := a.Auth.RefreshMinecraftToken(*Keys)
 	if err != nil {
 		return err
 	}
-	mcpayload, AuthSession, err := a.Auth.RefreshMinecraftToken(Keys)
+	err = a.Auth.SaveAndActivateAccount(Session)
 	if err != nil {
 		return err
 	}
@@ -284,7 +259,7 @@ func (a *App) StartGame(folderId string) error {
 	if err != nil {
 		return err
 	}
-	args, err := a.Launch.BuildArgs(*mcinfo, folderId, classpath, *vInfo, mcpayload, AuthSession)
+	args, err := a.Launch.BuildArgs(*mcinfo, folderId, classpath, *vInfo, mcpayload, Session)
 	if err != nil {
 		return err
 	}
@@ -414,6 +389,32 @@ func (a *App) Logout() {
 
 func (a *App) OpenInstanceFolder(folderId string) error {
 	err := a.InstanceManager.OpenInstanceFolder(folderId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) ListAccounts() ([]auth.AuthSession, error) {
+	return a.Auth.ListAccounts()
+}
+
+func (a *App) GetActiveAccount() (*auth.AuthSession, error) {
+	return a.Auth.GetActiveAccount()
+}
+
+func (a *App) SetActiveAccount(uuid string) error {
+	err := a.Auth.SetActiveAccount(uuid)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "account:changed")
+	return nil
+}
+
+func (a *App) DeleteAccount(uuid string) error {
+	_, err := a.Auth.DeleteAccount(uuid)
 	if err != nil {
 		return err
 	}
