@@ -47,6 +47,12 @@ func (l *Launch) ClasspathBuilder(info download.VersionInfo) (string, error) {
 				}
 				artifactLocation := filepath.Join(appdata, "SaturnLauncher", "minecraft", "libraries", a.Downloads.Artifact.Path)
 				artifacts = append(artifacts, artifactLocation)
+			} else if a.URL != "" {
+				path, err := download.MavenPath(a.Name)
+				if err != nil {
+					continue
+				}
+				artifacts = append(artifacts, filepath.Join(appdata, "SaturnLauncher", "minecraft", "libraries", path))
 			}
 		}
 	}
