@@ -298,7 +298,7 @@ func (a *App) StartGame(folderId string) error {
 		return err
 	}
 	cmd := exec.Command(*ensureJava, fullargs...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000}
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	cmd.Dir = instDir // saves logs to jvm.log in the future make a func that reads the files and returns its content for the frontend
 	cmd.Stdout = file
 	cmd.Stderr = file
