@@ -20,7 +20,7 @@ Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source
 >
 >  1. Click the small 'more info' button
 >
->  2. Click 'Install anyways'
+>  2. Click 'Run anyways'
 
 ## Tech Stack
 Golang V1.27.1 for back-end
