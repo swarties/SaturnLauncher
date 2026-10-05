@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -286,10 +287,21 @@ func (a *App) StartGame(folderId string) error {
 	fullargs = append(fullargs, vInfo.MainClass)
 	fullargs = append(fullargs, game...)
 	instDir := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId)
+	logDir := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "logs")
+	err = os.MkdirAll(logDir, 0o755)
+	if err != nil {
+		return err
+	}
+	logPath := filepath.Join(logDir, "jvm.log")
+	file, err := os.Create(logPath)
+	if err != nil {
+		return err
+	}
 	cmd := exec.Command(*ensureJava, fullargs...)
-	cmd.Dir = instDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000}
+	cmd.Dir = instDir // saves logs to jvm.log in the future make a func that reads the files and returns its content for the frontend
+	cmd.Stdout = file
+	cmd.Stderr = file
 	err = cmd.Start()
 	if err != nil {
 		wailsRuntime.EventsEmit(a.ctx, "game:error", err.Error())
@@ -300,7 +312,10 @@ func (a *App) StartGame(folderId string) error {
 		if err := cmd.Wait(); err != nil {
 			fmt.Printf("minecraft exited with error: %s\n", err)
 		}
-
+		err := file.Close()
+		if err != nil {
+			return
+		}
 	}()
 	return nil
 }
