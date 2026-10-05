@@ -9,9 +9,18 @@ Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source
 - Storage: 50 MB of free storage
 - Network: Required for login
 
-## Start Steps
-- Double-click the .exe or Linux binary file
-- Allow the .exe through SmartScreen if applicable
+## Install Steps
+
+> [!WARNING]
+>  Windows Smartscreen warning
+>
+>  Because the launcher is currently unsigned, windows displays a "Windows protected your pc alert"
+>
+>  How To Install:
+>
+>  1. Click the small 'more info' button
+>
+>  2. Click 'Install anyways'
 
 ## Tech Stack
 Golang V1.27.1 for back-end
