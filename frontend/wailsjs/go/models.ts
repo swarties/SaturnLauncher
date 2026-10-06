@@ -1,3 +1,28 @@
+export namespace auth {
+	
+	export class AuthSession {
+	    username: string;
+	    uuid: string;
+	    RefreshToken: string;
+	    Uhs: string;
+	    xuid: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AuthSession(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.username = source["username"];
+	        this.uuid = source["uuid"];
+	        this.RefreshToken = source["RefreshToken"];
+	        this.Uhs = source["Uhs"];
+	        this.xuid = source["xuid"];
+	    }
+	}
+
+}
+
 export namespace download {
 	
 	export class Version {
@@ -43,6 +68,18 @@ export namespace instances {
 	        this.timecreated = source["timecreated"];
 	        this.minram = source["minram"];
 	        this.maxram = source["maxram"];
+	    }
+	}
+	export class Ram {
+	    TotalRamMB: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Ram(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.TotalRamMB = source["TotalRamMB"];
 	    }
 	}
 

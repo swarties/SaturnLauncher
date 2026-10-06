@@ -11,12 +11,21 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as InstanceRouteImport } from './routes/_instance'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
 import { Route as AppInstancesRouteImport } from './routes/_app/instances'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as InstanceInstancesUuidRouteImport } from './routes/_instance/instances.$uuid'
+import { Route as InstanceInstancesUuidIndexRouteImport } from './routes/_instance/instances.$uuid.index'
+import { Route as InstanceInstancesUuidLogsRouteImport } from './routes/_instance/instances.$uuid.logs'
+import { Route as InstanceInstancesUuidModsRouteImport } from './routes/_instance/instances.$uuid.mods'
+import { Route as InstanceInstancesUuidResourcepacksRouteImport } from './routes/_instance/instances.$uuid.resourcepacks'
+import { Route as InstanceInstancesUuidScreenshotsRouteImport } from './routes/_instance/instances.$uuid.screenshots'
+import { Route as InstanceInstancesUuidSettingsRouteImport } from './routes/_instance/instances.$uuid.settings'
+import { Route as InstanceInstancesUuidShaderpacksRouteImport } from './routes/_instance/instances.$uuid.shaderpacks'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -25,6 +34,10 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstanceRoute = InstanceRouteImport.update({
+  id: '/_instance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -57,6 +70,53 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const InstanceInstancesUuidRoute = InstanceInstancesUuidRouteImport.update({
+  id: '/instances/$uuid',
+  path: '/instances/$uuid',
+  getParentRoute: () => InstanceRoute,
+} as any)
+const InstanceInstancesUuidIndexRoute =
+  InstanceInstancesUuidIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => InstanceInstancesUuidRoute,
+  } as any)
+const InstanceInstancesUuidLogsRoute =
+  InstanceInstancesUuidLogsRouteImport.update({
+    id: '/logs',
+    path: '/logs',
+    getParentRoute: () => InstanceInstancesUuidRoute,
+  } as any)
+const InstanceInstancesUuidModsRoute =
+  InstanceInstancesUuidModsRouteImport.update({
+    id: '/mods',
+    path: '/mods',
+    getParentRoute: () => InstanceInstancesUuidRoute,
+  } as any)
+const InstanceInstancesUuidResourcepacksRoute =
+  InstanceInstancesUuidResourcepacksRouteImport.update({
+    id: '/resourcepacks',
+    path: '/resourcepacks',
+    getParentRoute: () => InstanceInstancesUuidRoute,
+  } as any)
+const InstanceInstancesUuidScreenshotsRoute =
+  InstanceInstancesUuidScreenshotsRouteImport.update({
+    id: '/screenshots',
+    path: '/screenshots',
+    getParentRoute: () => InstanceInstancesUuidRoute,
+  } as any)
+const InstanceInstancesUuidSettingsRoute =
+  InstanceInstancesUuidSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => InstanceInstancesUuidRoute,
+  } as any)
+const InstanceInstancesUuidShaderpacksRoute =
+  InstanceInstancesUuidShaderpacksRouteImport.update({
+    id: '/shaderpacks',
+    path: '/shaderpacks',
+    getParentRoute: () => InstanceInstancesUuidRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +126,14 @@ export interface FileRoutesByFullPath {
   '/home': typeof AppHomeRoute
   '/instances': typeof AppInstancesRoute
   '/settings': typeof AppSettingsRoute
+  '/instances/$uuid': typeof InstanceInstancesUuidRouteWithChildren
+  '/instances/$uuid/logs': typeof InstanceInstancesUuidLogsRoute
+  '/instances/$uuid/mods': typeof InstanceInstancesUuidModsRoute
+  '/instances/$uuid/resourcepacks': typeof InstanceInstancesUuidResourcepacksRoute
+  '/instances/$uuid/screenshots': typeof InstanceInstancesUuidScreenshotsRoute
+  '/instances/$uuid/settings': typeof InstanceInstancesUuidSettingsRoute
+  '/instances/$uuid/shaderpacks': typeof InstanceInstancesUuidShaderpacksRoute
+  '/instances/$uuid/': typeof InstanceInstancesUuidIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,17 +143,33 @@ export interface FileRoutesByTo {
   '/home': typeof AppHomeRoute
   '/instances': typeof AppInstancesRoute
   '/settings': typeof AppSettingsRoute
+  '/instances/$uuid/logs': typeof InstanceInstancesUuidLogsRoute
+  '/instances/$uuid/mods': typeof InstanceInstancesUuidModsRoute
+  '/instances/$uuid/resourcepacks': typeof InstanceInstancesUuidResourcepacksRoute
+  '/instances/$uuid/screenshots': typeof InstanceInstancesUuidScreenshotsRoute
+  '/instances/$uuid/settings': typeof InstanceInstancesUuidSettingsRoute
+  '/instances/$uuid/shaderpacks': typeof InstanceInstancesUuidShaderpacksRoute
+  '/instances/$uuid': typeof InstanceInstancesUuidIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/_instance': typeof InstanceRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/home': typeof AppHomeRoute
   '/_app/instances': typeof AppInstancesRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/_instance/instances/$uuid': typeof InstanceInstancesUuidRouteWithChildren
+  '/_instance/instances/$uuid/logs': typeof InstanceInstancesUuidLogsRoute
+  '/_instance/instances/$uuid/mods': typeof InstanceInstancesUuidModsRoute
+  '/_instance/instances/$uuid/resourcepacks': typeof InstanceInstancesUuidResourcepacksRoute
+  '/_instance/instances/$uuid/screenshots': typeof InstanceInstancesUuidScreenshotsRoute
+  '/_instance/instances/$uuid/settings': typeof InstanceInstancesUuidSettingsRoute
+  '/_instance/instances/$uuid/shaderpacks': typeof InstanceInstancesUuidShaderpacksRoute
+  '/_instance/instances/$uuid/': typeof InstanceInstancesUuidIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +181,14 @@ export interface FileRouteTypes {
     | '/home'
     | '/instances'
     | '/settings'
+    | '/instances/$uuid'
+    | '/instances/$uuid/logs'
+    | '/instances/$uuid/mods'
+    | '/instances/$uuid/resourcepacks'
+    | '/instances/$uuid/screenshots'
+    | '/instances/$uuid/settings'
+    | '/instances/$uuid/shaderpacks'
+    | '/instances/$uuid/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,21 +198,38 @@ export interface FileRouteTypes {
     | '/home'
     | '/instances'
     | '/settings'
+    | '/instances/$uuid/logs'
+    | '/instances/$uuid/mods'
+    | '/instances/$uuid/resourcepacks'
+    | '/instances/$uuid/screenshots'
+    | '/instances/$uuid/settings'
+    | '/instances/$uuid/shaderpacks'
+    | '/instances/$uuid'
   id:
     | '__root__'
     | '/'
     | '/_app'
+    | '/_instance'
     | '/login'
     | '/onboarding'
     | '/_app/account'
     | '/_app/home'
     | '/_app/instances'
     | '/_app/settings'
+    | '/_instance/instances/$uuid'
+    | '/_instance/instances/$uuid/logs'
+    | '/_instance/instances/$uuid/mods'
+    | '/_instance/instances/$uuid/resourcepacks'
+    | '/_instance/instances/$uuid/screenshots'
+    | '/_instance/instances/$uuid/settings'
+    | '/_instance/instances/$uuid/shaderpacks'
+    | '/_instance/instances/$uuid/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  InstanceRoute: typeof InstanceRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
 }
@@ -139,6 +248,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_instance': {
+      id: '/_instance'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof InstanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -183,6 +299,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_instance/instances/$uuid': {
+      id: '/_instance/instances/$uuid'
+      path: '/instances/$uuid'
+      fullPath: '/instances/$uuid'
+      preLoaderRoute: typeof InstanceInstancesUuidRouteImport
+      parentRoute: typeof InstanceRoute
+    }
+    '/_instance/instances/$uuid/': {
+      id: '/_instance/instances/$uuid/'
+      path: '/'
+      fullPath: '/instances/$uuid/'
+      preLoaderRoute: typeof InstanceInstancesUuidIndexRouteImport
+      parentRoute: typeof InstanceInstancesUuidRoute
+    }
+    '/_instance/instances/$uuid/logs': {
+      id: '/_instance/instances/$uuid/logs'
+      path: '/logs'
+      fullPath: '/instances/$uuid/logs'
+      preLoaderRoute: typeof InstanceInstancesUuidLogsRouteImport
+      parentRoute: typeof InstanceInstancesUuidRoute
+    }
+    '/_instance/instances/$uuid/mods': {
+      id: '/_instance/instances/$uuid/mods'
+      path: '/mods'
+      fullPath: '/instances/$uuid/mods'
+      preLoaderRoute: typeof InstanceInstancesUuidModsRouteImport
+      parentRoute: typeof InstanceInstancesUuidRoute
+    }
+    '/_instance/instances/$uuid/resourcepacks': {
+      id: '/_instance/instances/$uuid/resourcepacks'
+      path: '/resourcepacks'
+      fullPath: '/instances/$uuid/resourcepacks'
+      preLoaderRoute: typeof InstanceInstancesUuidResourcepacksRouteImport
+      parentRoute: typeof InstanceInstancesUuidRoute
+    }
+    '/_instance/instances/$uuid/screenshots': {
+      id: '/_instance/instances/$uuid/screenshots'
+      path: '/screenshots'
+      fullPath: '/instances/$uuid/screenshots'
+      preLoaderRoute: typeof InstanceInstancesUuidScreenshotsRouteImport
+      parentRoute: typeof InstanceInstancesUuidRoute
+    }
+    '/_instance/instances/$uuid/settings': {
+      id: '/_instance/instances/$uuid/settings'
+      path: '/settings'
+      fullPath: '/instances/$uuid/settings'
+      preLoaderRoute: typeof InstanceInstancesUuidSettingsRouteImport
+      parentRoute: typeof InstanceInstancesUuidRoute
+    }
+    '/_instance/instances/$uuid/shaderpacks': {
+      id: '/_instance/instances/$uuid/shaderpacks'
+      path: '/shaderpacks'
+      fullPath: '/instances/$uuid/shaderpacks'
+      preLoaderRoute: typeof InstanceInstancesUuidShaderpacksRouteImport
+      parentRoute: typeof InstanceInstancesUuidRoute
+    }
   }
 }
 
@@ -202,9 +374,48 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface InstanceInstancesUuidRouteChildren {
+  InstanceInstancesUuidLogsRoute: typeof InstanceInstancesUuidLogsRoute
+  InstanceInstancesUuidModsRoute: typeof InstanceInstancesUuidModsRoute
+  InstanceInstancesUuidResourcepacksRoute: typeof InstanceInstancesUuidResourcepacksRoute
+  InstanceInstancesUuidScreenshotsRoute: typeof InstanceInstancesUuidScreenshotsRoute
+  InstanceInstancesUuidSettingsRoute: typeof InstanceInstancesUuidSettingsRoute
+  InstanceInstancesUuidShaderpacksRoute: typeof InstanceInstancesUuidShaderpacksRoute
+  InstanceInstancesUuidIndexRoute: typeof InstanceInstancesUuidIndexRoute
+}
+
+const InstanceInstancesUuidRouteChildren: InstanceInstancesUuidRouteChildren = {
+  InstanceInstancesUuidLogsRoute: InstanceInstancesUuidLogsRoute,
+  InstanceInstancesUuidModsRoute: InstanceInstancesUuidModsRoute,
+  InstanceInstancesUuidResourcepacksRoute:
+    InstanceInstancesUuidResourcepacksRoute,
+  InstanceInstancesUuidScreenshotsRoute: InstanceInstancesUuidScreenshotsRoute,
+  InstanceInstancesUuidSettingsRoute: InstanceInstancesUuidSettingsRoute,
+  InstanceInstancesUuidShaderpacksRoute: InstanceInstancesUuidShaderpacksRoute,
+  InstanceInstancesUuidIndexRoute: InstanceInstancesUuidIndexRoute,
+}
+
+const InstanceInstancesUuidRouteWithChildren =
+  InstanceInstancesUuidRoute._addFileChildren(
+    InstanceInstancesUuidRouteChildren,
+  )
+
+interface InstanceRouteChildren {
+  InstanceInstancesUuidRoute: typeof InstanceInstancesUuidRouteWithChildren
+}
+
+const InstanceRouteChildren: InstanceRouteChildren = {
+  InstanceInstancesUuidRoute: InstanceInstancesUuidRouteWithChildren,
+}
+
+const InstanceRouteWithChildren = InstanceRoute._addFileChildren(
+  InstanceRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  InstanceRoute: InstanceRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
 }
