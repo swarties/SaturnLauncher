@@ -14,7 +14,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -298,7 +297,9 @@ func (a *App) StartGame(folderId string) error {
 		return err
 	}
 	cmd := exec.Command(*ensureJava, fullargs...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	// cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+
+	a.Launch.HideConsole(cmd)
 	cmd.Dir = instDir // saves logs to jvm.log in the future make a func that reads the files and returns its content for the frontend
 	cmd.Stdout = file
 	cmd.Stderr = file
