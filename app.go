@@ -168,6 +168,10 @@ func (a *App) StartApp() {
 }
 
 func (a *App) StartGame(folderId string) error {
+	/* err := a.InstallFabric(folderId, "0.19.5")
+	if /* err != nil {
+		return /* err
+	} */
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
@@ -232,6 +236,18 @@ func (a *App) StartGame(folderId string) error {
 		return err
 	}
 	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Downloading Client Jar")
+	if instInfo.FabricVersion != "" {
+		fInfo, err := a.Download.ParseVersionInfo(instInfo.FabricVersion)
+		if err != nil {
+			return err
+		}
+
+		vInfo.MainClass = fInfo.MainClass
+		vInfo.Libraries = append(vInfo.Libraries, fInfo.Libraries...)
+		vInfo.Arguments.Jvm = append(vInfo.Arguments.Jvm, fInfo.Arguments.Jvm...)
+		vInfo.Arguments.Game = append(vInfo.Arguments.Game, fInfo.Arguments.Game...)
+		vInfo.ID = fInfo.ID
+	}
 	err = a.Download.GetClientJar(*vInfo)
 	if err != nil {
 		return err
@@ -460,4 +476,36 @@ func (a *App) GetTotalRam() (*instances.Ram, error) {
 		return nil, err
 	}
 	return ram, nil
+}
+
+func (a *App) InstallFabric(folderId, loaderVersion string) error {
+	if loaderVersion == "" {
+		return fmt.Errorf("loader version field is empty, cannot proceed")
+	}
+	instInfo, err := a.InstanceManager.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	profileId, err := a.Fabric.InstallFabric(instInfo.Version, loaderVersion)
+	if err != nil {
+		return err
+	}
+	err = a.InstanceManager.UpdateFabricVersion(folderId, profileId)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+
+func (a *App) GetFabricLoaders(folderId string) ([]fabric.LoaderVersion, error) {
+	instInfo, err := a.InstanceManager.GetInstanceInfo(folderId)
+	if err != nil {
+		return nil, err
+	}
+	versions, err := a.Fabric.GetLoaderVersions(instInfo.Version)
+	if err != nil {
+		return nil, err
+	}
+	return versions, nil
 }

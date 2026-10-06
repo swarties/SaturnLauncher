@@ -25,12 +25,13 @@ func NewInstanceManager() *InstanceManager {
 }
 
 type Instance struct {
-	Name        string `json:"name"`
-	Version     string `json:"version"`
-	Uuid        string `json:"uuid"`
-	TimeCreated string `json:"timecreated"`
-	MinRam      int    `json:"minram"`
-	MaxRam      int    `json:"maxram"`
+	Name          string `json:"name"`
+	Version       string `json:"version"`
+	Uuid          string `json:"uuid"`
+	TimeCreated   string `json:"timecreated"`
+	MinRam        int    `json:"minram"`
+	MaxRam        int    `json:"maxram"`
+	FabricVersion string `json:"fabricVersion,omitempty"`
 }
 type Ram struct {
 	TotalRamMB int
@@ -253,5 +254,23 @@ func (i *InstanceManager) RenameInstance(folderId, name string) error {
 		return err
 	}
 
+	return os.WriteFile(base, data, 0o600)
+}
+
+func (i *InstanceManager) UpdateFabricVersion(folderId, fabricVersion string) error {
+	instInfo, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	instInfo.FabricVersion = fabricVersion
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	data, err := json.MarshalIndent(instInfo, "", "  ")
+	if err != nil {
+		return err
+	}
 	return os.WriteFile(base, data, 0o600)
 }
