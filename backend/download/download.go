@@ -39,8 +39,7 @@ type Version struct {
 	SHA1 string `json:"sha1"`
 }
 
-// very long struct incoming
-// copied and pasted from https://transform.tools/json-to-go
+// copied and pasted from https://transform.tools/json-to-go to make it easier
 type Argument struct {
 	Rules []Rule   `json:"rules,omitempty"`
 	Value []string `json:"value"`
@@ -128,7 +127,7 @@ func (d *Download) Downloader(destPath string, downloadUrl string) (*string, err
 	fmt.Printf("Downloading %v...\n", req.URL())
 	resp := client.Do(req)
 	if resp.HTTPResponse != nil {
-		fmt.Printf("  %v\n", resp.HTTPResponse.Status)
+		//fmt.Printf("  %v\n", resp.HTTPResponse.Status)
 	}
 
 	t := time.NewTicker(500 * time.Millisecond)
@@ -146,11 +145,11 @@ Loop:
 		}
 	}
 	if err := resp.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
+		//fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
 		return nil, err
 	}
 
-	fmt.Printf("Download saved to %v \n", resp.Filename)
+	//fmt.Printf("Download saved to %v \n", resp.Filename)
 	return &resp.Filename, nil
 }
 

@@ -7,14 +7,19 @@ import (
 	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/launch"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/disintegration/imaging"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -508,4 +513,76 @@ func (a *App) GetFabricLoaders(folderId string) ([]fabric.LoaderVersion, error) 
 		return nil, err
 	}
 	return versions, nil
+}
+
+func (a *App) UpdateInstanceDescription(folderId, description string) error {
+	err := a.InstanceManager.UpdateInstanceDescription(folderId, description)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+
+func (a *App) PickInstanceIcon(folderId string) (string, error) {
+	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title: "Select an icon",
+		Filters: []wailsRuntime.FileFilter{
+			{
+				DisplayName: "Images",
+				Pattern:     "*.png,*.jpg,*.jpeg",
+			},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func (a *App) SetInstanceIcon(folderId, path string) (string, error) {
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher")
+	instIconDir := filepath.Join(base, "instances", folderId, "icon.png")
+	open, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer open.Close()
+	extension := filepath.Ext(path)
+	var img image.Image
+	switch extension {
+	case ".jpg", ".jpeg":
+		img, err = jpeg.Decode(open)
+		if err != nil {
+			return "", err
+		}
+	case ".png":
+		img, err = png.Decode(open)
+		if err != nil {
+			return "", err
+		}
+	default:
+		return "", fmt.Errorf("image format not supported")
+	}
+	file, err := os.Create(instIconDir)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	resizedImg := imaging.Fill(img, 512, 512, imaging.Center, imaging.CatmullRom)
+	err = png.Encode(file, resizedImg)
+	if err != nil {
+		return "", err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	readFile, err := os.ReadFile(instIconDir)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(readFile), nil
 }

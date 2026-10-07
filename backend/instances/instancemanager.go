@@ -26,6 +26,7 @@ func NewInstanceManager() *InstanceManager {
 
 type Instance struct {
 	Name          string `json:"name"`
+	Description   string `json:"description,omitempty"`
 	Version       string `json:"version"`
 	Uuid          string `json:"uuid"`
 	TimeCreated   string `json:"timecreated"`
@@ -184,6 +185,12 @@ func (i *InstanceManager) UpdateMemory(folderId string, minram, maxram int) erro
 	if err != nil {
 		return err
 	}
+	if minram == 0 || maxram == 0 {
+		return fmt.Errorf("memory fields are invalid")
+	}
+	if minram > maxram {
+		return fmt.Errorf("memory fields are invalid")
+	}
 	inst.MaxRam = maxram
 	inst.MinRam = minram
 	appdatadir, err := os.UserConfigDir()
@@ -248,6 +255,9 @@ func (i *InstanceManager) RenameInstance(folderId, name string) error {
 	if err != nil {
 		return err
 	}
+	if strings.TrimSpace(name) == "" {
+		return fmt.Errorf("name is empty")
+	}
 	inst.Name = name
 	data, err := json.MarshalIndent(inst, "", "  ")
 	if err != nil {
@@ -263,6 +273,45 @@ func (i *InstanceManager) UpdateFabricVersion(folderId, fabricVersion string) er
 		return err
 	}
 	instInfo.FabricVersion = fabricVersion
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	data, err := json.MarshalIndent(instInfo, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(base, data, 0o600)
+}
+
+//func (i *InstanceManager) UpdateInstanceIcon(folderId, iconFilename string) error {
+//	instInfo, err := i.GetInstanceInfo(folderId)
+//	if err != nil {
+//		return err
+//	}
+//	if strings.TrimSpace(iconFilename) == "" {
+//		return fmt.Errorf("icon path is invalid")
+//	}
+//	instInfo.Icon = iconFilename
+//	appdatadir, err := os.UserConfigDir()
+//	if err != nil {
+//		return err
+//	}
+//	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+//	data, err := json.MarshalIndent(instInfo, "", "  ")
+//	if err != nil {
+//		return err
+//	}
+//	return os.WriteFile(base, data, 0o600)
+//}
+
+func (i *InstanceManager) UpdateInstanceDescription(folderId, description string) error {
+	instInfo, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	instInfo.Description = description
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err

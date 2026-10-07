@@ -123,6 +123,7 @@ func (l *Launch) CreateArgs(fargs map[string]string, args []download.Argument) (
 
 	return nargs, nil
 }
+
 func resolve(s string, fargs map[string]string) (string, error) {
 	for {
 		start := strings.Index(s, "${")
