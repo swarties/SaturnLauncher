@@ -1,15 +1,14 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 import { createFileRoute } from '@tanstack/react-router';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useSpring, useTransform } from 'motion/react';
 
 import { Button } from '@/components/ui/button.jsx';
 import { InstanceSelector } from '@/components/ui/instance-selector.jsx';
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave';
 
-import { StartGame } from '../../../wailsjs/go/main/App';
-
 import { useAuth } from '@/stores/auth';
+import { startLaunch, useLaunch } from '@/stores/launch';
 import { copyText } from '@/lib/backend';
 
 export const Route = createFileRoute('/_app/home')({
@@ -19,9 +18,28 @@ export const Route = createFileRoute('/_app/home')({
 function HomePage() {
   const { profile } = useAuth();
   const username = profile?.name ?? 'player';
+
+  const { isLoading, progress, status, statusKind } = useLaunch();
+
+  const smoothProgress = useSpring(progress, {
+    stiffness: 90,
+    damping: 20,
+    mass: 0.5,
+  });
+  const smoothWidth = useTransform(smoothProgress, (v) => `${v}%`);
+
+  useEffect(() => {
+    smoothProgress.set(progress);
+  }, [progress, smoothProgress]);
+
   const [selectedInstance, setSelectedInstance] = useState(
     /** @type {import('@/components/ui/instance-selector.jsx').McInstance | null} */ null
   );
+
+  const handleLaunch = () => {
+    if (!selectedInstance || isLoading) return;
+    void startLaunch(selectedInstance.uuid);
+  };
 
   const [copiedUUID, setCopiedUUID] = useState(false);
 
@@ -51,38 +69,6 @@ function HomePage() {
     return () => window.removeEventListener('blur', onBlur);
   }, []);
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState('');
-  const statusTimerRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-    };
-  }, []);
-
-  const FINAL_STATUS = 'Game files downloaded and verified.';
-
-  const handleDownload = async () => {
-    if (!selectedInstance) return;
-    if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-    setIsLoading(true);
-    setStatus('Downloading game files...');
-
-    try {
-      await StartGame(selectedInstance.uuid);
-      setStatus(FINAL_STATUS);
-      statusTimerRef.current = setTimeout(() => {
-        setStatus((s) => (s === FINAL_STATUS ? '' : s));
-      }, 5000);
-    } catch (error) {
-      console.error('Failed to download:', error);
-      setStatus(`Error: ${error?.message ?? String(error)}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="grid h-full w-full grid-cols-[70fr_30fr] gap-5 p-6">
       {/* LEFT COLUMN */}
@@ -98,41 +84,64 @@ function HomePage() {
               {username}
             </p>
           </div>
-          <Button
-            variant="outline"
-            className="group border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-11 gap-2 rounded-lg border px-6 font-thin transition-colors"
-            onClick={handleDownload}
-            disabled={isLoading || !selectedInstance}
-          >
-            {isLoading ? (
-              'Downloading...'
-            ) : (
-              <>
-                Launch Minecraft
-                <span
-                  aria-hidden="true"
-                  className="text-saturn-300 transition-transform duration-200 group-hover:translate-x-1"
-                >
-                  →
-                </span>
-              </>
-            )}
-          </Button>
+
+          {/**/}
+          {/**/}
+
+          <div className="flex w-full max-w-xs flex-col items-center gap-3">
+            <Button
+              variant="outline"
+              className="group border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-11 min-w-44 gap-2 rounded-lg border px-6 font-thin transition-colors"
+              onClick={handleLaunch}
+              disabled={isLoading || !selectedInstance}
+            >
+              {isLoading ? (
+                'Launching...'
+              ) : (
+                <>
+                  Launch Minecraft
+                  <span
+                    aria-hidden="true"
+                    className="text-saturn-300 transition-transform duration-200 group-hover:translate-x-1"
+                  >
+                    →
+                  </span>
+                </>
+              )}
+            </Button>
+
+            {/* Progress bar */}
+            <div className="flex h-6 w-full items-center justify-center">
+              <AnimatePresence>
+                {isLoading && (
+                  <motion.div
+                    key="progress-track"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1, transition: { duration: 0.3 } }}
+                    exit={{ opacity: 0, transition: { duration: 0.7 } }}
+                    className="relative h-1 w-full overflow-hidden rounded-full bg-(--hairline)"
+                  >
+                    <motion.div
+                      className="from-saturn-700 to-saturn-400 h-full rounded-full bg-linear-to-r"
+                      style={{ width: smoothWidth }}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
           <AnimatePresence>
             {status && (
               <motion.div
-                key={status}
+                key="launch-status"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
                 transition={{ duration: 0.25 }}
                 className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center px-6"
               >
-                {status === FINAL_STATUS ? (
-                  <p className="text-muted-foreground text-center text-sm font-thin">
-                    {status}
-                  </p>
-                ) : (
+                {statusKind === 'progress' ? (
                   <TextShimmerWave
                     className="text-sm font-thin [--base-color:#71717a] [--base-gradient-color:#a18dec]"
                     duration={0.35}
@@ -143,10 +152,24 @@ function HomePage() {
                   >
                     {status}
                   </TextShimmerWave>
+                ) : (
+                  <p
+                    className={[
+                      'text-center text-sm font-thin',
+                      statusKind === 'error'
+                        ? 'text-red-400'
+                        : 'text-muted-foreground',
+                    ].join(' ')}
+                  >
+                    {status}
+                  </p>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/*  */}
+          {/*  */}
         </div>
 
         <div className="flex h-full w-full flex-col items-center justify-center gap-10 rounded-md border-2 border-(--surface-border) px-6">

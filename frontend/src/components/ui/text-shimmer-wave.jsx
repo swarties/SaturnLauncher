@@ -2,6 +2,16 @@
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
+const motionCache = new Map();
+function getMotionComponent(tag) {
+  let cached = motionCache.get(tag);
+  if (!cached) {
+    cached = motion.create(tag);
+    motionCache.set(tag, cached);
+  }
+  return cached;
+}
+
 export function TextShimmerWave({
   children,
   as: Component = 'p',
@@ -15,7 +25,7 @@ export function TextShimmerWave({
   rotateYDistance = 10,
   transition,
 }) {
-  const MotionComponent = motion.create(Component);
+  const MotionComponent = getMotionComponent(Component);
 
   return (
     <MotionComponent
