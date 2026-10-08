@@ -3,6 +3,7 @@ import {
   Link,
   Outlet,
   useLocation,
+  useNavigate,
 } from '@tanstack/react-router';
 import { motion } from 'motion/react';
 import {
@@ -141,6 +142,7 @@ function NavBar({ pathname }) {
 
 function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const prevPathRef = useRef(location.pathname);
   const { profile } = useAuth();
 
@@ -149,6 +151,31 @@ function AppLayout() {
   useEffect(() => {
     prevPathRef.current = location.pathname;
   }, [location.pathname]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+
+      let digit = null
+      if (e.code.startsWith('Digit')) {
+        digit = e.code.slice(5)
+      } else if (e.code.startsWith('Numpad')) {
+        digit = e.code.slice(6);
+      }
+      if (!digit) return;
+
+      const index = Number(digit) -1;
+      const target = NAV_ITEMS[index];
+      if (!target) return;
+      if (target.to === location.pathname) return;
+
+      e.preventDefault()
+      void navigate({ to: target.to });
+    }
+
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [navigate, location.pathname]);
 
   return (
     <div className="bg-background relative flex h-screen w-full flex-col overflow-hidden">
