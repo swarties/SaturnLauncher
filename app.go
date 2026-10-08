@@ -588,6 +588,7 @@ func (a *App) UninstallFabric(folderId string) error {
 	if err != nil {
 		return err
 	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
 }
 
@@ -600,8 +601,66 @@ func (a *App) GetInstanceIcon(folderId string) (string, error) {
 	iconDir := filepath.Join(appdataDir, "SaturnLauncher", "instances", folderId, "icon.png")
 	file, err := os.ReadFile(iconDir)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
 		return "", err
 	}
 
 	return base64.StdEncoding.EncodeToString(file), nil
+}
+
+func (a *App) InstallContent(folderId, contentType string) (string, error) {
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId)
+	modDir := filepath.Join(base, "mods")
+	rpDir := filepath.Join(base, "resourcepacks")
+	shadersDir := filepath.Join(base, "shaderpacks")
+	var contentDir string
+	var fileFormat string
+	switch contentType {
+	case "mods":
+		fileFormat = "*.jar"
+		contentDir = modDir
+	case "resourcepacks":
+		fileFormat = "*.zip"
+		contentDir = rpDir
+	case "shaders":
+		fileFormat = "*.zip"
+		contentDir = shadersDir
+	default:
+		return "", fmt.Errorf("content type is not supported")
+	}
+	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title: "Select Content",
+		Filters: []wailsRuntime.FileFilter{
+			{
+				DisplayName: contentType,
+				Pattern:     fileFormat,
+			},
+		}})
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return "", nil
+	}
+	destPath := filepath.Join(contentDir, filepath.Base(path))
+	err = os.MkdirAll(contentDir, 0o755)
+	if err != nil {
+		return "", err
+	}
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	err = os.WriteFile(destPath, file, 0644)
+	if err != nil {
+		return "", err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return filepath.Base(path), nil
 }
