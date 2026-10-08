@@ -503,12 +503,8 @@ func (a *App) InstallFabric(folderId, loaderVersion string) error {
 	return nil
 }
 
-func (a *App) GetFabricLoaders(folderId string) ([]fabric.LoaderVersion, error) {
-	instInfo, err := a.InstanceManager.GetInstanceInfo(folderId)
-	if err != nil {
-		return nil, err
-	}
-	versions, err := a.Fabric.GetLoaderVersions(instInfo.Version)
+func (a *App) GetFabricLoaders(gameVersion string) ([]fabric.LoaderVersion, error) {
+	versions, err := a.Fabric.GetLoaderVersions(gameVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -585,4 +581,27 @@ func (a *App) SetInstanceIcon(folderId, path string) (string, error) {
 	}
 
 	return base64.StdEncoding.EncodeToString(readFile), nil
+}
+
+func (a *App) UninstallFabric(folderId string) error {
+	err := a.InstanceManager.UpdateFabricVersion(folderId, "")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *App) GetInstanceIcon(folderId string) (string, error) {
+	appdataDir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	iconDir := filepath.Join(appdataDir, "SaturnLauncher", "instances", folderId, "icon.png")
+	file, err := os.ReadFile(iconDir)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(file), nil
 }
