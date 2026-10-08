@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { createFileRoute } from '@tanstack/react-router';
 import { AnimatePresence, motion, useSpring, useTransform } from 'motion/react';
+
+import { AlertTriangle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button.jsx';
 import { InstanceSelector } from '@/components/ui/instance-selector.jsx';
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave';
 
 import { useAuth } from '@/stores/auth';
-import { startLaunch, useLaunch } from '@/stores/launch';
+import { clearError, startLaunch, useLaunch } from '@/stores/launch';
 import { copyText } from '@/lib/backend';
 
 export const Route = createFileRoute('/_app/home')({
@@ -132,7 +135,7 @@ function HomePage() {
           </div>
 
           <AnimatePresence>
-            {status && (
+            {status && statusKind !== 'error' && (
               <motion.div
                 key="launch-status"
                 initial={{ opacity: 0, y: 6 }}
@@ -153,20 +156,15 @@ function HomePage() {
                     {status}
                   </TextShimmerWave>
                 ) : (
-                  <p
-                    className={[
-                      'text-center text-sm font-thin',
-                      statusKind === 'error'
-                        ? 'text-red-400'
-                        : 'text-muted-foreground',
-                    ].join(' ')}
-                  >
+                  <p className="text-muted-foreground text-center text-sm font-thin">
                     {status}
                   </p>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
+
+          <LaunchErrorDialog />
 
           {/*  */}
           {/*  */}
@@ -227,5 +225,96 @@ function HomePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+const ERROR_DIALOG_EASE = [0.22, 1, 0.38, 1];
+
+function LaunchErrorDialog() {
+  const { status, statusKind } = useLaunch();
+  const isOpen = statusKind === 'error';
+
+  const handleClose = () => {
+    clearError();
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') handleClose();
+    };
+
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="launch-error-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: 0.2 } }}
+          exit={{ opacity: 0, transition: { duration: 0.35, delay: 0.05 } }}
+          onClick={handleClose}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-(--backdrop) p-6 backdrop-blur-sm"
+        >
+          <motion.div
+            key="launch-error-panel"
+            initial={{ opacity: 0, y: 12, scale: 0.96 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              transition: { duration: 0.28, ease: ERROR_DIALOG_EASE },
+            }}
+            exit={{
+              opacity: 0,
+              y: 8,
+              scale: 0.97,
+              transition: { duration: 0.2, ease: ERROR_DIALOG_EASE },
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-background relative w-full max-w-md overflow-hidden rounded-md border-2 border-(--danger-border)"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0"
+            >
+              <div className="absolute -top-24 left-1/2 h-56 w-96 -translate-x-1/2 rounded-full bg-(--orb-1) blur-[80px]" />
+              <div className="absolute -right-16 -bottom-16 h-48 w-64 rounded-full bg-(--orb-2) blur-[70px]" />
+              <div className="absolute top-1/2 -left-24 h-40 w-56 rounded-full bg-(--orb-3) blur-[70px]" />
+            </div>
+            <div className="relative z-10 p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg)">
+                  <AlertTriangle className="size-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-normal tracking-[0.2em] text-(--danger-fg) uppercase">
+                    Launch Failed
+                  </p>
+                  <p className="text-muted-foreground mt-2 text-sm font-normal break-words whitespace-pre-wrap">
+                    {status}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="h-10 rounded-md border border-(--danger-border) bg-(--danger-bg) px-6 text-sm font-thin text-(--danger-fg) transition-colors hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover)"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 }

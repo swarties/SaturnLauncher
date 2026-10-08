@@ -184,7 +184,7 @@ function MorphingDialogContainer({ children }) {
         <>
           <motion.div
             key={`backdrop-${uniqueId}`}
-            className="fixed inset-0 h-full w-full bg-transparent backdrop-blur-sm"
+            className="fixed inset-0 h-full w-full bg-(--backdrop) backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

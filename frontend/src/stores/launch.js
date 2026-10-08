@@ -132,8 +132,27 @@ function clearTimers() {
   }
 }
 
+export function clearError() {
+  setState({
+    activeUuid: null,
+    isLoading: false,
+    progress: 0,
+    status: '',
+    statusKind: 'idle',
+  });
+}
+
 export async function startLaunch(uuid) {
   if (state.isLoading) return;
+
+  setState({
+    activeUuid: uuid,
+    isLoading: false,
+    progress: 0,
+    status: 'Test error: forced rejection for UI testing',
+    statusKind: 'error',
+  });
+  return;
 
   installSubs();
   clearTimers();
@@ -175,9 +194,5 @@ export async function startLaunch(uuid) {
       status: e?.message ?? String(e),
       statusKind: 'error',
     });
-    statusTimer = setTimeout(() => {
-      setState({ status: '', statusKind: 'idle' });
-      statusTimer = null;
-    }, STATUS_CLEAR_MS);
   }
 }

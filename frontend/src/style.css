@@ -149,7 +149,7 @@ textarea,
   );
   --hairline: rgb(255 255 255 / 8%);
   --divider: color-mix(in oklch, var(--color-saturn-950) 60%, transparent);
-  --backdrop: color-mix(in oklch, var(--color-saturn-950) 70%, transparent);
+  --backdrop: color-mix(in oklch, var(--color-saturn-950) 45%, transparent);
 
   --nav-pill: color-mix(in oklch, var(--color-saturn-900) 60%, transparent);
   --nav-account-bg: color-mix(
@@ -255,7 +255,7 @@ textarea,
   );
   --hairline: rgb(0 0 0 / 8%);
   --divider: color-mix(in oklch, var(--color-saturn-300) 60%, transparent);
-  --backdrop: color-mix(in oklch, var(--color-saturn-950) 40%, transparent);
+  --backdrop: color-mix(in oklch, var(--color-saturn-950) 25%, transparent);
 
   --nav-pill: color-mix(in oklch, var(--color-saturn-200) 60%, transparent);
   --nav-account-bg: color-mix(
