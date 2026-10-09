@@ -611,28 +611,9 @@ func (a *App) GetInstanceIcon(folderId string) (string, error) {
 }
 
 func (a *App) InstallContent(folderId, contentType string) (string, error) {
-	appdatadir, err := os.UserConfigDir()
+	contentDir, fileFormat, err := ContentDir(folderId, contentType)
 	if err != nil {
 		return "", err
-	}
-	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId)
-	modDir := filepath.Join(base, "mods")
-	rpDir := filepath.Join(base, "resourcepacks")
-	shadersDir := filepath.Join(base, "shaderpacks")
-	var contentDir string
-	var fileFormat string
-	switch contentType {
-	case "mods":
-		fileFormat = "*.jar"
-		contentDir = modDir
-	case "resourcepacks":
-		fileFormat = "*.zip"
-		contentDir = rpDir
-	case "shaders":
-		fileFormat = "*.zip"
-		contentDir = shadersDir
-	default:
-		return "", fmt.Errorf("content type is not supported")
 	}
 	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
 		Title: "Select Content",
@@ -663,4 +644,78 @@ func (a *App) InstallContent(folderId, contentType string) (string, error) {
 	}
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return filepath.Base(path), nil
+}
+
+func ContentDir(folderId, contentType string) (string, string, error) {
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return "", "", err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId)
+	modDir := filepath.Join(base, "mods")
+	rpDir := filepath.Join(base, "resourcepacks")
+	shadersDir := filepath.Join(base, "shaderpacks")
+	var contentDir string
+	var fileFormat string
+	switch contentType {
+	case "mods":
+		fileFormat = "*.jar"
+		contentDir = modDir
+	case "resourcepacks":
+		fileFormat = "*.zip"
+		contentDir = rpDir
+	case "shaders":
+		fileFormat = "*.zip"
+		contentDir = shadersDir
+	default:
+		return "", "", fmt.Errorf("content type is not supported")
+	}
+
+	return contentDir, fileFormat, nil
+}
+
+func (a *App) GetInstalledContent(folderId, contentType string) ([]string, error) {
+	contentDir, _, err := ContentDir(folderId, contentType)
+	if err != nil {
+		return nil, err
+	}
+	dir, err := os.ReadDir(contentDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+	Content := make([]string, 0, len(dir))
+	for _, r := range dir {
+		if r.IsDir() {
+			continue
+		}
+		Content = append(Content, r.Name())
+	}
+
+	return Content, nil
+}
+
+func (a *App) RemoveContent(folderId, contentType, filename string) error {
+	if strings.Contains(filename, "/") {
+		return fmt.Errorf("filename is invalid")
+	}
+	if strings.Contains(filename, "\\") {
+		return fmt.Errorf("filename is invalid")
+	}
+	if strings.Contains(filename, "..") {
+		return fmt.Errorf("filename is invalid")
+	}
+	contentDir, _, err := ContentDir(folderId, contentType)
+	if err != nil {
+		return err
+	}
+	dest := filepath.Join(contentDir, filename)
+	err = os.Remove(dest)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
 }
