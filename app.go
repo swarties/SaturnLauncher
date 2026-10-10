@@ -6,9 +6,11 @@ import (
 	"SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/launch"
+	"bufio"
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -18,6 +20,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/disintegration/imaging"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -317,27 +320,92 @@ func (a *App) StartGame(folderId string) error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(*ensureJava, fullargs...)
-	// cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-
-	a.Launch.HideConsole(cmd)
-	cmd.Dir = instDir // saves logs to jvm.log in the future make a func that reads the files and returns its content for the frontend
-	cmd.Stdout = file
-	cmd.Stderr = file
-	err = cmd.Start()
+	mc := exec.Command(*ensureJava, fullargs...)
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(2)
+	a.Launch.HideConsole(mc)
+	mc.Dir = instDir // saves logs to jvm.log in the future make a func that reads the files and returns its content for the frontend
+	stdout, err := mc.StdoutPipe()
 	if err != nil {
-		wailsRuntime.EventsEmit(a.ctx, "game:error", err.Error())
-		return err
-	}
-	wailsRuntime.EventsEmit(a.ctx, "game:start", "Game Launching....")
-	go func() {
-		if err := cmd.Wait(); err != nil {
-			fmt.Printf("minecraft exited with error: %s\n", err)
-		}
 		err := file.Close()
 		if err != nil {
-			return
+			return err
 		}
+		return err
+	}
+	stderr, err := mc.StderrPipe()
+	if err != nil {
+		err := file.Close()
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	err = mc.Start()
+	if err != nil {
+		wailsRuntime.EventsEmit(a.ctx, "game:error", err.Error())
+		err := file.Close()
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "game:started", folderId)
+	go func() {
+		defer waitGroup.Done()
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			wailsRuntime.EventsEmit(a.ctx, "game:info", line)
+			fmt.Println("game:info", " ", line)
+			_, err := fmt.Fprintln(file, line)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+		if scanner.Err() != nil {
+			fmt.Println(scanner.Err())
+		}
+	}()
+	go func() {
+		defer waitGroup.Done()
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			wailsRuntime.EventsEmit(a.ctx, "game:error", line)
+			fmt.Println("game:error", " ", line)
+			_, err := fmt.Fprintln(file, line)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+		if scanner.Err() != nil {
+			fmt.Println(scanner.Err())
+		}
+	}()
+
+	go func() {
+		waitGroup.Wait()
+		err := mc.Wait()
+		var code int
+		var exitError *exec.ExitError
+		if err != nil {
+			if errors.As(err, &exitError) {
+				code = exitError.ExitCode()
+			} else {
+				code = -1
+			}
+		}
+
+		err = file.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+		wailsRuntime.EventsEmit(a.ctx, "game:stopped", map[string]any{
+			"folderId": folderId,
+			"exitCode": code,
+		})
+		fmt.Println("game:stopped", folderId, " ", code)
 	}()
 	return nil
 }
