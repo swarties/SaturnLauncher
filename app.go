@@ -588,7 +588,7 @@ func (a *App) UpdateInstanceDescription(folderId, description string) error {
 	return nil
 }
 
-func (a *App) PickInstanceIcon(folderId string) (string, error) {
+func (a *App) PickInstanceIcon() (string, error) {
 	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
 		Title: "Select an icon",
 		Filters: []wailsRuntime.FileFilter{

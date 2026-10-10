@@ -145,14 +145,14 @@ export function clearError() {
 export async function startLaunch(uuid) {
   if (state.isLoading) return;
 
-  setState({
-    activeUuid: uuid,
-    isLoading: false,
-    progress: 0,
-    status: 'Test error: forced rejection for UI testing',
-    statusKind: 'error',
-  });
-  return;
+  // setState({
+  //   activeUuid: uuid,
+  //   isLoading: false,
+  //   progress: 0,
+  //   status: 'Test error: forced rejection for UI testing',
+  //   statusKind: 'error',
+  // });
+  // return;
 
   installSubs();
   clearTimers();
