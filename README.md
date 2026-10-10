@@ -7,7 +7,7 @@ Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source
 - CPU: 2+ cores
 - RAM: 1GB of free RAM
 - Storage: 50 MB of free storage
-- Network: Required for login
+- Network: Required for login and installing the game
 
 ## Install Steps
 
@@ -21,6 +21,7 @@ Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source
 >  1. Click the small 'more info' button
 >
 >  2. Click 'Run anyways'
+>     
 
 ## Tech Stack
 Golang V1.27.1 for back-end
@@ -53,7 +54,7 @@ Turned Instances to be UUID based
 Linked logout
 Login Page Redesign
 Instance selector in home page 
-Fabric installation ( around 80% done )
+Finished fabric installation ( still not connected in front end )
 
 
 ## Motivation
