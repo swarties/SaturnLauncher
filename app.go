@@ -6,6 +6,7 @@ import (
 	"SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/launch"
+	"SaturnLauncher/backend/modrinth"
 	"bufio"
 	"context"
 	"encoding/base64"
@@ -31,23 +32,23 @@ import (
 type App struct {
 	ctx               context.Context
 	Auth              *auth.Auth
-	Account           *auth.Account
 	ActiveAccessToken string
 	Launch            *launch.Launch
 	Download          *download.Download
 	InstanceManager   *instances.InstanceManager
 	Fabric            *fabric.Fabric
+	Modrinth          *modrinth.Modrinth
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{
 		Auth:            auth.NewAuth(),
-		Account:         auth.NewAccount(),
 		Launch:          launch.NewLaunch(),
 		Download:        download.NewDownload(),
 		InstanceManager: instances.NewInstanceManager(),
 		Fabric:          fabric.NewFabric(),
+		Modrinth:        modrinth.NewModrinth(),
 	}
 }
 
