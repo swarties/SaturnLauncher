@@ -14,4 +14,4 @@
 ## Polishing :
 - remove dead code :
   - dev const + imports unused (`launch.js` and `home.jsx`)
-  - run ESLint anyways
+  - run ESLint anyway
