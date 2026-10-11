@@ -15,17 +15,11 @@ import {
 } from 'react';
 import { GlassNavbar } from '@glinui/ui';
 import { useAuth } from '@/stores/auth';
+import { NAV_ITEMS } from '@/lib/nav-items';
 
 export const Route = createFileRoute('/_app')({
   component: AppLayout,
 });
-
-const NAV_ITEMS = [
-  { to: '/home', label: 'Home' },
-  { to: '/instances', label: 'Instances' },
-  { to: '/account', label: 'Account' },
-  { to: '/settings', label: 'Settings' },
-];
 
 const PAGE_ANIMATE = { x: '0', opacity: 1, filter: 'blur(0px)' };
 const PAGE_TRANSITION = { duration: 0.55, ease: [0.22, 1, 0.38, 1] };
