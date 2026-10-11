@@ -7,13 +7,15 @@ import {
 import { motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 
-import { MOCK_INSTANCE } from '@/lib/mock-instance.js';
 import { onBackendEvent } from '@/lib/backend.js';
 import {
   loadInstance,
   refreshInstance,
   useInstance,
 } from '@/stores/instance.js';
+
+import minecraftLogo from '@/assets/logos/minecraft.png';
+import fabricLogo from '@/assets/logos/fabric.png';
 
 export const Route = createFileRoute('/_instance/instances/$uuid')({
   component: InstanceDetailLayout,
@@ -37,7 +39,13 @@ function InstanceDetailLayout() {
   const [pill, setPill] = useState({ top: 0, height: 0, ready: false });
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
-  const { data: instance } = useInstance();
+  const { data: instance, iconDataUrl } = useInstance();
+
+  const iconSrc = iconDataUrl
+    ? `data:image/png;base64.${iconDataUrl}`
+    : instance?.fabricVersion
+      ? fabricLogo
+      : minecraftLogo;
 
   useEffect(() => {
     loadInstance(uuid);
@@ -75,7 +83,7 @@ function InstanceDetailLayout() {
         {/* Identity card — sits at the same top edge as the content panel */}
         <div className="flex flex-col gap-3 rounded-md border-2 border-(--surface-border) p-4">
           <img
-            src={MOCK_INSTANCE.icon}
+            src={iconSrc}
             alt=""
             draggable={false}
             className="h-16 w-16 rounded-md"
@@ -89,7 +97,7 @@ function InstanceDetailLayout() {
             </p>
           </div>
           <p className="text-muted-foreground line-clamp-4 text-xs font-thin">
-            {MOCK_INSTANCE.description}
+            {instance?.description}
           </p>
         </div>
 

@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { MOCK_INSTANCE } from '@/lib/mock-instance.js';
 import { useInstance } from '@/stores/instance.js';
 
 import {
   GetTotalRam,
+  PickInstanceIcon,
   RenameInstance,
+  SetInstanceIcon,
+  UpdateInstanceDescription,
   UpdateMem,
 } from '../../../wailsjs/go/main/App';
+
+import minecraftLogo from '@/assets/logos/minecraft.png';
+import fabricLogo from '@/assets/logos/fabric.png';
 
 export const Route = createFileRoute('/_instance/instances/$uuid/settings')({
   component: SettingsTab,
@@ -20,15 +25,17 @@ const RAM_STEP = 256;
 
 function SettingsTab() {
   const { uuid } = Route.useParams();
-  const { data: instance, error: loadError } = useInstance();
+  const { data: instance, iconDataUrl, error: loadError } = useInstance();
 
   const [name, setName] = useState('');
-  const [description, setDescription] = useState(MOCK_INSTANCE.description);
+  const [description, setDescription] = useState('');
   const [minRam, setMinRam] = useState(2048);
   const [maxRam, setMaxRam] = useState(4096);
   const [totalRamMB, setTotalRamMB] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [iconUploading, setIconUploading] = useState(false);
+  const [iconError, setIconError] = useState(null);
 
   useEffect(() => {
     GetTotalRam()
@@ -39,7 +46,7 @@ function SettingsTab() {
   const resetFromStore = useCallback(() => {
     if (!instance) return;
     setName(instance.name ?? '');
-    setDescription(MOCK_INSTANCE.description);
+    setDescription(instance.description ?? '');
     setMinRam(instance.minram ?? 2048);
     setMaxRam(instance.maxram ?? 4096);
   }, [instance]);
@@ -68,6 +75,7 @@ function SettingsTab() {
     setSaveError(null);
     try {
       await RenameInstance(uuid, name.trim());
+      await UpdateInstanceDescription(uuid, description);
       await UpdateMem(uuid, minRam, maxRam);
     } catch (e) {
       setSaveError(e?.message ?? String(e));
@@ -79,6 +87,27 @@ function SettingsTab() {
   const handleCancel = () => {
     setSaveError(null);
     resetFromStore();
+  };
+
+  const iconSrc = iconDataUrl
+    ? `data:image/png;base64,${iconDataUrl}`
+    : instance?.fabricVersion
+      ? fabricLogo
+      : minecraftLogo;
+
+  const handleUploadIcon = async () => {
+    if (iconUploading) return;
+    setIconUploading(true);
+    setIconError(null);
+    try {
+      const path = await PickInstanceIcon();
+      if (!path) return;
+      await SetInstanceIcon(uuid, path);
+    } catch (e) {
+      setIconError(e?.message ?? String(e));
+    } finally {
+      setIconUploading(false);
+    }
   };
 
   return (
@@ -139,7 +168,7 @@ function SettingsTab() {
           <div className="mx-auto flex w-full max-w-52 flex-col">
             <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border-2 border-(--surface-border)">
               <img
-                src={MOCK_INSTANCE.icon}
+                src={iconSrc}
                 alt=""
                 draggable={false}
                 className="h-full w-full object-cover"
@@ -147,10 +176,15 @@ function SettingsTab() {
             </div>
             <button
               type="button"
-              className="text-muted-foreground mt-4 h-10 w-full rounded-md border-2 border-(--surface-border) text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
+              onClick={handleUploadIcon}
+              disabled={iconUploading}
+              className="text-muted-foreground mt-4 h-10 w-full rounded-md border-2 border-(--surface-border) text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
             >
-              Upload Icon
+              {iconUploading ? 'Uploading...' : 'Upload Icon'}
             </button>
+            {iconError && (
+              <p className="mt-2 text-xs font-thin text-red-400">{iconError}</p>
+            )}
           </div>
         </Field>
       </div>

@@ -156,22 +156,22 @@ function AppLayout() {
     const onKey = (e) => {
       if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
 
-      let digit = null
+      let digit = null;
       if (e.code.startsWith('Digit')) {
-        digit = e.code.slice(5)
+        digit = e.code.slice(5);
       } else if (e.code.startsWith('Numpad')) {
         digit = e.code.slice(6);
       }
       if (!digit) return;
 
-      const index = Number(digit) -1;
+      const index = Number(digit) - 1;
       const target = NAV_ITEMS[index];
       if (!target) return;
       if (target.to === location.pathname) return;
 
-      e.preventDefault()
+      e.preventDefault();
       void navigate({ to: target.to });
-    }
+    };
 
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);

@@ -6,16 +6,72 @@ export function CreateInstance(arg1, arg2) {
   return window['go']['main']['App']['CreateInstance'](arg1, arg2);
 }
 
+export function DeleteAccount(arg1) {
+  return window['go']['main']['App']['DeleteAccount'](arg1);
+}
+
 export function DeleteInstance(arg1) {
   return window['go']['main']['App']['DeleteInstance'](arg1);
+}
+
+export function GetActiveAccount() {
+  return window['go']['main']['App']['GetActiveAccount']();
+}
+
+export function GetDiscoveryPage(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetDiscoveryPage'](arg1, arg2, arg3);
+}
+
+export function GetFabricLoaders(arg1) {
+  return window['go']['main']['App']['GetFabricLoaders'](arg1);
+}
+
+export function GetInstalledContent(arg1, arg2) {
+  return window['go']['main']['App']['GetInstalledContent'](arg1, arg2);
+}
+
+export function GetInstanceIcon(arg1) {
+  return window['go']['main']['App']['GetInstanceIcon'](arg1);
 }
 
 export function GetInstanceInfo(arg1) {
   return window['go']['main']['App']['GetInstanceInfo'](arg1);
 }
 
+export function GetInstanceLogs(arg1) {
+  return window['go']['main']['App']['GetInstanceLogs'](arg1);
+}
+
+export function GetProjectPage(arg1) {
+  return window['go']['main']['App']['GetProjectPage'](arg1);
+}
+
+export function GetProjectVersions(arg1, arg2) {
+  return window['go']['main']['App']['GetProjectVersions'](arg1, arg2);
+}
+
+export function GetTotalRam() {
+  return window['go']['main']['App']['GetTotalRam']();
+}
+
 export function GetVersions() {
   return window['go']['main']['App']['GetVersions']();
+}
+
+export function InstallContent(arg1, arg2) {
+  return window['go']['main']['App']['InstallContent'](arg1, arg2);
+}
+
+export function InstallFabric(arg1, arg2) {
+  return window['go']['main']['App']['InstallFabric'](arg1, arg2);
+}
+
+export function InstallProjectContent(arg1, arg2, arg3) {
+  return window['go']['main']['App']['InstallProjectContent'](arg1, arg2, arg3);
+}
+
+export function ListAccounts() {
+  return window['go']['main']['App']['ListAccounts']();
 }
 
 export function ListInstances() {
@@ -24,6 +80,30 @@ export function ListInstances() {
 
 export function Logout() {
   return window['go']['main']['App']['Logout']();
+}
+
+export function OpenInstanceFolder(arg1) {
+  return window['go']['main']['App']['OpenInstanceFolder'](arg1);
+}
+
+export function PickInstanceIcon() {
+  return window['go']['main']['App']['PickInstanceIcon']();
+}
+
+export function RemoveContent(arg1, arg2, arg3) {
+  return window['go']['main']['App']['RemoveContent'](arg1, arg2, arg3);
+}
+
+export function RenameInstance(arg1, arg2) {
+  return window['go']['main']['App']['RenameInstance'](arg1, arg2);
+}
+
+export function SetActiveAccount(arg1) {
+  return window['go']['main']['App']['SetActiveAccount'](arg1);
+}
+
+export function SetInstanceIcon(arg1, arg2) {
+  return window['go']['main']['App']['SetInstanceIcon'](arg1, arg2);
 }
 
 export function StartApp() {
@@ -36,6 +116,14 @@ export function StartGame(arg1) {
 
 export function StartLogin() {
   return window['go']['main']['App']['StartLogin']();
+}
+
+export function UninstallFabric(arg1) {
+  return window['go']['main']['App']['UninstallFabric'](arg1);
+}
+
+export function UpdateInstanceDescription(arg1, arg2) {
+  return window['go']['main']['App']['UpdateInstanceDescription'](arg1, arg2);
 }
 
 export function UpdateMem(arg1, arg2, arg3) {

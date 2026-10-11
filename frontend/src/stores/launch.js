@@ -15,7 +15,7 @@ const CREEP_MIN_STEP = 0.02;
 const SPRINT_COEFFICIENT = 0.08;
 const SPRINT_MIN_STEP = 0.5;
 const SUCCESS_HOLD_MS = 200;
-const STATUS_CLEAR_MS = 5000;
+// const STATUS_CLEAR_MS = 5000; unused
 const MIN_LAUNCH_MS = 2200;
 
 let state = {

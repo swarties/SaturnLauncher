@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from 'react';
-import { GetInstanceInfo } from '../../wailsjs/go/main/App';
+import { GetInstanceInfo, GetInstanceIcon } from '../../wailsjs/go/main/App';
 
 let state = {
   uuid: null,
   data: null,
+  iconDataUrl: null,
   loading: false,
   error: null,
 };
@@ -28,31 +29,57 @@ export function useInstance() {
 
 let currentUuid = null;
 
-function fetch(uuid, { silent = false } = {}) {
-  if (!silent) setState({ uuid, data: null, loading: true, error: null });
-  GetInstanceInfo(uuid)
-    .then((data) => {
-      if (currentUuid !== uuid) return;
-      setState({ data, loading: false, error: null });
-    })
-    .catch((e) => {
-      if (currentUuid !== uuid) return;
-      setState({ data: null, loading: false, error: e?.message ?? String(e) });
+async function fetch(uuid, { silent = false } = {}) {
+  if (!silent) {
+    setState({
+      uuid,
+      data: null,
+      iconDataUrl: null,
+      loading: true,
+      error: null,
     });
+  }
+
+  try {
+    const data = await GetInstanceInfo(uuid);
+    if (currentUuid !== uuid) return;
+    const icon = await GetInstanceIcon(uuid).catch(() => '');
+    if (currentUuid !== uuid) return;
+    setState({
+      data,
+      iconDataUrl: icon || null,
+      loading: false,
+      error: null,
+    });
+  } catch (e) {
+    if (currentUuid !== uuid) return;
+    setState({
+      data: null,
+      iconDataUrl: null,
+      loading: false,
+      error: e?.message ?? String(e),
+    });
+  }
 }
 
 export function loadInstance(uuid) {
   if (currentUuid === uuid && state.data) return;
   currentUuid = uuid;
-  fetch(uuid);
+  void fetch(uuid);
 }
 
 export function refreshInstance() {
   if (!currentUuid) return;
-  fetch(currentUuid, { silent: true });
+  void fetch(currentUuid, { silent: true });
 }
 
 export function clearInstance() {
   currentUuid = null;
-  setState({ uuid: null, data: null, loading: false, error: null });
+  setState({
+    uuid: null,
+    data: null,
+    iconDataUrl: null,
+    loading: false,
+    error: null,
+  });
 }

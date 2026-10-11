@@ -3,15 +3,14 @@
 ### Event Related
 
 - Added logs events to start game( "game:info" and "game:error" )
-- added a game:started and game:stopped events that also pass the folderId. 
- game:stopped also passes the exit code to determine if the game crashed or exited normally
+- added a game:started and game:stopped events that also pass the folderId.
+  game:stopped also passes the exit code to determine if the game crashed or exited normally
 
 ### Fabric Related
 
 - Added an InstallFabric function that takes a folderId and a loaderVersion(we get that from the follow function)
 - Added GetFabricLoaders which return a slice of fabric loader versions compatible with the instance's game version
 - Added UninstallFabric does what it says
-
 
 ### Instance Related
 
