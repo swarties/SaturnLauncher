@@ -4,6 +4,8 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { motion } from 'motion/react';
 
 import { VersionPicker } from '@/components/ui/version-picker.jsx';
+import { LoaderPicker } from '@/components/ui/loader-picker.jsx';
+import { FabricVersionPicker } from '@/components/ui/fabric-version-picker.jsx';
 import {
   MorphingDialog,
   MorphingDialogTrigger,
@@ -18,6 +20,7 @@ import {
 import {
   CreateInstance,
   DeleteInstance,
+  InstallFabric,
   ListInstances,
 } from '../../../wailsjs/go/main/App';
 import { onBackendEvent } from '@/lib/backend.js';
@@ -272,24 +275,74 @@ function formatCreated(iso) {
 }
 
 function CreateInstanceForm() {
-  const { setIsOpen } = useMorphingDialog();
+  const { setIsOpen, setPreventClose } = useMorphingDialog();
   const [name, setName] = useState('');
   const [version, setVersion] = useState('1.14');
+  const [loader, setLoader] = useState('vanilla');
+  const [fabricVersion, setFabricVersion] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState('idle');
+  const [partialUuid, setPartialUuid] = useState(
+    /** @type {string | null} */ (null)
+  );
   const [error, setError] = useState(/** @type { string | null } */ (null));
 
-  const handleCreate = async () => {
-    if (!name.trim() || submitting) return;
+  useEffect(() => {
+    setFabricVersion('');
+  }, [version]);
+
+  useEffect(() => {
+    if (loader !== 'fabric') setFabricVersion('');
+  }, [loader]);
+
+  const handleSubmit = async () => {
+    if (submitting) return;
+    if (!partialUuid && !name.trim()) return;
+    if (!partialUuid && loader === 'fabric' && !fabricVersion) return;
+
     setSubmitting(true);
+    setPreventClose(true);
     setError(null);
+
+    let uuid = partialUuid;
+
     try {
-      await CreateInstance(name.trim(), version);
+      if (!uuid) {
+        setPhase('creating');
+        const inst = await CreateInstance(name.trim(), version);
+        uuid = inst.uuid;
+      }
+
+      if (loader === 'fabric') {
+        setPhase(uuid === partialUuid ? 'retrying' : 'installing');
+        await InstallFabric(uuid, fabricVersion);
+      }
+
       setIsOpen(false);
     } catch (e) {
       setError(e?.message ?? String(e));
+      setPartialUuid(uuid);
       setSubmitting(false);
+      setPhase('idle');
+      setPreventClose(false);
     }
   };
+
+  const buttonLabel = (() => {
+    if (submitting) {
+      if (phase === 'creating') return 'Creating...';
+      if (phase === 'installing') return 'Installing Fabric...';
+      if (phase === 'retrying') return 'Retrying...';
+      return 'Working...';
+    }
+    if (partialUuid) return 'Retry Fabric Install';
+    return 'Create';
+  })();
+
+  const canSubmit =
+    !submitting &&
+    (Boolean(partialUuid) ||
+      (name.trim() && (loader !== 'fabric' || Boolean(fabricVersion))));
 
   return (
     <>
@@ -306,7 +359,7 @@ function CreateInstanceForm() {
               if (e.key !== 'Enter') return;
               if (e.nativeEvent.isComposing) return;
               e.preventDefault();
-              void handleCreate();
+              void handleSubmit();
             }}
             placeholder="My Instance"
             className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
@@ -318,20 +371,41 @@ function CreateInstanceForm() {
           </span>
           <VersionPicker value={version} onChange={setVersion} />
         </div>
+        <div className="flex flex-col gap-2">
+          <span className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
+            Loader
+          </span>
+          <LoaderPicker value={loader} onChange={setLoader} />
+        </div>
+        {loader === 'fabric' && (
+          <div className="flex flex-col gap-2">
+            <span className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
+              Fabric Version
+            </span>
+            <FabricVersionPicker
+              gameVersion={version}
+              value={fabricVersion}
+              onChange={setFabricVersion}
+            />
+          </div>
+        )}
         {error && <p className="text-xs font-thin text-red-400">{error}</p>}
       </div>
 
       <div className="mt-6 flex justify-end gap-3">
-        <MorphingDialogClose className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)">
-          Cancel
+        <MorphingDialogClose
+          disabled={submitting}
+          className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
+        >
+          {partialUuid ? 'Close' : 'Cancel'}
         </MorphingDialogClose>
         <button
           type="button"
-          onClick={handleCreate}
-          disabled={!name.trim() || submitting}
+          onClick={handleSubmit}
+          disabled={!canSubmit}
           className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-10 rounded-md border px-6 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
         >
-          {submitting ? 'Creating...' : 'Create'}
+          {buttonLabel}
         </button>
       </div>
     </>

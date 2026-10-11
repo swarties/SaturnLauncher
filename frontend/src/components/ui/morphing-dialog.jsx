@@ -28,17 +28,24 @@ function useMorphingDialog() {
 
 function MorphingDialogProvider({ children, transition }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [preventClose, setPreventClose] = useState(false);
   const uniqueId = useId();
   const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) setPreventClose(false);
+  }, [isOpen]);
 
   const contextValue = useMemo(
     () => ({
       isOpen,
       setIsOpen,
+      preventClose,
+      setPreventClose,
       uniqueId,
       triggerRef,
     }),
-    [isOpen, uniqueId]
+    [isOpen, preventClose, uniqueId]
   );
 
   return (
@@ -92,14 +99,15 @@ function MorphingDialogTrigger({ children, className, style, triggerRef }) {
 }
 
 function MorphingDialogContent({ children, className, style }) {
-  const { setIsOpen, isOpen, uniqueId, triggerRef } = useMorphingDialog();
+  const { setIsOpen, isOpen, uniqueId, triggerRef, preventClose } =
+    useMorphingDialog();
   const containerRef = useRef(null);
   const [firstFocusableElement, setFirstFocusableElement] = useState(null);
   const [lastFocusableElement, setLastFocusableElement] = useState(null);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !preventClose) {
         setIsOpen(false);
       }
       if (event.key === 'Tab') {
@@ -124,7 +132,7 @@ function MorphingDialogContent({ children, className, style }) {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setIsOpen, firstFocusableElement, lastFocusableElement]);
+  }, [setIsOpen, firstFocusableElement, lastFocusableElement, preventClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -146,7 +154,7 @@ function MorphingDialogContent({ children, className, style }) {
   }, [isOpen, triggerRef]);
 
   useClickOutside(containerRef, () => {
-    if (isOpen) {
+    if (isOpen && !preventClose) {
       setIsOpen(false);
     }
   });
@@ -270,20 +278,28 @@ function MorphingDialogImage({ src, alt, className, style }) {
   );
 }
 
-function MorphingDialogClose({ children, className, variants }) {
-  const { setIsOpen, uniqueId } = useMorphingDialog();
+function MorphingDialogClose({ children, className, variants, disabled }) {
+  const { setIsOpen, uniqueId, preventClose } = useMorphingDialog();
+
+  const isLocked = preventClose || disabled;
 
   const handleClose = useCallback(() => {
+    if (isLocked) return;
     setIsOpen(false);
-  }, [setIsOpen]);
+  }, [setIsOpen, isLocked]);
 
   return (
     <motion.button
       onClick={handleClose}
       type="button"
       aria-label="Close dialog"
+      disabled={isLocked}
       key={`dialog-close-${uniqueId}`}
-      className={cn('absolute top-6 right-6', className)}
+      className={cn(
+        'absolute top-6 right-6',
+        isLocked && 'pointer-events-none opacity-40',
+        className
+      )}
       initial="initial"
       animate="animate"
       exit="exit"
