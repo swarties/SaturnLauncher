@@ -42,7 +42,7 @@ function InstanceDetailLayout() {
   const { data: instance, iconDataUrl } = useInstance();
 
   const iconSrc = iconDataUrl
-    ? `data:image/png;base64.${iconDataUrl}`
+    ? `data:image/png;base64,${iconDataUrl}`
     : instance?.fabricVersion
       ? fabricLogo
       : minecraftLogo;
