@@ -181,6 +181,7 @@ func (a *App) StartGame(folderId string) error {
 	if /* err != nil {
 		return /* err
 	} */
+
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
@@ -744,4 +745,47 @@ func (a *App) RemoveContent(folderId, contentType, filename string) error {
 	}
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
+}
+
+func (a *App) GetDiscoveryPage(projectType, version, categories string) (*modrinth.DiscoverProjects, error) {
+	discoveryPage, err := a.Modrinth.GetDiscoveryPage(projectType, version, categories)
+	if err != nil {
+		return nil, err
+	}
+	return discoveryPage, nil
+}
+
+func (a *App) GetProjectPage(projectId string) (*modrinth.ProjectPage, error) {
+	project, err := a.Modrinth.GetProject(projectId)
+	if err != nil {
+		return nil, err
+	}
+	return project, nil
+}
+
+func (a *App) GetProjectVersions(projectId, gameVersion string) ([]modrinth.VersionInfo, error) {
+	versions, err := a.Modrinth.GetVersions(projectId, gameVersion)
+	if err != nil {
+		return nil, err
+	}
+	return versions, nil
+}
+
+func (a *App) InstallProjectContent(folderId, contentType, versionId string) (string, error) {
+	instInfo, err := a.GetInstanceInfo(folderId)
+	if err != nil {
+		return "", err
+	}
+	version, err := a.Modrinth.GetVersion(versionId)
+	if err != nil {
+		return "", err
+	}
+	seen := make(map[string]bool)
+	err = a.Modrinth.InstallDeps(*version, seen, instInfo.Uuid, contentType, instInfo.Version)
+	if err != nil {
+		return "", err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+
+	return version.Files[0].Filename, nil
 }

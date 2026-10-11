@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 )
 
 // import "SaturnLauncher/backend/download"
@@ -28,63 +27,65 @@ func NewModrinth() *Modrinth {
 const userAgent = "swarties/SaturnLauncher/" + projectInfo.Version + " (" + projectInfo.ContactEmail + ")"
 
 // structs made using https://transform.tools/json-to-go
-type DiscoverMods struct {
-	Hits []struct {
-		ProjectID         string    `json:"project_id"`
-		ProjectType       string    `json:"project_type"`
-		AllProjectTypes   []string  `json:"all_project_types"`
-		Slug              string    `json:"slug"`
-		Author            string    `json:"author"`
-		AuthorID          string    `json:"author_id"`
-		Organization      string    `json:"organization"`
-		OrganizationID    string    `json:"organization_id"`
-		Title             string    `json:"title"`
-		Description       string    `json:"description"`
-		Categories        []string  `json:"categories"`
-		DisplayCategories []string  `json:"display_categories"`
-		Versions          []string  `json:"versions"`
-		Downloads         int       `json:"downloads"`
-		Follows           int       `json:"follows"`
-		IconURL           string    `json:"icon_url"`
-		DateCreated       time.Time `json:"date_created"`
-		DateModified      time.Time `json:"date_modified"`
-		LatestVersion     string    `json:"latest_version"`
-		License           string    `json:"license"`
-		ClientSide        string    `json:"client_side"`
-		ServerSide        string    `json:"server_side"`
-		Environment       []string  `json:"environment"`
-		DisclosureTypes   []string  `json:"disclosure_types"`
-		Gallery           []string  `json:"gallery"`
-		FeaturedGallery   string    `json:"featured_gallery"`
-		Color             int       `json:"color"`
-	} `json:"hits"`
-	Offset    int `json:"offset"`
-	Limit     int `json:"limit"`
-	TotalHits int `json:"total_hits"`
-}
 
-type ModPage struct {
-	ClientSide   string    `json:"client_side"`
-	ServerSide   string    `json:"server_side"`
-	GameVersions []string  `json:"game_versions"`
-	Environment  []string  `json:"environment"`
-	ID           string    `json:"id"`
-	Slug         string    `json:"slug"`
-	ProjectType  string    `json:"project_type"`
-	Team         string    `json:"team"`
-	Organization string    `json:"organization"`
-	Title        string    `json:"title"`
-	Description  string    `json:"description"`
-	Body         string    `json:"body"`
-	BodyURL      string    `json:"body_url"`
-	Published    time.Time `json:"published"`
-	Updated      time.Time `json:"updated"`
-	Status       string    `json:"status"`
-	License      struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-		URL  string `json:"url"`
-	} `json:"license"`
+type SearchHits struct {
+	ProjectID         string   `json:"project_id"`
+	ProjectType       string   `json:"project_type"`
+	AllProjectTypes   []string `json:"all_project_types"`
+	Slug              string   `json:"slug"`
+	Author            string   `json:"author"`
+	AuthorID          string   `json:"author_id"`
+	Organization      string   `json:"organization"`
+	OrganizationID    string   `json:"organization_id"`
+	Title             string   `json:"title"`
+	Description       string   `json:"description"`
+	Categories        []string `json:"categories"`
+	DisplayCategories []string `json:"display_categories"`
+	Versions          []string `json:"versions"`
+	Downloads         int      `json:"downloads"`
+	Follows           int      `json:"follows"`
+	IconURL           string   `json:"icon_url"`
+	DateCreated       string   `json:"date_created"`
+	DateModified      string   `json:"date_modified"`
+	LatestVersion     string   `json:"latest_version"`
+	License           string   `json:"license"`
+	ClientSide        string   `json:"client_side"`
+	ServerSide        string   `json:"server_side"`
+	Environment       []string `json:"environment"`
+	DisclosureTypes   []string `json:"disclosure_types"`
+	Gallery           []string `json:"gallery"`
+	FeaturedGallery   string   `json:"featured_gallery"`
+	Color             int      `json:"color"`
+}
+type DiscoverProjects struct {
+	Hits      []SearchHits `json:"hits"`
+	Offset    int          `json:"offset"`
+	Limit     int          `json:"limit"`
+	TotalHits int          `json:"total_hits"`
+}
+type License struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+type ProjectPage struct {
+	ClientSide           string            `json:"client_side"`
+	ServerSide           string            `json:"server_side"`
+	GameVersions         []string          `json:"game_versions"`
+	Environment          []string          `json:"environment"`
+	ID                   string            `json:"id"`
+	Slug                 string            `json:"slug"`
+	ProjectType          string            `json:"project_type"`
+	Team                 string            `json:"team"`
+	Organization         string            `json:"organization"`
+	Title                string            `json:"title"`
+	Description          string            `json:"description"`
+	Body                 string            `json:"body"`
+	BodyURL              string            `json:"body_url"`
+	Published            string            `json:"published"`
+	Updated              string            `json:"updated"`
+	Status               string            `json:"status"`
+	License              License           `json:"license"`
 	Downloads            int               `json:"downloads"`
 	Followers            int               `json:"followers"`
 	Categories           []string          `json:"categories"`
@@ -101,47 +102,49 @@ type ModPage struct {
 	Gallery              map[string]any    `json:"gallery"`
 	Color                int               `json:"color"`
 }
-
+type Hashes struct {
+	Sha512 string `json:"sha512"`
+	Sha1   string `json:"sha1"`
+}
+type VersionDependencies struct {
+	VersionID      string `json:"version_id"`
+	ProjectID      string `json:"project_id"`
+	FileName       string `json:"file_name"`
+	DependencyType string `json:"dependency_type"`
+}
+type VersionFile struct {
+	ID       string `json:"id"`
+	Hashes   Hashes `json:"hashes"`
+	URL      string `json:"url"`
+	Filename string `json:"filename"`
+	Primary  bool   `json:"primary"`
+	Size     int    `json:"size"`
+	FileType string `json:"file_type"`
+}
 type VersionInfo struct {
-	GameVersions    []string  `json:"game_versions"`
-	Loaders         []string  `json:"loaders"`
-	Environment     string    `json:"environment"`
-	ID              string    `json:"id"`
-	ProjectID       string    `json:"project_id"`
-	AuthorID        string    `json:"author_id"`
-	Featured        bool      `json:"featured"`
-	Name            string    `json:"name"`
-	VersionNumber   string    `json:"version_number"`
-	Changelog       string    `json:"changelog"`
-	ChangelogURL    string    `json:"changelog_url"`
-	DatePublished   time.Time `json:"date_published"`
-	Downloads       int       `json:"downloads"`
-	VersionType     string    `json:"version_type"`
-	Status          string    `json:"status"`
-	RequestedStatus string    `json:"requested_status"`
-	Files           []struct {
-		ID     string `json:"id"`
-		Hashes struct {
-			Sha512 string `json:"sha512"`
-			Sha1   string `json:"sha1"`
-		} `json:"hashes"`
-		URL      string `json:"url"`
-		Filename string `json:"filename"`
-		Primary  bool   `json:"primary"`
-		Size     int    `json:"size"`
-		FileType string `json:"file_type"`
-	} `json:"files"`
-	Dependencies []struct {
-		VersionID      string `json:"version_id"`
-		ProjectID      string `json:"project_id"`
-		FileName       string `json:"file_name"`
-		DependencyType string `json:"dependency_type"`
-	} `json:"dependencies"`
+	GameVersions    []string              `json:"game_versions"`
+	Loaders         []string              `json:"loaders"`
+	Environment     string                `json:"environment"`
+	ID              string                `json:"id"`
+	ProjectID       string                `json:"project_id"`
+	AuthorID        string                `json:"author_id"`
+	Featured        bool                  `json:"featured"`
+	Name            string                `json:"name"`
+	VersionNumber   string                `json:"version_number"`
+	Changelog       string                `json:"changelog"`
+	ChangelogURL    string                `json:"changelog_url"`
+	DatePublished   string                `json:"date_published"`
+	Downloads       int                   `json:"downloads"`
+	VersionType     string                `json:"version_type"`
+	Status          string                `json:"status"`
+	RequestedStatus string                `json:"requested_status"`
+	Files           []VersionFile         `json:"files"`
+	Dependencies    []VersionDependencies `json:"dependencies"`
 }
 
-func (m *Modrinth) GetDiscoveryPage(projectType, version, categories string) (*DiscoverMods, error) {
+func (m *Modrinth) GetDiscoveryPage(projectType, version, categories string) (*DiscoverProjects, error) {
 	categories = "fabric" // hardcoded as fabric cuz it's the only mod loader supported at this time
-	var discover DiscoverMods
+	var discover DiscoverProjects
 	facets := [][]string{
 		{
 			"project_type=" + projectType,
@@ -181,8 +184,8 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories string) (*D
 	return &discover, nil
 }
 
-func (m *Modrinth) GetProject(projectId string) (*ModPage, error) {
-	var modInfo ModPage
+func (m *Modrinth) GetProject(projectId string) (*ProjectPage, error) {
+	var modInfo ProjectPage
 	url := "https://api.modrinth.com/v2/project/" + projectId
 	requests, err := http.NewRequest("GET", url, nil)
 	if err != nil {
