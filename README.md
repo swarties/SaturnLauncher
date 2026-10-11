@@ -7,7 +7,7 @@ Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source
 - CPU: 2+ cores
 - RAM: 1GB of free RAM
 - Storage: 50 MB of free storage
-- Network: Required for login and installing the game
+- Network: Required for login and installing the game and mods from modrinth
 
 ## Install Steps
 
@@ -35,26 +35,30 @@ Using wailsIo V2.15.0
 
 
 ## Project State
-Microsoft and Minecraft authentication finished in both backend and frontend
-Launching the app keeps the refresh key and user hash always up to date
-Initializing the necessary folders to always exist on launch
-Can install game assets, game libraries, extract natives, and find the right java version for the selected game version
-Added an id based instance manager
-Instance Page DONE
-Per Instance Page DONE
-Profile Page DONE
-Settings Page DONE
-Onboarding DONE
-Added Support for linux java
-Can Launch the game from any version starting 1.14
-Can Select ram allocation for instances
-Added Multi Account Support
-Added Light And Dark Mode
-Turned Instances to be UUID based
-Linked logout
-Login Page Redesign
-Instance selector in home page 
-Finished fabric installation ( still not connected in front end )
+- Microsoft and Minecraft authentication finished in both backend and frontend
+- Launching the app keeps the refresh key and user hash always up to date
+- Initializing the necessary folders to always exist on launch
+- Can install game assets, game libraries, extract natives, and find the right java version for the selected game version
+- Added an id based instance manager
+- Instance Page 
+- Per Instance Page 
+- Profile Page 
+- Settings Page 
+- Onboarding 
+- Added Support for linux java
+- Can Launch the game from any version starting 1.14
+- Can Select ram allocation for instances
+- Added Multi Account Support
+- Added Light And Dark Mode
+- Turned Instances to be UUID based
+- Linked logout
+- Login Page Redesign
+- Instance selector in home page 
+- Finished fabric installation
+- Added Icon and Description
+- Added Game Logs
+- Added Installing/Deleting and fetching Content ( mods, resource packs and shaders ) not connected to the frontend
+- Added Modrinth Discovery Page, Project Page, Version Page and a recursive Install Project function that gets the dependencies for a mod and the dependencies that dependency might have
 
 
 ## Motivation
