@@ -923,3 +923,54 @@ func (a *Argument) UnmarshalJSON(data []byte) error {
 
 	return fmt.Errorf("coudlnt unmarshal json. json might've been tampered with")
 }
+
+func (d *Download) GetInstalledContent(folderId, contentType string) ([]string, error) {
+	contentDir, _, err := d.ContentDir(folderId, contentType)
+	if err != nil {
+		return nil, err
+	}
+	dir, err := os.ReadDir(contentDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+	Content := make([]string, 0, len(dir))
+	for _, r := range dir {
+		if r.IsDir() {
+			continue
+		}
+		Content = append(Content, r.Name())
+	}
+
+	return Content, nil
+}
+
+func (d *Download) ContentDir(folderId, contentType string) (string, string, error) {
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return "", "", err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId)
+	modDir := filepath.Join(base, "mods")
+	rpDir := filepath.Join(base, "resourcepacks")
+	shadersDir := filepath.Join(base, "shaderpacks")
+	var contentDir string
+	var fileFormat string
+	switch contentType {
+	case "mods":
+		fileFormat = "*.jar"
+		contentDir = modDir
+	case "resourcepacks":
+		fileFormat = "*.zip"
+		contentDir = rpDir
+	case "shaders":
+		fileFormat = "*.zip"
+		contentDir = shadersDir
+	default:
+		return "", "", fmt.Errorf("content type is not supported")
+	}
+
+	return contentDir, fileFormat, nil
+}

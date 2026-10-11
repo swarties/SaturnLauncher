@@ -1,15 +1,12 @@
 package modrinth
 
 import (
-	"SaturnLauncher/backend/download"
 	"SaturnLauncher/backend/projectInfo"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	url2 "net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -233,23 +230,29 @@ func (m *Modrinth) GetVersions(projectId, gameVersion string) ([]VersionInfo, er
 	return verInfo, nil
 }
 
-func (m *Modrinth) InstallContent(destdir string, versions VersionInfo, verId, gameVer string) error {
+/*
+func (m *Modrinth) InstallContent(versions VersionInfo, gameVer, folderId, contentType string) error {
 	var fileUrl string
 	var filename string
 	var sha1 string
 	for _, v := range versions.Files {
-		if v.ID != verId {
-			continue
-		} else {
+		if v.Primary {
 			fileUrl = v.URL
 			filename = v.Filename
 			sha1 = v.Hashes.Sha1
+			break
 		}
 	}
+	if fileUrl == "" {
+		return fmt.Errorf("file url is empty")
+	}
 	dl := download.NewDownload()
-
-	fileLoc := filepath.Join(destdir, filename)
-	_, err := dl.Downloader(fileLoc, fileUrl)
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	fileLoc := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, contentType, filename)
+	_, err = dl.Downloader(fileLoc, fileUrl)
 	if err != nil {
 		return err
 	}
@@ -270,31 +273,47 @@ func (m *Modrinth) InstallContent(destdir string, versions VersionInfo, verId, g
 		} else {
 			if d.VersionID != "" {
 				// https://docs.modrinth.com/api/operations/getversion/
+				url := fmt.Sprintf("https://api.modrinth.com/v2/version/%s", d.VersionID)
+
 			} else {
 				if d.ProjectID != "" {
 					getVersions, err := m.GetVersions(d.ProjectID, gameVer)
 					if err != nil {
 						return err
 					}
-
+					content, err := dl.GetInstalledContent(folderId, contentType)
+					if err != nil {
+						return err
+					}
+					depFilename := getVersions[0].Files[0].Filename
+					if slices.Contains(content, depFilename) {
+						continue
+					}
 					url := getVersions[0].Files[0].URL
-					_, err = dl.Downloader(fileLoc, url)
+					depLocation := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, contentType, depFilename)
+					_, err = dl.Downloader(depLocation, url)
 					if err != nil {
 						return err
 					}
-					sha1, err := dl.GetFileSha1(fileLoc)
+					depSha1, err := dl.GetFileSha1(depLocation)
 					if err != nil {
 						return err
 					}
-					if getVersions[0].Files[0].Hashes.Sha1 != sha1 {
-						err := os.Remove(fileLoc)
+					if getVersions[0].Files[0].Hashes.Sha1 != depSha1 {
+						err := os.Remove(depLocation)
 						if err != nil {
 							return err
 						}
+						return fmt.Errorf("dependency sha1 mismatch")
 					}
 				}
 			}
 		}
 	}
 	return nil
+}
+*/ //going to be replaced
+func (m *Modrinth) GetVersion(verId string) (*VersionInfo, error) {
+	url := fmt.Sprintf("https://api.modrinth.com/v2/version/%s", verId)
+
 }
