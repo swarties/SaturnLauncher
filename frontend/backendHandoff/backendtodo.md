@@ -26,3 +26,10 @@
 - Added InstallContent takes a folderid and contenttype( "mods", "resourcepacks" and "shaders" ) the contenttype is case sensitive. does what it says copies the selected file to the appropriate location
 - Added GetInstalledContent takes the contentType and folderId and returns a slice of all the names of the content in the folder ( to be upgraded soon to be more precise )
 - Added RemoveContent takes a folderId, contentType and the files name and deletes it (careful if the file contains / \\ or .. it'll return an error)
+
+### Modrinth Related
+
+- Added GetDiscoveryPage function takes a projectType(mods shaders resourcepacks) a version and categories(can be set to whatever or not passed cuz harcoded to fabric)
+- Added GetProjectPage takes a ProjectId and returns a ProjectPage struct containing a lot of information regarding the project also returns an errror
+- Added GetProjectVersions takes a projectId and gameVersion and returns a VersionInfo struct
+- Added InstallProjectContent takes a folderId, contentType(mods shaders resourcepacks) and a versionId( we get that from GetProjectVersions) the function install the mod and the required deps returns a filename string and an error if applicable
