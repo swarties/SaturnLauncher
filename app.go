@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -596,7 +597,7 @@ func (a *App) PickInstanceIcon() (string, error) {
 		Filters: []wailsRuntime.FileFilter{
 			{
 				DisplayName: "Images",
-				Pattern:     "*.png,*.jpg,*.jpeg",
+				Pattern:     "*.png;*.jpg;*.jpeg",
 			},
 		},
 	})
@@ -804,4 +805,29 @@ func (a *App) GetInstanceLogs(folderId string) (string, error) {
 		return "", err
 	}
 	return string(file), nil
+}
+
+func (a *App) OpenContentFolder(folderId, contentType string) error {
+	osName := runtime.GOOS
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	contentLocation := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, contentType)
+	if osName == "windows" {
+		cmd := exec.Command("explorer", contentLocation)
+		err := cmd.Start()
+		if err != nil {
+			return err
+		}
+	} else if osName == "linux" {
+		cmd := exec.Command("xdg-open", contentLocation)
+		err := cmd.Start()
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("could not open content folder")
+	}
+	return nil
 }
