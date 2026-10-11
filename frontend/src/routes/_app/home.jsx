@@ -146,6 +146,7 @@ function HomePage() {
               >
                 {statusKind === 'progress' ? (
                   <TextShimmerWave
+                    key={status}
                     className="text-sm font-thin [--base-color:#71717a] [--base-gradient-color:#a18dec]"
                     duration={0.35}
                     spread={0.7}
