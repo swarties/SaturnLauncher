@@ -14,30 +14,45 @@ const CREEP_COEFFICIENT = 0.015;
 const CREEP_MIN_STEP = 0.02;
 const SPRINT_COEFFICIENT = 0.08;
 const SPRINT_MIN_STEP = 0.5;
-const SUCCESS_HOLD_MS = 200;
-// const STATUS_CLEAR_MS = 5000; unused
 const MIN_LAUNCH_MS = 2200;
+const EXIT_MESSAGE_MS = 5000;
 
-let state = {
-  activeUuid: null,
-  isLoading: false,
-  progress: 0,
-  status: '',
-  statusKind: 'idle', // 'idle' | 'progress' | 'success' | 'error'
-};
+// State:
+// {
+//   instances: {
+//     [uuid]: { phase, progress, status, statusKind, exitCode }
+//   }
+// }
+//
+// phase: 'launching' | 'running' | 'exited' | 'crashed' | 'error'
+// Absence from `instances` == idle.
+
+let state = { instances: {} };
 
 let currentValue = 0;
 let currentCeiling = 0;
 let creepInterval = null;
-let successTimer = null;
-let statusTimer = null;
-let fadeTriggered = false;
+let lastStatusCommit = 0;
+let activeLaunchUuid = null;
+let exitTimers = new Map();
 
 const listeners = new Set();
 
 function setState(patch) {
   state = { ...state, ...patch };
   listeners.forEach((l) => l());
+}
+
+function setInstance(uuid, patch) {
+  const prev = state.instances[uuid] ?? {};
+  setState({
+    instances: { ...state.instances, [uuid]: { ...prev, ...patch } },
+  });
+}
+
+function clearInstance(uuid) {
+  const { [uuid]: _removed, ...rest } = state.instances;
+  setState({ instances: rest });
 }
 
 function subscribe(listener) {
@@ -51,10 +66,9 @@ export function useLaunch() {
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
-let subsInstalled = false;
-
 const MIN_STATUS_MS = 250;
-let lastStatusCommit = 0;
+
+let subsInstalled = false;
 
 function installSubs() {
   if (subsInstalled) return;
@@ -62,6 +76,7 @@ function installSubs() {
 
   onBackendEvent('download:progress', (msg) => {
     if (typeof msg !== 'string') return;
+    if (!activeLaunchUuid) return;
 
     const ceil = STEP_CEILINGS[msg];
     if (typeof ceil === 'number' && ceil > currentCeiling) {
@@ -73,39 +88,69 @@ function installSubs() {
     const now = performance.now();
     if (now - lastStatusCommit >= MIN_STATUS_MS) {
       lastStatusCommit = now;
-      setState({ status: msg, statusKind: 'progress' });
+      setInstance(activeLaunchUuid, { status: msg, statusKind: 'progress' });
     }
+  });
+
+  onBackendEvent('game:started', (folderId) => {
+    if (typeof folderId !== 'string') return;
+    stopCreep();
+    currentValue = 0;
+    currentCeiling = 0;
+    if (activeLaunchUuid === folderId) activeLaunchUuid = null;
+
+    setInstance(folderId, {
+      phase: 'running',
+      progress: 100,
+      status: '',
+      statusKind: 'idle',
+      exitCode: null,
+    });
+  });
+
+  onBackendEvent('game:stopped', (payload) => {
+    const folderId = payload?.folderId;
+    const exitCode = payload?.exitCode ?? -1;
+    if (typeof folderId !== 'string') return;
+
+    if (activeLaunchUuid === folderId) activeLaunchUuid = null;
+    stopCreep();
+
+    const isClean = exitCode === 0;
+    const phase = isClean ? 'exited' : 'crashed';
+
+    setInstance(folderId, {
+      phase,
+      progress: 0,
+      status: isClean
+        ? `Game exited (code ${exitCode})`
+        : `Game crashed (code ${exitCode})`,
+      statusKind: 'idle',
+      exitCode,
+    });
+
+    const prev = exitTimers.get(folderId);
+    if (prev) clearTimeout(prev);
+    const timer = setTimeout(() => {
+      exitTimers.delete(folderId);
+      const current = state.instances[folderId];
+      if (current?.phase === phase && current?.exitCode === exitCode) {
+        clearInstance(folderId);
+      }
+    }, EXIT_MESSAGE_MS);
+    exitTimers.set(folderId, timer);
   });
 }
 
 function creep() {
   const diff = currentCeiling - currentValue;
   if (diff > 0) {
-    let step;
-    if (state.statusKind === 'success') {
-      step = Math.max(SPRINT_MIN_STEP, diff * SPRINT_COEFFICIENT);
-    } else {
-      const coeff = diff > 3 ? 0.15 : CREEP_COEFFICIENT;
-      step = Math.max(CREEP_MIN_STEP, diff * coeff);
-    }
+    const coeff = diff > 3 ? 0.15 : CREEP_COEFFICIENT;
+    const step = Math.max(CREEP_MIN_STEP, diff * coeff);
     currentValue = Math.min(currentCeiling, currentValue + step);
-    setState({ progress: currentValue });
-  }
-
-  if (state.statusKind === 'success' && currentValue >= 100 && !fadeTriggered) {
-    fadeTriggered = true;
-    successTimer = setTimeout(() => {
-      stopCreep();
-      setState({
-        activeUuid: null,
-        isLoading: false,
-        progress: 0,
-        status: '',
-        statusKind: 'idle',
-      });
-      successTimer = null;
-      fadeTriggered = false;
-    }, SUCCESS_HOLD_MS);
+    if (activeLaunchUuid) {
+      setInstance(activeLaunchUuid, { progress: currentValue });
+    }
   }
 }
 
@@ -121,69 +166,61 @@ function stopCreep() {
   }
 }
 
-function clearTimers() {
-  if (successTimer) {
-    clearTimeout(successTimer);
-    successTimer = null;
-  }
-  if (statusTimer) {
-    clearTimeout(statusTimer);
-    statusTimer = null;
-  }
-}
-
-export function clearError() {
-  setState({
-    activeUuid: null,
-    isLoading: false,
-    progress: 0,
-    status: '',
-    statusKind: 'idle',
-  });
+export function clearError(uuid) {
+  const entry = state.instances[uuid];
+  if (!entry || entry.phase !== 'error') return;
+  clearInstance(uuid);
 }
 
 export async function startLaunch(uuid) {
-  if (state.isLoading) return;
+  if (activeLaunchUuid) return;
+  const existing = state.instances[uuid];
+  if (existing?.phase === 'launching' || existing?.phase === 'running') return;
 
   installSubs();
-  clearTimers();
   stopCreep();
 
-  fadeTriggered = false;
+  const prevTimer = exitTimers.get(uuid);
+  if (prevTimer) {
+    clearTimeout(prevTimer);
+    exitTimers.delete(uuid);
+  }
+
   currentValue = 2;
   currentCeiling = 8;
+  activeLaunchUuid = uuid;
+  lastStatusCommit = 0;
 
-  setState({
-    activeUuid: uuid,
-    isLoading: true,
+  setInstance(uuid, {
+    phase: 'launching',
     progress: 2,
     status: 'Preparing...',
     statusKind: 'progress',
+    exitCode: null,
   });
 
   const startedAt = performance.now();
-
   startCreep();
 
   try {
     await StartGame(uuid);
     const elapsed = performance.now() - startedAt;
     const remaining = Math.max(0, MIN_LAUNCH_MS - elapsed);
-    if (remaining > 0) {
-      await new Promise((r) => setTimeout(r, remaining));
-    }
+    if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
 
-    currentCeiling = 100;
-    setState({ status: 'Game launched!', statusKind: 'success' });
-    //   creep() sees statusKind is success so sprint to 100
+    if (state.instances[uuid]?.phase === 'launching') {
+      currentValue = 97;
+      setInstance(uuid, { status: 'Starting...', statusKind: 'progress' });
+    }
   } catch (e) {
     stopCreep();
-    setState({
-      activeUuid: null,
-      isLoading: false,
+    if (activeLaunchUuid === uuid) activeLaunchUuid = null;
+    setInstance(uuid, {
+      phase: 'error',
       progress: 0,
       status: e?.message ?? String(e),
       statusKind: 'error',
+      exitCode: null,
     });
   }
 }

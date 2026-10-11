@@ -29,7 +29,7 @@ export const Route = createFileRoute('/_app/instances')({
   component: InstancesPage,
 });
 
-/** @typedef {{ name: string, version: string, uuid: string, timecreated: string, minram: number, maxram: number }} McInstance */
+/** @typedef {{ name: string, version: string, uuid: string, timecreated: string, minram: number, maxram: number, description?: string, fabricVersion?: string }} McInstance */
 
 function InstancesPage() {
   const [instances, setInstances] = useState(/** @type {McInstance[]} */ ([]));
@@ -177,6 +177,13 @@ function InstanceCard({ instance, onDelete }) {
           </p>
           <p className="text-foreground mt-1 line-clamp-2 text-xl font-extralight tracking-tight">
             {instance.name}
+          </p>
+          <p className="text-muted-foreground mt-1 text-xs font-thin">
+            {instance.fabricVersion
+              ? `Fabric · ${instance.fabricVersion
+                  .replace('fabric-loader-', '')
+                  .replace(`-${instance.version}`, '')}`
+              : 'Vanilla'}
           </p>
           <div className="mt-auto flex items-center justify-between pt-6">
             <span className="text-muted-foreground text-xs font-thin">

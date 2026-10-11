@@ -22,7 +22,26 @@ function HomePage() {
   const { profile } = useAuth();
   const username = profile?.name ?? 'player';
 
-  const { isLoading, progress, status, statusKind } = useLaunch();
+  const { instances } = useLaunch();
+
+  const [selectedInstance, setSelectedInstance] = useState(
+    /** @type {import('@/components/ui/instance-selector.jsx').McInstance} | null */ (
+      null
+    )
+  );
+
+  const uuid = selectedInstance?.uuid ?? null;
+  const launchState = uuid ? instances[uuid] : null;
+  const phase = launchState?.phase ?? 'idle';
+  const progress = launchState?.progress ?? 0;
+  const status = launchState?.status ?? '';
+  const statusKind = launchState?.statusKind ?? 'idle';
+
+  const isLaunching = phase === 'launching';
+  const isRunning = phase === 'running';
+  const isExited = phase === 'exited';
+  const isCrashed = phase === 'crashed';
+  const isError = phase === 'error';
 
   const smoothProgress = useSpring(progress, {
     stiffness: 90,
@@ -35,13 +54,9 @@ function HomePage() {
     smoothProgress.set(progress);
   }, [progress, smoothProgress]);
 
-  const [selectedInstance, setSelectedInstance] = useState(
-    /** @type {import('@/components/ui/instance-selector.jsx').McInstance | null} */ null
-  );
-
   const handleLaunch = () => {
-    if (!selectedInstance || isLoading) return;
-    void startLaunch(selectedInstance.uuid);
+    if (!uuid || isLaunching || isRunning) return;
+    void startLaunch(uuid);
   };
 
   const [copiedUUID, setCopiedUUID] = useState(false);
@@ -92,31 +107,64 @@ function HomePage() {
           {/**/}
 
           <div className="flex w-full max-w-xs flex-col items-center gap-3">
-            <Button
-              variant="outline"
-              className="group border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-11 min-w-44 gap-2 rounded-lg border px-6 font-thin transition-colors"
-              onClick={handleLaunch}
-              disabled={isLoading || !selectedInstance}
-            >
-              {isLoading ? (
-                'Launching...'
-              ) : (
-                <>
-                  Launch Minecraft
-                  <span
-                    aria-hidden="true"
-                    className="text-saturn-300 transition-transform duration-200 group-hover:translate-x-1"
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="group border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-11 min-w-44 gap-2 rounded-lg border px-6 font-thin transition-colors"
+                onClick={handleLaunch}
+                disabled={isLaunching || isRunning || !selectedInstance}
+              >
+                {isRunning ? (
+                  'Game Running...'
+                ) : isLaunching ? (
+                  'Launching...'
+                ) : (
+                  <>
+                    Launch Minecraft
+                    <span
+                      aria-hidden="true"
+                      className="text-saturn-300 transition-transform duration-200 group-hover:translate-x-1"
+                    >
+                      →
+                    </span>
+                  </>
+                )}
+              </Button>
+              <AnimatePresence>
+                {(isLaunching || isRunning) && (
+                  <motion.button
+                    key="kill-button"
+                    type="button"
+                    aria-label="Force Kill"
+                    data-tooltip="Force kill (not yet wired)"
+                    disabled
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2, ease: EASE }}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg) transition-colors disabled:pointer-events-none disabled:opacity-40"
                   >
-                    →
-                  </span>
-                </>
-              )}
-            </Button>
+                    <svg
+                      viewBox="0 0 12 12"
+                      aria-hidden="true"
+                      className="size-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                    >
+                      <line x1="2" y1="2" x2="10" y2="10" />
+                      <line x1="10" y1="2" x2="2" y2="10" />
+                    </svg>
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Progress bar */}
             <div className="flex h-6 w-full items-center justify-center">
               <AnimatePresence>
-                {isLoading && (
+                {isLaunching && (
                   <motion.div
                     key="progress-track"
                     initial={{ opacity: 0 }}
@@ -135,7 +183,7 @@ function HomePage() {
           </div>
 
           <AnimatePresence>
-            {status && statusKind !== 'error' && (
+            {status && !isError && (
               <motion.div
                 key="launch-status"
                 initial={{ opacity: 0, y: 6 }}
@@ -165,7 +213,7 @@ function HomePage() {
             )}
           </AnimatePresence>
 
-          <LaunchErrorDialog />
+          <LaunchErrorDialog uuid={uuid} />
 
           {/*  */}
           {/*  */}
@@ -229,14 +277,16 @@ function HomePage() {
   );
 }
 
-const ERROR_DIALOG_EASE = [0.22, 1, 0.38, 1];
+const EASE = [0.22, 1, 0.38, 1];
 
-function LaunchErrorDialog() {
-  const { status, statusKind } = useLaunch();
-  const isOpen = statusKind === 'error';
+function LaunchErrorDialog({ uuid }) {
+  const { instances } = useLaunch();
+  const launchState = uuid ? instances[uuid] : null;
+  const isOpen = launchState?.phase === 'error';
+  const status = launchState?.status ?? '';
 
   const handleClose = () => {
-    clearError();
+    if (uuid) clearError(uuid);
   };
 
   useEffect(() => {
@@ -267,13 +317,13 @@ function LaunchErrorDialog() {
               opacity: 1,
               y: 0,
               scale: 1,
-              transition: { duration: 0.28, ease: ERROR_DIALOG_EASE },
+              transition: { duration: 0.28, ease: EASE },
             }}
             exit={{
               opacity: 0,
               y: 8,
               scale: 0.97,
-              transition: { duration: 0.2, ease: ERROR_DIALOG_EASE },
+              transition: { duration: 0.2, ease: EASE },
             }}
             onClick={(e) => e.stopPropagation()}
             className="bg-background relative w-full max-w-md overflow-hidden rounded-md border-2 border-(--danger-border)"
