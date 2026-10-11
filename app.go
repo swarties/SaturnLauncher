@@ -789,3 +789,19 @@ func (a *App) InstallProjectContent(folderId, contentType, versionId string) (st
 
 	return version.Files[0].Filename, nil
 }
+
+func (a *App) GetInstanceLogs(folderId string) (string, error) {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	logsLocation := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "logs", "jvm.log")
+	file, err := os.ReadFile(logsLocation)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	return string(file), nil
+}

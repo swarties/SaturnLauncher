@@ -20,6 +20,7 @@
 - Added UpdateInstanceDescription that updates an Instance's description ( takes folderId and description )
 - Added SetInstanceIcon (takes a folderId and a path to the image returns the image encoded in base64 string)
 - Added GetInstanceIcon returns the instances icon in base64( maybe find a way to cache this ? )
+- Added GetInstanceLogs returns the contents of jvm.log ( use when game:stopped and use events when game:started)
 
 ### Content Related
 
