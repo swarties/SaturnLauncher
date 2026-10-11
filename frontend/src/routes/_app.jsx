@@ -148,6 +148,8 @@ function AppLayout() {
 
   const direction = getDirection(location.pathname, prevPathRef.current);
 
+  const topSegment = '/' + (location.pathname.split('/')[1] ?? '');
+
   useEffect(() => {
     prevPathRef.current = location.pathname;
   }, [location.pathname]);
@@ -215,7 +217,7 @@ function AppLayout() {
 
       <main className="relative z-10 flex-1 overflow-hidden">
         <motion.div
-          key={location.pathname}
+          key={topSegment}
           initial={{
             x: direction === 'forward' ? '100%' : '-100%',
             opacity: 0.7,
