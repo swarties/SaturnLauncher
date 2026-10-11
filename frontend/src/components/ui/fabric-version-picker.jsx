@@ -22,7 +22,6 @@ export function FabricVersionPicker({ gameVersion, value, onChange }) {
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
   useEffect(() => {
-    console.log('[fabric-picker] fetching for gameVersion:', gameVersion);
     let cancelled = false;
     setVersions([]);
     setLoading(true);
@@ -31,7 +30,6 @@ export function FabricVersionPicker({ gameVersion, value, onChange }) {
     GetFabricLoaders(gameVersion)
       .then((vs) => {
         if (cancelled) return;
-        console.log('[fabric-picker] received loaders:', vs);
         setVersions(/** @type {FabricLoaderVersion[]}*/ (vs ?? []));
       })
       .catch((e) => {
@@ -46,6 +44,13 @@ export function FabricVersionPicker({ gameVersion, value, onChange }) {
       cancelled = true;
     };
   }, [gameVersion]);
+
+  useEffect(() => {
+    if (value || loading || versions.length === 0) return;
+    const stable = versions.find((v) => v.stable);
+    const pick = stable ?? versions[0];
+    if (pick) onChange(pick.version);
+  }, [value, loading, versions, onChange]);
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current) return;
@@ -83,7 +88,12 @@ export function FabricVersionPicker({ gameVersion, value, onChange }) {
     };
   }, [open]);
 
-  const triggerLabel = loading ? 'Loading...' : value || '—';
+  const autoPickVersion =
+    !value && versions.length > 0
+      ? (versions.find((v) => v.stable) ?? versions[0])?.version
+      : null;
+
+  const triggerLabel = loading ? 'Loading...' : value || autoPickVersion || '—';
 
   return (
     <div ref={containerRef} className="relative">

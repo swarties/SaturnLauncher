@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 
 import { VersionPicker } from '@/components/ui/version-picker.jsx';
 import { LoaderPicker } from '@/components/ui/loader-picker.jsx';
@@ -288,10 +288,6 @@ function CreateInstanceForm() {
   const [error, setError] = useState(/** @type { string | null } */ (null));
 
   useEffect(() => {
-    setFabricVersion('');
-  }, [version]);
-
-  useEffect(() => {
     if (loader !== 'fabric') setFabricVersion('');
   }, [loader]);
 
@@ -377,18 +373,27 @@ function CreateInstanceForm() {
           </span>
           <LoaderPicker value={loader} onChange={setLoader} />
         </div>
-        {loader === 'fabric' && (
-          <div className="flex flex-col gap-2">
-            <span className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
-              Fabric Version
-            </span>
-            <FabricVersionPicker
-              gameVersion={version}
-              value={fabricVersion}
-              onChange={setFabricVersion}
-            />
-          </div>
-        )}
+        <AnimatePresence initial={false}>
+          {loader === 'fabric' && (
+            <motion.div
+              className="flex flex-col gap-2"
+              key="fabric-version"
+              initial={{ opacity: 0, height: 0, marginTop: -16 }}
+              animate={{ opacity: 1, height: 'auto', marginTop: 0 }}
+              exit={{ opacity: 0, height: 0, marginTop: -16 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.38, 1] }}
+            >
+              <span className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
+                Fabric Version
+              </span>
+              <FabricVersionPicker
+                gameVersion={version}
+                value={fabricVersion}
+                onChange={setFabricVersion}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {error && <p className="text-xs font-thin text-red-400">{error}</p>}
       </div>
 
