@@ -1,12 +1,16 @@
 package modrinth
 
 import (
+	"SaturnLauncher/backend/download"
 	"SaturnLauncher/backend/projectInfo"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	url2 "net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -126,7 +130,12 @@ type VersionInfo struct {
 		Size     int         `json:"size"`
 		FileType interface{} `json:"file_type"`
 	} `json:"files"`
-	Dependencies []interface{} `json:"dependencies"`
+	Dependencies []struct {
+		VersionID      interface{} `json:"version_id"`
+		ProjectID      string      `json:"project_id"`
+		FileName       interface{} `json:"file_name"`
+		DependencyType string      `json:"dependency_type"`
+	} `json:"dependencies"`
 }
 
 func (m *Modrinth) GetDiscoveryPage(projectType, version, categories string) (*DiscoverMods, error) {
@@ -162,7 +171,7 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories string) (*D
 	}
 	defer do.Body.Close()
 	if do.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("modrinth api did not return status 200 OK")
+		return nil, fmt.Errorf("modrinth's api did not return status 200 OK")
 	}
 	err = json.NewDecoder(do.Body).Decode(&discover)
 	if err != nil {
@@ -185,7 +194,7 @@ func (m *Modrinth) GetProject(projectId string) (*ModPage, error) {
 	}
 	defer do.Body.Close()
 	if do.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("modrinth api did not return status 200 OK")
+		return nil, fmt.Errorf("modrinth's api did not return status 200 OK")
 	}
 	err = json.NewDecoder(do.Body).Decode(&modInfo)
 	if err != nil {
@@ -194,34 +203,98 @@ func (m *Modrinth) GetProject(projectId string) (*ModPage, error) {
 	return &modInfo, nil
 }
 
-func (m *Modrinth) GetVersions(modInfo ModPage) ([]VersionInfo, error) {
+func (m *Modrinth) GetVersions(projectId, gameVersion string) ([]VersionInfo, error) {
 	var verInfo []VersionInfo
-	var info VersionInfo
-	i := 0
-	url := "https://api.modrinth.com/v2/version/"
-	for _, v := range modInfo.Versions {
-		if i < 20 {
-			newUrl := url + url2.QueryEscape(v)
-			requests, err := http.NewRequest("GET", newUrl, nil)
-			if err != nil {
-				return nil, err
-			}
-			requests.Header.Set("User-Agent", userAgent)
-			do, err := http.DefaultClient.Do(requests)
-			if err != nil {
-				return nil, err
-			}
-			defer do.Body.Close()
-			if do.StatusCode != http.StatusOK {
-				return nil, fmt.Errorf("modrinth api did not return status 200 OK")
-			}
-			err = json.NewDecoder(do.Body).Decode(&info)
-			if err != nil {
-				return nil, err
-			}
-			verInfo = append(verInfo, info)
-			i++
-		}
+	if strings.TrimSpace(gameVersion) == "" {
+		return nil, fmt.Errorf("version is invalid")
+	}
+	gameVer := "[\"" + gameVersion + "\"]"
+	url := "https://api.modrinth.com/v2/project/" + projectId + "/version" + "?loaders=" + url2.QueryEscape("[\"fabric\"]") + "&game_versions=" + url2.QueryEscape(gameVer)
+	requests, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	requests.Header.Set("User-Agent", userAgent)
+	do, err := http.DefaultClient.Do(requests)
+	if err != nil {
+		return nil, err
+	}
+	defer do.Body.Close()
+	if do.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("modrinth's api did not return status 200 OK")
+	}
+	err = json.NewDecoder(do.Body).Decode(&verInfo)
+	if err != nil {
+		return nil, err
+	}
+	if len(verInfo) == 0 {
+		return nil, fmt.Errorf("version info is empty")
 	}
 	return verInfo, nil
+}
+
+func (m *Modrinth) InstallContent(destdir string, versions VersionInfo, verId, gameVer string) error {
+	var fileUrl string
+	var filename string
+	var sha1 string
+	for _, v := range versions.Files {
+		if v.ID != verId {
+			continue
+		} else {
+			fileUrl = v.URL
+			filename = v.Filename
+			sha1 = v.Hashes.Sha1
+		}
+	}
+	dl := download.NewDownload()
+
+	fileLoc := filepath.Join(destdir, filename)
+	_, err := dl.Downloader(fileLoc, fileUrl)
+	if err != nil {
+		return err
+	}
+	fileSha1, err := dl.GetFileSha1(fileLoc)
+	if err != nil {
+		return err
+	}
+	if sha1 != fileSha1 {
+		err := os.Remove(fileLoc)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("file sha1 does not match")
+	}
+	for _, d := range versions.Dependencies {
+		if d.DependencyType != "required" {
+			continue
+		} else {
+			if d.VersionID != "" {
+				// https://docs.modrinth.com/api/operations/getversion/
+			} else {
+				if d.ProjectID != "" {
+					getVersions, err := m.GetVersions(d.ProjectID, gameVer)
+					if err != nil {
+						return err
+					}
+
+					url := getVersions[0].Files[0].URL
+					_, err = dl.Downloader(fileLoc, url)
+					if err != nil {
+						return err
+					}
+					sha1, err := dl.GetFileSha1(fileLoc)
+					if err != nil {
+						return err
+					}
+					if getVersions[0].Files[0].Hashes.Sha1 != sha1 {
+						err := os.Remove(fileLoc)
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
