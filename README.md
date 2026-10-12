@@ -53,12 +53,14 @@ Using wailsIo V2.15.0
 - Turned Instances to be UUID based
 - Linked logout
 - Login Page Redesign
-- Instance selector in home page 
+- Instance selector in home page
+- Alt + num navigation
+- Various FrontEnd Bug Fixes
 - Finished fabric installation
 - Added Icon and Description
 - Added Game Logs
 - Added Installing/Deleting and fetching Content ( mods, resource packs and shaders ) not connected to the frontend
-- Added Modrinth Discovery Page, Project Page, Version Page and a recursive Install Project function that gets the dependencies for a mod and the dependencies that dependency might have
+- Added Modrinth Discovery Page, Project Page, Version Page and a recursive Install Project function that gets the dependencies for a mod and the dependencies that dependency might have ( Not Connected to frontend )
 
 
 ## Motivation
