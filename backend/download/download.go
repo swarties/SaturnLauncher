@@ -10,12 +10,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/cavaliergopher/grab/v3"
 )
@@ -124,32 +122,12 @@ func (d *Download) Downloader(destPath string, downloadUrl string) (*string, err
 		return nil, err
 	}
 	req.NoResume = true
-	fmt.Printf("Downloading %v...\n", req.URL())
 	resp := client.Do(req)
-	if resp.HTTPResponse != nil {
-		//fmt.Printf("  %v\n", resp.HTTPResponse.Status)
-	}
-
-	t := time.NewTicker(500 * time.Millisecond)
-	defer t.Stop()
-Loop:
-	for {
-		select {
-		case <-t.C:
-			fmt.Printf("  transferred %v / %v bytes (%.2f%%)\n",
-				resp.BytesComplete(),
-				resp.Size(),
-				100*resp.Progress())
-		case <-resp.Done:
-			break Loop
-		}
-	}
+	<-resp.Done
 	if err := resp.Err(); err != nil {
 		//fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
 		return nil, err
 	}
-
-	//fmt.Printf("Download saved to %v \n", resp.Filename)
 	return &resp.Filename, nil
 }
 
@@ -211,8 +189,6 @@ func (d *Download) GetFileSha1(filePath string) (string, error) {
 	hashInBytes := hasher.Sum(nil)
 	return hex.EncodeToString(hashInBytes), nil
 }
-
-// get started on download when instance manager is completed
 
 func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId string) error {
 	var versionUrl string
@@ -304,7 +280,7 @@ func (d *Download) GetClientJar(vInfo VersionInfo) error {
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("sha1 Mismatch error file is corrupted. version id: %s", vInfo.ID)
+		return fmt.Errorf("sha1 mismatch error file is corrupted. version id: %s", vInfo.ID)
 	}
 
 	return nil
@@ -696,143 +672,202 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 }
 
 // GetJava add linux support and more java locations to check
-func (d *Download) GetJava(vInfo VersionInfo) ([]string, error) {
+// Just bundle java its easier https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jre/hotspot/normal/eclipse
+
+func (d *Download) DownloadJava(majorVersion int) (string, error) {
 	osName := runtime.GOOS
-	var javaVersions []string
-	javaHome := os.Getenv("JAVA_HOME")
-	if len(javaHome) == 0 {
-		fmt.Println("coudlnt find java in JAVA_HOME continuing search")
-	} else {
-		javabin := "java"
-		if osName == "windows" {
-			javabin = "java.exe"
-		}
-		java := filepath.Join(javaHome, "bin", javabin)
-		javaVersions = append(javaVersions, java)
+	url := fmt.Sprintf("https://api.adoptium.net/v3/binary/latest/%d/ga/%s/x64/jre/hotspot/normal/eclipse", majorVersion, osName)
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
 	}
-	if osName == "windows" {
-		javaDir := "C:\\Program Files\\Java\\"
-		_, err := os.Stat(javaDir)
-		if err == nil {
-			dir, err := os.ReadDir(javaDir)
-			if err != nil {
-				return nil, err
+	var bin string
+	switch osName {
+	case "linux":
+		bin = "java"
+	case "windows":
+		bin = "java.exe"
+	}
+	javaLocation := filepath.Join(appdata, "SaturnLauncher", "java", strconv.Itoa(majorVersion))
+	_, err = os.Stat(filepath.Join(javaLocation, "bin", bin))
+	if err == nil {
+		return filepath.Join(javaLocation, "bin", bin), nil
+	}
+	if os.IsNotExist(err) {
+		zipPath := javaLocation + ".zip"
+		_, err := d.Downloader(zipPath, url)
+		if err != nil {
+			return "", err
+		}
+		reader, err := zip.OpenReader(zipPath)
+		if err != nil {
+			return "", err
+		}
+		for _, f := range reader.File {
+			if f.FileInfo().IsDir() {
+				continue
 			}
-			for _, entries := range dir {
-				if entries.IsDir() {
-					if entries.Name() == "latest" {
-						javaLocation := filepath.Join(javaDir, entries.Name(), "jre-1.8", "bin", "java.exe")
-						javaVersions = append(javaVersions, javaLocation)
-						continue
-					}
-					javaLocation := filepath.Join(javaDir, entries.Name(), "bin", "java.exe")
-					javaVersions = append(javaVersions, javaLocation)
-				} else {
-					continue
+			segments := strings.Split(f.Name, "/")
+			if len(segments) <= 1 {
+				continue
+			}
+			relPath := filepath.Join(segments[1:]...)
+			targetPath := filepath.Join(javaLocation, relPath)
+			if strings.HasPrefix(targetPath, javaLocation+string(os.PathSeparator)) {
+				err := os.MkdirAll(filepath.Dir(targetPath), 0o755)
+				if err != nil {
+					return "", err
 				}
+				open, err := f.Open()
+				if err != nil {
+					return "", err
+				}
+				create, err := os.Create(targetPath)
+				if err != nil {
+					return "", err
+				}
+				_, err = io.Copy(create, open)
+				err = create.Close()
+				if err != nil {
+					return "", err
+				}
+				err = open.Close()
+				if err != nil {
+					return "", err
+				}
+
+			} else {
+				continue
 			}
 		}
-		adoptiumDir := "C:\\Program Files\\Eclipse Adoptium\\"
-		_, err = os.Stat(adoptiumDir)
-		if err == nil {
-			dir, err := os.ReadDir(adoptiumDir)
-			if err != nil {
-				return nil, err
-			}
-			for _, entries := range dir {
-				if entries.IsDir() {
-					javaLocation := filepath.Join(adoptiumDir, entries.Name(), "bin", "java.exe")
-					javaVersions = append(javaVersions, javaLocation)
-				} else {
-					continue
-				}
-			}
+		err = reader.Close()
+		if err != nil {
+			return "", err
 		}
-		zuluDir := "C:\\Program Files\\Zulu\\"
-		_, err = os.Stat(zuluDir)
-		if err == nil {
-			dir, err := os.ReadDir(zuluDir)
-			if err != nil {
-				return nil, err
-			}
-			for _, entries := range dir {
-				if entries.IsDir() {
-					javaLocation := filepath.Join(zuluDir, entries.Name(), "bin", "java.exe")
-					javaVersions = append(javaVersions, javaLocation)
-				} else {
-					continue
-				}
-			}
+		err = os.Remove(zipPath)
+		if err != nil {
+			return "", err
 		}
-	} else if osName == "linux" {
-		javaDir := "/usr/lib/jvm"
-		_, err := os.Stat(javaDir)
-		if err == nil {
-			dir, err := os.ReadDir(javaDir)
-			if err != nil {
-				return nil, err
+		_, err = os.Stat(filepath.Join(javaLocation, "bin", bin))
+		if os.IsNotExist(err) {
+			removeErr := os.RemoveAll(javaLocation)
+			if removeErr != nil {
+				return "", removeErr
 			}
-			for _, d := range dir {
-				if d.IsDir() {
-					javaLocation := filepath.Join(javaDir, d.Name(), "bin", "java")
-					javaVersions = append(javaVersions, javaLocation)
-				} else {
-					continue
-				}
-			}
-		}
-		javaDir = "/usr/bin/java"
-		_, err = os.Stat(javaDir)
-		if err == nil {
-			javaVersions = append(javaVersions, javaDir)
+			return "", fmt.Errorf("java extraction failed for version %d", majorVersion)
 		}
 	}
-	if len(javaVersions) == 0 {
-		return nil, fmt.Errorf("could not find any java executables installed. please visit https://adoptium.net/temurin/releases/ and install java version %d", vInfo.JavaVersion.MajorVersion)
+	if err != nil && !os.IsNotExist(err) {
+		return "", err
 	}
-	return javaVersions, nil
+	return filepath.Join(javaLocation, "bin", bin), nil
 }
 
-func (d *Download) EnsureJava(javaVersions []string, vInfo VersionInfo) (*string, error) {
-	for _, java := range javaVersions {
-		cmd := exec.Command(java, "-XshowSettings:properties", "-version")
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			continue
-		}
-		outputStr := string(out)
-		for line := range strings.SplitSeq(outputStr, "\n") {
-			if strings.Contains(line, "java.specification.version =") {
-				parts := strings.Split(line, "=")
-				if len(parts) == 2 {
-					version := strings.TrimSpace(parts[1])
-					var nversion string
-					if strings.Contains(version, "1.") {
-						nversion = strings.TrimPrefix(version, "1.")
-					} else {
-						v, err := strconv.Atoi(version)
-						if err != nil {
-							continue
-						}
-						if v >= vInfo.JavaVersion.MajorVersion {
-							return &java, nil
-						}
-					}
-					v, err := strconv.Atoi(nversion)
-					if err != nil {
-						continue
-					}
-					if v >= vInfo.JavaVersion.MajorVersion {
-						return &java, nil
-					}
+//func (d *Download) GetJava(vInfo VersionInfo) ([]string, error) {
+//	osName := runtime.GOOS
+//	var javaVersions []string
+//	javaHome := os.Getenv("JAVA_HOME")
+//	if len(javaHome) == 0 {
+//		fmt.Println("coudlnt find java in JAVA_HOME continuing search")
+//	} else {
+//		javabin := "java"
+//		if osName == "windows" {
+//			javabin = "java.exe"
+//		}
+//		java := filepath.Join(javaHome, "bin", javabin)
+//		javaVersions = append(javaVersions, java)
+//	}
+//	if osName == "windows" {
+//		javaDir := "C:\\Program Files\\Java\\"
+//		_, err := os.Stat(javaDir)
+//		if err == nil {
+//			dir, err := os.ReadDir(javaDir)
+//			if err != nil {
+//				return nil, err
+//			}
+//			for _, entries := range dir {
+//				if entries.IsDir() {
+//					if entries.Name() == "latest" {
+//						javaLocation := filepath.Join(javaDir, entries.Name(), "jre-1.8", "bin", "java.exe")
+//						javaVersions = append(javaVersions, javaLocation)
+//						continue
+//					}
+//					javaLocation := filepath.Join(javaDir, entries.Name(), "bin", "java.exe")
+//					javaVersions = append(javaVersions, javaLocation)
+//				} else {
+//					continue
+//				}
+//			}
+//		}
+//		adoptiumDir := "C:\\Program Files\\Eclipse Adoptium\\"
+//		_, err = os.Stat(adoptiumDir)
+//		if err == nil {
+//			dir, err := os.ReadDir(adoptiumDir)
+//			if err != nil {
+//				return nil, err
+//			}
+//			for _, entries := range dir {
+//				if entries.IsDir() {
+//					javaLocation := filepath.Join(adoptiumDir, entries.Name(), "bin", "java.exe")
+//					javaVersions = append(javaVersions, javaLocation)
+//				} else {
+//					continue
+//				}
+//			}
+//		}
+//		zuluDir := "C:\\Program Files\\Zulu\\"
+//		_, err = os.Stat(zuluDir)
+//		if err == nil {
+//			dir, err := os.ReadDir(zuluDir)
+//			if err != nil {
+//				return nil, err
+//			}
+//			for _, entries := range dir {
+//				if entries.IsDir() {
+//					javaLocation := filepath.Join(zuluDir, entries.Name(), "bin", "java.exe")
+//					javaVersions = append(javaVersions, javaLocation)
+//				} else {
+//					continue
+//				}
+//			}
+//		}
+//	} else if osName == "linux" {
+//		javaDir := "/usr/lib/jvm"
+//		_, err := os.Stat(javaDir)
+//		if err == nil {
+//			dir, err := os.ReadDir(javaDir)
+//			if err != nil {
+//				return nil, err
+//			}
+//			for _, d := range dir {
+//				if d.IsDir() {
+//					javaLocation := filepath.Join(javaDir, d.Name(), "bin", "java")
+//					javaVersions = append(javaVersions, javaLocation)
+//				} else {
+//					continue
+//				}
+//			}
+//		}
+//		javaDir = "/usr/bin/java"
+//		_, err = os.Stat(javaDir)
+//		if err == nil {
+//			javaVersions = append(javaVersions, javaDir)
+//		}
+//	}
+//	if len(javaVersions) == 0 {
+//		return nil, fmt.Errorf("could not find any java executables installed. please visit https://adoptium.net/temurin/releases/ and install java version %d", vInfo.JavaVersion.MajorVersion)
+//	}
+//	return javaVersions, nil
+//}
 
-					continue
-				}
-			}
-		}
+func (d *Download) EnsureJava(vInfo VersionInfo) (*string, error) {
+	// handle javaPathOverride later
+
+	java, err := d.DownloadJava(vInfo.JavaVersion.MajorVersion)
+	if err != nil {
+		return nil, err
 	}
-
-	return nil, fmt.Errorf("could not find a suitable java version. please install java version %d at https://adoptium.net/temurin/releases/", vInfo.JavaVersion.MajorVersion)
+	return &java, nil
 }
 
 func EnsureRules(rules []Rule, features map[string]bool) bool {

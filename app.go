@@ -279,11 +279,8 @@ func (a *App) StartGame(folderId string) error {
 	if err != nil {
 		return err
 	}
-	java, err := a.Download.GetJava(*vInfo)
-	if err != nil {
-		return err
-	}
-	ensureJava, err := a.Download.EnsureJava(java, *vInfo)
+	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Installing Java")
+	ensureJava, err := a.Download.EnsureJava(*vInfo)
 	if err != nil {
 		return err
 	}
@@ -360,7 +357,6 @@ func (a *App) StartGame(folderId string) error {
 		for scanner.Scan() {
 			line := scanner.Text()
 			wailsRuntime.EventsEmit(a.ctx, "game:info", line)
-			fmt.Println("game:info", " ", line)
 			_, err := fmt.Fprintln(file, line)
 			if err != nil {
 				fmt.Println(err)
@@ -376,7 +372,6 @@ func (a *App) StartGame(folderId string) error {
 		for scanner.Scan() {
 			line := scanner.Text()
 			wailsRuntime.EventsEmit(a.ctx, "game:error", line)
-			fmt.Println("game:error", " ", line)
 			_, err := fmt.Fprintln(file, line)
 			if err != nil {
 				fmt.Println(err)
@@ -408,7 +403,6 @@ func (a *App) StartGame(folderId string) error {
 			"folderId": folderId,
 			"exitCode": code,
 		})
-		fmt.Println("game:stopped", folderId, " ", code)
 	}()
 	return nil
 }

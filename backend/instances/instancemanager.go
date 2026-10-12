@@ -54,6 +54,7 @@ func (i *InstanceManager) InitStorage() (*string, error) {
 		filepath.Join(base, "minecraft", "assets"),
 		filepath.Join(base, "instances"),
 		filepath.Join(base, "accounts"),
+		filepath.Join(base, "java"),
 	}
 
 	for _, dir := range dirs {
@@ -284,27 +285,6 @@ func (i *InstanceManager) UpdateFabricVersion(folderId, fabricVersion string) er
 	}
 	return os.WriteFile(base, data, 0o600)
 }
-
-//func (i *InstanceManager) UpdateInstanceIcon(folderId, iconFilename string) error {
-//	instInfo, err := i.GetInstanceInfo(folderId)
-//	if err != nil {
-//		return err
-//	}
-//	if strings.TrimSpace(iconFilename) == "" {
-//		return fmt.Errorf("icon path is invalid")
-//	}
-//	instInfo.Icon = iconFilename
-//	appdatadir, err := os.UserConfigDir()
-//	if err != nil {
-//		return err
-//	}
-//	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
-//	data, err := json.MarshalIndent(instInfo, "", "  ")
-//	if err != nil {
-//		return err
-//	}
-//	return os.WriteFile(base, data, 0o600)
-//}
 
 func (i *InstanceManager) UpdateInstanceDescription(folderId, description string) error {
 	instInfo, err := i.GetInstanceInfo(folderId)
