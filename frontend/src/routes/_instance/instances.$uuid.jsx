@@ -35,6 +35,20 @@ const PILL_TRANSITION = { type: 'spring', stiffness: 400, damping: 35 };
 function InstanceDetailLayout() {
   const { uuid } = Route.useParams();
   const { pathname } = useLocation();
+  const activeTab = pathname.split('/').pop() || 'settings';
+
+  const prevTabRef = useRef(activeTab);
+  const isInitialTabRef = useRef(true);
+
+  const activeIndex = TABS.findIndex((tab) => tab.to === activeTab);
+  const prevIndex = TABS.findIndex((tab) => tab.to === prevTabRef.current);
+  const direction = activeIndex < prevIndex ? 'up' : 'down';
+
+  useEffect(() => {
+    prevTabRef.current = activeTab;
+    isInitialTabRef.current = false;
+  }, [activeTab]);
+
   const navRef = useRef(null);
   const [pill, setPill] = useState({ top: 0, height: 0, ready: false });
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -47,6 +61,13 @@ function InstanceDetailLayout() {
       ? fabricLogo
       : minecraftLogo;
 
+  const [canAnimate, setCanAnimate] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setCanAnimate(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     loadInstance(uuid);
   }, [uuid]);
@@ -58,7 +79,6 @@ function InstanceDetailLayout() {
     };
   }, []);
 
-  const activeIndex = TABS.findIndex((tab) => pathname.endsWith(`/${tab.to}`));
   const targetIndex = hoveredIndex ?? activeIndex;
 
   useEffect(() => {
@@ -75,7 +95,7 @@ function InstanceDetailLayout() {
     <motion.div
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.38, 1] }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.38, 1] }}
       className="flex h-full w-full gap-4 p-6"
     >
       {/* Sidebar */}
@@ -146,9 +166,25 @@ function InstanceDetailLayout() {
 
       {/* Content — bordered panel, scrolls internally */}
       <div className="min-h-0 flex-1 overflow-hidden rounded-md border-2 border-(--surface-border)">
-        <div className="h-full w-full overflow-y-auto p-8">
-          <Outlet />
-        </div>
+        <motion.div
+          key={activeTab}
+          initial={
+            canAnimate
+              ? {
+                  y: direction === 'down' ? '100%' : '-100%',
+                  opacity: 0.6,
+                  filter: 'blur(6px)',
+                }
+              : false
+          }
+          animate={{ y: '0', opacity: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.38, 1] }}
+          className="h-full w-full"
+        >
+          <div className="h-full w-full overflow-y-auto p-8">
+            <Outlet />
+          </div>
+        </motion.div>
       </div>
     </motion.div>
   );

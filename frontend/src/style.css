@@ -46,6 +46,16 @@ textarea,
   -webkit-user-select: text;
 }
 
+::selection {
+  background: var(--color-saturn-700);
+  color: var(--color-saturn-50);
+}
+
+.light ::selection {
+  background: var(--color-saturn-300);
+  color: var(--color-saturn-950);
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Raleway Variable', sans-serif;
@@ -173,6 +183,9 @@ textarea,
   --danger-bg-hover: color-mix(in oklch, #450a0a 40%, transparent);
   --danger-fg-hover: #fecaca;
 
+  --warning-fg: #fb923c; /* orange-400 */
+  --debug-fg: #facc15; /* yellow-400 */
+
   --chip-border: color-mix(in oklch, var(--color-saturn-700) 40%, transparent);
   --chip-bg: color-mix(in oklch, var(--color-saturn-900) 20%, transparent);
   --chip-fg: var(--color-saturn-200);
@@ -200,6 +213,8 @@ textarea,
   --code-bg: var(--color-saturn-950);
   --code-border: var(--color-saturn-900);
   --code-fg: var(--color-saturn-100);
+
+  --log-bg: #0e0818;
 }
 
 .light {
@@ -279,6 +294,9 @@ textarea,
   --danger-bg-hover: #fee2e2;
   --danger-fg-hover: #7f1d1d;
 
+  --warning-fg: #c2410c; /* orange-700 */
+  --debug-fg: #a16207; /* yellow-700 */
+
   --chip-border: color-mix(in oklch, var(--color-saturn-300) 80%, transparent);
   --chip-bg: var(--color-saturn-100);
   --chip-fg: var(--color-saturn-800);
@@ -306,6 +324,8 @@ textarea,
   --code-bg: var(--color-saturn-100);
   --code-border: var(--color-saturn-300);
   --code-fg: var(--color-saturn-950);
+
+  --log-bg: #f5f3fe;
 }
 
 .light .font-thin {
