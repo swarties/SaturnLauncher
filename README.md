@@ -61,6 +61,8 @@ Using wailsIo V2.15.0
 - Added Game Logs
 - Added Installing/Deleting and fetching Content ( mods, resource packs and shaders ) not connected to the frontend
 - Added Modrinth Discovery Page, Project Page, Version Page and a recursive Install Project function that gets the dependencies for a mod and the dependencies that dependency might have ( Not Connected to frontend )
+- Added Icons for vanilla and fabric
+- Default an instance's icon to its loader's icon
 
 
 ## Motivation
