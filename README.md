@@ -90,7 +90,8 @@ Most launchers today are aesthetically unpleasing, are filled with ads, and are 
 | <img width="1262" height="721" alt="image" src="https://github.com/user-attachments/assets/6d7c2b2d-08b7-459a-a898-932010f5638f" /> | <img width="443" height="415" alt="image" src="https://github.com/user-attachments/assets/42e4ed13-67b5-4107-b366-2ad473b1c510" /> |
 | :---: | :---: |
 | <img width="1258" height="722" alt="image" src="https://github.com/user-attachments/assets/97e5baa3-9980-4215-89c4-f33ef1bdeed9" /> | <img width="1258" height="725" alt="image" src="https://github.com/user-attachments/assets/5dbfcc37-493d-48d6-b262-d23eee3c4f50" /> |
-| <img width="443" height="497" alt="image" src="https://github.com/user-attachments/assets/1eebe8c1-e8db-4ab9-afe1-d30e7f472844" /> | ADD LOGS IMAGE HERE |
+| <img width="443" height="497" alt="image" src="https://github.com/user-attachments/assets/1eebe8c1-e8db-4ab9-afe1-d30e7f472844" /> | <img width="1260" height="725" alt="image" src="https://github.com/user-attachments/assets/01846675-0f87-422c-ae34-451f87cd791a" />
+ |
 
 
 
