@@ -11,6 +11,8 @@ Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source
 
 ## Install Steps
 
+#### **[Download The Latest Version Of Saturn Launcher](https://github.com/swarties/SaturnLauncher/releases/latest)**
+
 > [!WARNING]
 >  Windows Smartscreen warning
 >
@@ -34,7 +36,9 @@ React front-end with Vite
 Using wailsIo V2.15.0
 
 
-## Project State
+## Features
+
+
 - Microsoft and Minecraft authentication finished in both backend and frontend
 - Launching the app keeps the refresh key and user hash always up to date
 - Initializing the necessary folders to always exist on launch
@@ -93,9 +97,6 @@ Most launchers today are aesthetically unpleasing, are filled with ads, and are 
 | :---: | :---: |
 | <img width="1258" height="722" alt="image" src="https://github.com/user-attachments/assets/97e5baa3-9980-4215-89c4-f33ef1bdeed9" /> | <img width="1258" height="725" alt="image" src="https://github.com/user-attachments/assets/5dbfcc37-493d-48d6-b262-d23eee3c4f50" /> |
 | <img width="443" height="497" alt="image" src="https://github.com/user-attachments/assets/1eebe8c1-e8db-4ab9-afe1-d30e7f472844" /> | <img width="1260" height="725" alt="image" src="https://github.com/user-attachments/assets/01846675-0f87-422c-ae34-451f87cd791a" />
- |
-
-
 
 
 ### Multi Account :
