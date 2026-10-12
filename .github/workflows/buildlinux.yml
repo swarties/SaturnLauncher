@@ -37,7 +37,7 @@ jobs:
           npm run build
 
       - name: Build Linux app
-        run: wails build -platform linux/amd64 -s
+        run: wails build -platform linux/amd64 -s -tags webkit2_41
 
       - name: List build output
         run: ls -laR build/bin
