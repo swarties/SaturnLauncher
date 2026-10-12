@@ -22,19 +22,20 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
       - name: Install NSIS
         run: choco install nsis -y --no-progress
 
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
+
       - name: Build Windows app
-        run: wails build -platform windows/amd64 -webview2 download -nsis
+        run: wails build -platform windows/amd64 -webview2 download -nsis -s
 
       - name: List build output
         run: Get-ChildItem -Path build -Recurse | Select-Object FullName
