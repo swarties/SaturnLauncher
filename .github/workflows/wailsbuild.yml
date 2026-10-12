@@ -1,41 +1,41 @@
-name: "Build Wails App"
-description: "Runs wails build and fixes executable permissions per OS"
-inputs:
+name: Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
   build:
-    description: "Whether to run the build"
-    required: false
-    default: "true"
-  app-working-directory:
-    required: false
-    default: "."
-  build-platform:
-    required: true
-  build-name:
-    required: true
-  wails-build-webview2:
-    required: false
-    default: "download"
-  build-options:
-    description: "Precomputed BUILD_OPTIONS string"
-    required: false
-    default: ""
-runs:
-  using: "composite"
-  steps:
-    - name: Build App
-      if: inputs.build == 'true'
-      env:
-        BUILD_OPTIONS: ${{ inputs.build-options }}
-      working-directory: ${{ inputs.app-working-directory }}
-      run: wails build --platform ${{ inputs.build-platform }} -webview2 ${{ inputs.wails-build-webview2 }} -o ${{ inputs.build-name }} $BUILD_OPTIONS
-      shell: bash
-    - name: Add macOS perms
-      if: inputs.build == 'true' && runner.os == 'macOS'
-      working-directory: ${{ inputs.app-working-directory }}
-      run: chmod +x build/bin/*/Contents/MacOS/*
-      shell: bash
-    - name: Add Linux perms
-      if: inputs.build == 'true' && runner.os == 'Linux'
-      working-directory: ${{ inputs.app-working-directory }}
-      run: chmod +x build/bin/*
-      shell: bash
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: Build app
+        run: wails build -platform windows/amd64 -webview2 download -o SaturnLauncher.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SaturnLauncher-windows
+          path: build/bin/SaturnLauncher.exe
