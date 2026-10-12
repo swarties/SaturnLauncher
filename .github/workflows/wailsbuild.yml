@@ -32,7 +32,7 @@ jobs:
           npm run build
 
       - name: Build app
-        run: wails build -platform windows/amd64 -webview2 download -o SaturnLauncher.exe
+        run: wails build -platform windows/amd64 -webview2 download -o SaturnLauncher.exe -s
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
