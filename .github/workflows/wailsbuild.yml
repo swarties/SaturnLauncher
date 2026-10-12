@@ -34,6 +34,9 @@ jobs:
       - name: Build app
         run: wails build -platform windows/amd64 -webview2 download -o SaturnLauncher.exe -s
 
+      - name: List build output
+        run: Get-ChildItem -Path build -Recurse | Select-Object FullName
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
