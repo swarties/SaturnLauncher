@@ -684,9 +684,9 @@ func (d *Download) DownloadJava(majorVersion int) (string, error) {
 	var bin string
 	switch osName {
 	case "linux":
-		bin = "javaw"
+		bin = "java"
 	case "windows":
-		bin = "javaw.exe"
+		bin = "java.exe"
 	}
 	javaLocation := filepath.Join(appdata, "SaturnLauncher", "java", strconv.Itoa(majorVersion))
 	_, err = os.Stat(filepath.Join(javaLocation, "bin", bin))
