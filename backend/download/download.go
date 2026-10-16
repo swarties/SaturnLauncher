@@ -660,10 +660,6 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 		if err != nil {
 			return err
 		}
-		err = reader.Close()
-		if err != nil {
-			return err
-		}
 		for _, entry := range reader.File {
 			if entry.FileInfo().IsDir() {
 				continue
@@ -704,7 +700,10 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 				return err
 			}
 		}
-
+		err = reader.Close()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
