@@ -103,6 +103,38 @@ type AssetCandidate struct {
 	DestPath string
 	Hash     string
 }
+type Authors struct {
+	Name    string `json:"name"`
+	Contact struct {
+		Email    string `json:"email"`
+		Homepage string `json:"homepage"`
+	}
+}
+type ModManifest struct {
+	Version     string    `json:"version"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Authors     []Authors `json:"authors"`
+	Icon        string    `json:"icon"`
+}
+
+type pack struct {
+	Description string `json:"description"`
+	Name        string
+}
+type RpManifest struct {
+	Pack pack `json:"pack"`
+}
+
+type ContentInfo struct {
+	Version     string
+	Name        string
+	Description string
+	Authors     []Authors
+	Icon        string
+	Pack        pack
+	FileName    string
+}
 
 const assetUrl = "https://resources.download.minecraft.net/"
 
@@ -133,21 +165,21 @@ func (d *Download) Downloader(destPath string, downloadUrl string) (*string, err
 
 func (d *Download) GetVersionManifest() (*VersionManifest, error) {
 	var rawManifest VersionManifest
-	appdatadir, err := os.UserConfigDir()
+	appdata, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
 	}
-	targetdir := filepath.Join(appdatadir, "SaturnLauncher")
-	err = os.MkdirAll(targetdir, 0o755)
+	targetDir := filepath.Join(appdata, "SaturnLauncher")
+	err = os.MkdirAll(targetDir, 0o755)
 	if err != nil {
 		return nil, err
 	}
-	_, err = d.Downloader(targetdir, "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
+	_, err = d.Downloader(targetDir, "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
 	if err != nil {
 		return nil, err
 	}
-	finaldir := filepath.Join(targetdir, "version_manifest_v2.json")
-	jsonFile, err := os.Open(finaldir)
+	finalDir := filepath.Join(targetDir, "version_manifest_v2.json")
+	jsonFile, err := os.Open(finalDir)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +225,7 @@ func (d *Download) GetFileSha1(filePath string) (string, error) {
 func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId string) error {
 	var versionUrl string
 	var versionSha1 string
-	appdatadir, err := os.UserConfigDir()
+	appdata, err := os.UserConfigDir()
 	if err != nil {
 		return err
 	}
@@ -205,9 +237,9 @@ func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId st
 		}
 	}
 	if versionUrl == "" {
-		return fmt.Errorf("couldnt find version url in the manifest. What did you even do... restart the launcher and it should fix the manifest")
+		return fmt.Errorf("couldn't find version url in the manifest. What did you even do... restart the launcher and it should fix the manifest")
 	}
-	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "versions", versionId)
+	destPath := filepath.Join(appdata, "SaturnLauncher", "minecraft", "versions", versionId)
 	err = os.MkdirAll(destPath, 0o755)
 	if err != nil {
 		return err
@@ -237,11 +269,11 @@ func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId st
 
 func (d *Download) ParseVersionInfo(versionId string) (*VersionInfo, error) {
 	var data VersionInfo
-	appdatadir, err := os.UserConfigDir()
+	appdata, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
 	}
-	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "versions", versionId)
+	destPath := filepath.Join(appdata, "SaturnLauncher", "minecraft", "versions", versionId)
 	filePath := filepath.Join(destPath, versionId+".json")
 	file, err := os.ReadFile(filePath)
 	if err != nil {
@@ -255,11 +287,11 @@ func (d *Download) ParseVersionInfo(versionId string) (*VersionInfo, error) {
 }
 
 func (d *Download) GetClientJar(vInfo VersionInfo) error {
-	appdatadir, err := os.UserConfigDir()
+	appdata, err := os.UserConfigDir()
 	if err != nil {
 		return err
 	}
-	destPath := filepath.Join(appdatadir, "SaturnLauncher", "minecraft", "versions", vInfo.ID)
+	destPath := filepath.Join(appdata, "SaturnLauncher", "minecraft", "versions", vInfo.ID)
 	filePath := filepath.Join(destPath, vInfo.ID+".jar")
 	clientUrl := vInfo.Downloads.Client.URL
 	clientSha1 := vInfo.Downloads.Client.Sha1
@@ -431,7 +463,6 @@ func (d *Download) GetAssetIndex(versionInfo *VersionInfo) (*AssetIndex, error) 
 		}
 		return nil, fmt.Errorf("sha1 Mismatch error asset index file is corrupted")
 	}
-	// parsing
 	file, err := os.ReadFile(*filePath)
 	if err != nil {
 		return nil, err
@@ -589,7 +620,6 @@ func (d *Download) GetNatives(vInfo VersionInfo) ([]string, error) {
 			}
 		}
 	}
-	// Does not support arm still downloads them add support later
 	return natives, nil
 }
 
@@ -629,7 +659,10 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 		if err != nil {
 			return err
 		}
-		defer reader.Close()
+		err = reader.Close()
+		if err != nil {
+			return err
+		}
 		for _, entry := range reader.File {
 			if entry.FileInfo().IsDir() {
 				continue
@@ -653,6 +686,10 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 			if err != nil {
 				return err
 			}
+			err = file.Close()
+			if err != nil {
+				return err
+			}
 			_, err = io.Copy(file, fileReader)
 			if err != nil {
 				return err
@@ -671,7 +708,6 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 	return nil
 }
 
-// GetJava add linux support and more java locations to check
 // Just bundle java its easier https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jre/hotspot/normal/eclipse
 
 func (d *Download) DownloadJava(majorVersion int) (string, error) {
@@ -703,6 +739,7 @@ func (d *Download) DownloadJava(majorVersion int) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		defer reader.Close()
 		for _, f := range reader.File {
 			if f.FileInfo().IsDir() {
 				continue
@@ -762,103 +799,6 @@ func (d *Download) DownloadJava(majorVersion int) (string, error) {
 	}
 	return filepath.Join(javaLocation, "bin", bin), nil
 }
-
-//func (d *Download) GetJava(vInfo VersionInfo) ([]string, error) {
-//	osName := runtime.GOOS
-//	var javaVersions []string
-//	javaHome := os.Getenv("JAVA_HOME")
-//	if len(javaHome) == 0 {
-//		fmt.Println("coudlnt find java in JAVA_HOME continuing search")
-//	} else {
-//		javabin := "java"
-//		if osName == "windows" {
-//			javabin = "java.exe"
-//		}
-//		java := filepath.Join(javaHome, "bin", javabin)
-//		javaVersions = append(javaVersions, java)
-//	}
-//	if osName == "windows" {
-//		javaDir := "C:\\Program Files\\Java\\"
-//		_, err := os.Stat(javaDir)
-//		if err == nil {
-//			dir, err := os.ReadDir(javaDir)
-//			if err != nil {
-//				return nil, err
-//			}
-//			for _, entries := range dir {
-//				if entries.IsDir() {
-//					if entries.Name() == "latest" {
-//						javaLocation := filepath.Join(javaDir, entries.Name(), "jre-1.8", "bin", "java.exe")
-//						javaVersions = append(javaVersions, javaLocation)
-//						continue
-//					}
-//					javaLocation := filepath.Join(javaDir, entries.Name(), "bin", "java.exe")
-//					javaVersions = append(javaVersions, javaLocation)
-//				} else {
-//					continue
-//				}
-//			}
-//		}
-//		adoptiumDir := "C:\\Program Files\\Eclipse Adoptium\\"
-//		_, err = os.Stat(adoptiumDir)
-//		if err == nil {
-//			dir, err := os.ReadDir(adoptiumDir)
-//			if err != nil {
-//				return nil, err
-//			}
-//			for _, entries := range dir {
-//				if entries.IsDir() {
-//					javaLocation := filepath.Join(adoptiumDir, entries.Name(), "bin", "java.exe")
-//					javaVersions = append(javaVersions, javaLocation)
-//				} else {
-//					continue
-//				}
-//			}
-//		}
-//		zuluDir := "C:\\Program Files\\Zulu\\"
-//		_, err = os.Stat(zuluDir)
-//		if err == nil {
-//			dir, err := os.ReadDir(zuluDir)
-//			if err != nil {
-//				return nil, err
-//			}
-//			for _, entries := range dir {
-//				if entries.IsDir() {
-//					javaLocation := filepath.Join(zuluDir, entries.Name(), "bin", "java.exe")
-//					javaVersions = append(javaVersions, javaLocation)
-//				} else {
-//					continue
-//				}
-//			}
-//		}
-//	} else if osName == "linux" {
-//		javaDir := "/usr/lib/jvm"
-//		_, err := os.Stat(javaDir)
-//		if err == nil {
-//			dir, err := os.ReadDir(javaDir)
-//			if err != nil {
-//				return nil, err
-//			}
-//			for _, d := range dir {
-//				if d.IsDir() {
-//					javaLocation := filepath.Join(javaDir, d.Name(), "bin", "java")
-//					javaVersions = append(javaVersions, javaLocation)
-//				} else {
-//					continue
-//				}
-//			}
-//		}
-//		javaDir = "/usr/bin/java"
-//		_, err = os.Stat(javaDir)
-//		if err == nil {
-//			javaVersions = append(javaVersions, javaDir)
-//		}
-//	}
-//	if len(javaVersions) == 0 {
-//		return nil, fmt.Errorf("could not find any java executables installed. please visit https://adoptium.net/temurin/releases/ and install java version %d", vInfo.JavaVersion.MajorVersion)
-//	}
-//	return javaVersions, nil
-//}
 
 func (d *Download) EnsureJava(vInfo VersionInfo) (*string, error) {
 	// handle javaPathOverride later
@@ -952,34 +892,114 @@ func (a *Argument) UnmarshalJSON(data []byte) error {
 			a.Value = str
 			return nil
 		} else {
-			return fmt.Errorf("coudlnt unmarshal json. json might've been tampered with")
+			return fmt.Errorf("couldn't unmarshal json. json might've been tampered with")
 		}
 	}
 
-	return fmt.Errorf("coudlnt unmarshal json. json might've been tampered with")
+	return fmt.Errorf("couldn't unmarshal json. json might've been tampered with")
 }
 
-func (d *Download) GetInstalledContent(folderId, contentType string) ([]string, error) {
+func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentInfo, error) {
 	contentDir, _, err := d.ContentDir(folderId, contentType)
+	var contentInfo []ContentInfo
+
 	if err != nil {
 		return nil, err
 	}
 	dir, err := os.ReadDir(contentDir)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return []string{}, nil
-		}
 		return nil, err
 	}
-	Content := make([]string, 0, len(dir))
-	for _, r := range dir {
-		if r.IsDir() {
+	for _, d := range dir {
+
+		if d.IsDir() {
 			continue
 		}
-		Content = append(Content, r.Name())
-	}
+		var info ContentInfo
+		dirName := filepath.Join(contentDir, d.Name())
+		info = ContentInfo{FileName: d.Name()}
+		if contentType == "mods" {
 
-	return Content, nil
+			var superm ModManifest
+			reader, err := zip.OpenReader(dirName)
+			if err != nil {
+				contentInfo = append(contentInfo, info)
+				continue
+			}
+			for _, r := range reader.File {
+
+				if r.Name != "fabric.mod.json" {
+					continue
+				}
+				open, err := r.Open()
+				if err != nil {
+					return nil, err
+				}
+
+				file, err := io.ReadAll(open)
+				if err != nil {
+					return nil, err
+				}
+				err = json.Unmarshal(file, &superm)
+				if err != nil {
+					return nil, err
+				}
+				err = open.Close()
+				if err != nil {
+					return nil, err
+				}
+				info.Name = superm.Name
+				info.Version = superm.Version
+				info.Description = superm.Description
+				info.Authors = superm.Authors
+				info.Icon = superm.Icon
+				break
+			}
+			err = reader.Close()
+			if err != nil {
+				return nil, err
+			}
+
+		} else if contentType == "resourcepacks" {
+			var superRp RpManifest
+			reader, err := zip.OpenReader(dirName)
+			if err != nil {
+				contentInfo = append(contentInfo, info)
+				continue
+			}
+			for _, r := range reader.File {
+				if r.Name != "pack.mcmeta" {
+					continue
+				}
+				open, err := r.Open()
+				if err != nil {
+					return nil, err
+				}
+
+				file, err := io.ReadAll(open)
+				if err != nil {
+					return nil, err
+				}
+				err = json.Unmarshal(file, &superRp)
+				if err != nil {
+					return nil, err
+				}
+				err = open.Close()
+				if err != nil {
+					return nil, err
+				}
+				info.Pack.Name = strings.TrimSuffix(d.Name(), ".zip")
+				info.Pack.Description = superRp.Pack.Description
+				break
+			}
+			err = reader.Close()
+			if err != nil {
+				return nil, err
+			}
+		}
+		contentInfo = append(contentInfo, info)
+	}
+	return contentInfo, nil
 }
 
 func (d *Download) ContentDir(folderId, contentType string) (string, string, error) {

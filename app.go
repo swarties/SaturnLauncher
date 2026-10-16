@@ -675,19 +675,21 @@ func (a *App) GetInstanceIcon(folderId string) (string, error) {
 	return base64.StdEncoding.EncodeToString(file), nil
 }
 
-func (a *App) InstallContent(folderId, contentType string) (string, error) {
+func (a *App) InstallContent(folderId, contentType, path string) (string, error) {
 	contentDir, fileFormat, err := a.Download.ContentDir(folderId, contentType)
 	if err != nil {
 		return "", err
 	}
-	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
-		Title: "Select Content",
-		Filters: []wailsRuntime.FileFilter{
-			{
-				DisplayName: contentType,
-				Pattern:     fileFormat,
-			},
-		}})
+	if path == "" {
+		path, err = wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+			Title: "Select Content",
+			Filters: []wailsRuntime.FileFilter{
+				{
+					DisplayName: contentType,
+					Pattern:     fileFormat,
+				},
+			}})
+	}
 	if err != nil {
 		return "", err
 	}
@@ -711,7 +713,7 @@ func (a *App) InstallContent(folderId, contentType string) (string, error) {
 	return filepath.Base(path), nil
 }
 
-func (a *App) GetInstalledContent(folderId, contentType string) ([]string, error) {
+func (a *App) GetInstalledContent(folderId, contentType string) ([]download.ContentInfo, error) {
 	content, err := a.Download.GetInstalledContent(folderId, contentType)
 	if err != nil {
 		return nil, err
@@ -824,4 +826,24 @@ func (a *App) OpenContentFolder(folderId, contentType string) error {
 		return fmt.Errorf("could not open content folder")
 	}
 	return nil
+}
+
+func (a *App) ToggleContent(path string) (bool, error) {
+	cleanedPath := filepath.Clean(path)
+	if strings.HasSuffix(cleanedPath, ".disabled") {
+		newPath := strings.TrimSuffix(cleanedPath, ".disabled")
+		err := os.Rename(cleanedPath, newPath)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	} else {
+		newPath := cleanedPath + ".disabled"
+		err := os.Rename(cleanedPath, newPath)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
 }
