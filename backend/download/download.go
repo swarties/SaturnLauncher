@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"crypto/sha1"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -948,11 +949,31 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				if err != nil {
 					return nil, err
 				}
+				for _, read := range reader.File {
+					if read.Name != superm.Icon {
+						continue
+					}
+					mOpen, err := read.Open()
+					if err != nil {
+						continue
+					}
+					mFile, err := io.ReadAll(mOpen)
+					if err != nil {
+						continue
+					}
+					err = mOpen.Close()
+					if err != nil {
+						continue
+					}
+					info.Icon = base64.StdEncoding.EncodeToString(mFile)
+					break
+				}
+
 				info.Name = superm.Name
 				info.Version = superm.Version
 				info.Description = superm.Description
 				info.Authors = superm.Authors
-				info.Icon = superm.Icon
+
 				break
 			}
 			err = reader.Close()
@@ -987,6 +1008,26 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				err = open.Close()
 				if err != nil {
 					return nil, err
+				}
+				packIconDir := "pack.png"
+				for _, read := range reader.File {
+					if read.Name != packIconDir {
+						continue
+					}
+					rpOpen, err := read.Open()
+					if err != nil {
+						continue
+					}
+					rpFile, err := io.ReadAll(rpOpen)
+					if err != nil {
+						continue
+					}
+					err = rpOpen.Close()
+					if err != nil {
+						continue
+					}
+					info.Icon = base64.StdEncoding.EncodeToString(rpFile)
+					break
 				}
 				info.Pack.Name = strings.TrimSuffix(d.Name(), ".zip")
 				info.Pack.Description = superRp.Pack.Description
