@@ -10,7 +10,6 @@ import (
 	url2 "net/url"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 )
 
@@ -285,7 +284,14 @@ func (m *Modrinth) InstallModFile(v VersionInfo, folderId, contentType string) e
 	if err != nil {
 		return err
 	}
-	if slices.Contains(content, fileName) {
+	alreadyInstalled := false
+	for _, c := range content {
+		if c.FileName == fileName {
+			alreadyInstalled = true
+			break
+		}
+	}
+	if alreadyInstalled {
 		return nil
 	}
 	appdata, err := os.UserConfigDir()
