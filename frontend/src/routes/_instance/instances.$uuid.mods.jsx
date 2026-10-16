@@ -1,6 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ComingSoon } from '@/components/ui/coming-soon.jsx';
+import { ContentList } from '@/components/ui/content-list.jsx';
 
 export const Route = createFileRoute('/_instance/instances/$uuid/mods')({
-  component: () => <ComingSoon label="Mods" />,
+  component: ModsTab,
 });
+
+function ModsTab() {
+  const { uuid } = Route.useParams();
+  return <ContentList uuid={uuid} contentType="mods" />;
+}

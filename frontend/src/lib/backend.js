@@ -4,6 +4,8 @@ import {
   EventsOn,
   EventsOff,
   ClipboardSetText,
+  OnFileDrop,
+  OnFileDropOff,
 } from '../../wailsjs/runtime/runtime';
 
 const isWails =
@@ -75,5 +77,20 @@ export async function copyText(text) {
   } catch (error) {
     console.warn('Could not write to the browser clipboard: ', error);
     return false;
+  }
+}
+
+export function onFileDrop(callback) {
+  if (!isWails) {
+    console.warn("Saturn isn't running inside Wails. onFileDrop skipped.");
+    return () => {};
+  }
+
+  OnFileDrop((x, y, paths) => {
+    callback(x, y, paths);
+  }, true);
+
+  return () => {
+    OnFileDropOff()
   }
 }
