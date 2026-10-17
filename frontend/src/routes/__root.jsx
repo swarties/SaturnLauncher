@@ -6,8 +6,10 @@ import {
   useNavigate,
 } from '@tanstack/react-router';
 import { useEffect, useState, useRef } from 'react';
+
 import { LineWobble } from 'ldrs/react';
 import 'ldrs/react/LineWobble.css';
+import { AlertTriangle } from 'lucide-react';
 
 import * as Runtime from '../../wailsjs/runtime/runtime';
 import { authActions, useAuth, getAuthState } from '@/stores/auth';
@@ -29,6 +31,7 @@ function getRedirectTarget(status, pathname) {
 }
 
 export const Route = createRootRoute({
+  errorComponent: RootErrorComponent,
   beforeLoad: ({ location }) => {
     const { status } = getAuthState();
     const redirectTarget = getRedirectTarget(status, location.pathname);
@@ -132,5 +135,49 @@ function StartupScreen() {
         Starting Saturn Launcher...
       </p>
     </main>
+  );
+}
+
+function RootErrorComponent({ error, reset }) {
+  return (
+    <div className="bg-background relative flex h-screen w-full flex-col items-center justify-center overflow-hidden p-6">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-48 left-1/2 h-144 w-4xl -translate-x-1/2 rounded-full bg-(--orb-1) blur-[120px]" />
+        <div className="absolute -right-32 bottom-0 h-112 w-160 rounded-full bg-(--orb-2) blur-[100px]" />
+        <div className="absolute top-1/3 -left-32 h-96 w-lg rounded-full bg-(--orb-3) blur-[90px]" />
+      </div>
+
+      <div className="relative z-10 flex w-full max-w-lg flex-col items-center gap-6 text-center">
+        <div className="flex size-16 items-center justify-center rounded-full border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg)">
+          <AlertTriangle className="size-8" aria-hidden="true" />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <h1 className="text-foreground text-3xl font-extralight tracking-tight">
+            Something went wrong
+          </h1>
+          <p className="text-muted-foreground text-sm font-normal wrap-break-word whitespace-pre-wrap">
+            {error?.message ?? 'An unexpected error occurred.'}
+          </p>
+        </div>
+
+        <div className="mt-2 flex gap-3">
+          <button
+            type="button"
+            onClick={() => reset()}
+            className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-5 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
+          >
+            Try Again
+          </button>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-10 rounded-md border px-5 text-sm font-thin transition-colors"
+          >
+            Reload App
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

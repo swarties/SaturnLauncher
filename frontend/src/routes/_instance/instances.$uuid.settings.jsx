@@ -186,13 +186,8 @@ function SettingsTab() {
               <p className="mt-2 text-xs font-thin text-red-400">{iconError}</p>
             )}
           </div>
+          <br />
         </Field>
-      </div>
-      {/* Placeholder bars — spot reserved for future settings sections */}
-      <div className="mt-10 flex flex-col gap-4">
-        <div className="h-10 w-40 rounded-sm bg-(--surface-active)" />
-        <div className="h-4 w-3/4 rounded-sm bg-(--surface-active)" />
-        <div className="h-4 w-full rounded-sm bg-(--surface-active)" />
       </div>
       {saveError && (
         <p className="mt-6 text-xs font-thin text-red-400">{saveError}</p>

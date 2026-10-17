@@ -111,20 +111,31 @@ export function InstanceSelector({ onSelectionChange }) {
     const scroll = scrollRef.current;
     if (!scroll) return;
 
-    const rowH = ROW_HEIGHT_FALLBACK[viewMode];
-    const available = scroll.clientHeight - LIST_PADDING;
-    const usedRows =
-      instances.length === 0
-        ? 0
-        : instances.length * rowH + (instances.length - 1) * LIST_GAP;
-    const remaining = Math.max(0, available - usedRows);
+    const recalculateGhosts = () => {
+      const rowH = ROW_HEIGHT_FALLBACK[viewMode];
+      const available = scroll.clientHeight - LIST_PADDING;
+      const usedRows =
+        instances.length === 0
+          ? 0
+          : instances.length * rowH + (instances.length - 1) * LIST_GAP;
+      const remaining = Math.max(0, available - usedRows);
 
-    const nextCount =
-      instances.length === 0
-        ? 0
-        : Math.max(0, Math.floor((remaining + LIST_GAP) / (rowH + LIST_GAP)));
+      const nextCount =
+        instances.length === 0
+          ? 0
+          : Math.max(0, Math.floor((remaining + LIST_GAP) / (rowH + LIST_GAP)));
 
-    setGhostCount((prev) => (prev === nextCount ? prev : nextCount));
+      setGhostCount((prev) => (prev === nextCount ? prev : nextCount) - 1);
+    };
+
+    recalculateGhosts();
+
+    const observer = new ResizeObserver(() => {
+      recalculateGhosts();
+    });
+    observer.observe(scroll);
+
+    return () => observer.disconnect();
   }, [instances, viewMode]);
 
   const countLabel = loading
