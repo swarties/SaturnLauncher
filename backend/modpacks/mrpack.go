@@ -1,11 +1,17 @@
 package modpacks
 
 import (
+	"SaturnLauncher/backend/download"
+	fabric2 "SaturnLauncher/backend/fabric"
+	"SaturnLauncher/backend/instances"
 	"archive/zip"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Mrpack struct {
@@ -89,7 +95,67 @@ func (m *Mrpack) ParseModpack(path string) (*ModrinthPack, error) {
 		}
 	}
 	if mrpack.Name == "" {
-		return nil, fmt.Errorf("couldnt correctly parse the modpack")
+		return nil, fmt.Errorf("couldn't correctly parse the modpack")
 	}
 	return &mrpack, nil
+}
+
+func (m *Mrpack) InstallModpack(path string) (string, error) {
+	instManager := instances.NewInstanceManager()
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	modpack, err := m.ParseModpack(path)
+	if err != nil {
+		return "", err
+	}
+	inst, err := instManager.CreateInstance(modpack.Name, modpack.Dependencies.Minecraft)
+	if err != nil {
+		return "", err
+	}
+	folderId := inst.Uuid
+	dl := download.NewDownload()
+	//instInfo, err := instManager.GetInstanceInfo(folderId)
+	//if err != nil {
+	//	return err
+	//}
+	//fabric := fmt.Sprintf("fabric-loader-%s-%s", modpack.Dependencies.FabricLoader, instInfo.Version)
+	f := fabric2.NewFabric()
+	id, err := f.InstallFabric(inst.Version, modpack.Dependencies.FabricLoader)
+	if err != nil {
+		return "", err
+	}
+	err = instManager.UpdateFabricVersion(folderId, id)
+	if err != nil {
+		return "", err
+	}
+
+	for _, m := range modpack.Files {
+		path := filepath.Clean(m.Path)
+		if strings.Contains(path, "..") {
+			continue
+		}
+		if m.Env.Client == "unsupported" {
+			continue
+		}
+		mod := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, path)
+		err = os.MkdirAll(filepath.Dir(mod), 0o755)
+		if err != nil {
+			return "", err
+		}
+		_, err = dl.Downloader(mod, m.Downloads[0])
+		if err != nil {
+			return "", err
+		}
+		sha1, err := dl.GetFileSha1(mod)
+		if err != nil {
+			return "", err
+		}
+		if sha1 != m.Hashes.Sha1 {
+			os.Remove(mod)
+			return "", fmt.Errorf("sha1 mismatch for %s", m.Path)
+		}
+	}
+	return inst.Uuid, nil
 }

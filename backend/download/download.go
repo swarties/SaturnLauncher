@@ -104,12 +104,13 @@ type AssetCandidate struct {
 	DestPath string
 	Hash     string
 }
+type Contact struct {
+	Email    string `json:"email"`
+	Homepage string `json:"homepage"`
+}
 type Authors struct {
-	Name    string `json:"name"`
-	Contact struct {
-		Email    string `json:"email"`
-		Homepage string `json:"homepage"`
-	}
+	Name    string  `json:"name"`
+	Contact Contact `json:"contact"`
 }
 type ModManifest struct {
 	Version     string    `json:"version"`
@@ -683,11 +684,11 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 			if err != nil {
 				return err
 			}
-			err = file.Close()
+			_, err = io.Copy(file, fileReader)
 			if err != nil {
 				return err
 			}
-			_, err = io.Copy(file, fileReader)
+			err = file.Close()
 			if err != nil {
 				return err
 			}
@@ -695,10 +696,7 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 			if err != nil {
 				return err
 			}
-			err = file.Close()
-			if err != nil {
-				return err
-			}
+
 		}
 		err = reader.Close()
 		if err != nil {
@@ -707,8 +705,6 @@ func (d *Download) ExtractNatives(vInfo VersionInfo) error {
 	}
 	return nil
 }
-
-// Just bundle java its easier https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jre/hotspot/normal/eclipse
 
 func (d *Download) DownloadJava(majorVersion int) (string, error) {
 	osName := runtime.GOOS

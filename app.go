@@ -6,6 +6,7 @@ import (
 	"SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/launch"
+	"SaturnLauncher/backend/modpacks"
 	"SaturnLauncher/backend/modrinth"
 	"bufio"
 	"context"
@@ -39,6 +40,7 @@ type App struct {
 	InstanceManager   *instances.InstanceManager
 	Fabric            *fabric.Fabric
 	Modrinth          *modrinth.Modrinth
+	Mrpack            *modpacks.Mrpack
 }
 
 // NewApp creates a new App application struct
@@ -50,6 +52,7 @@ func NewApp() *App {
 		InstanceManager: instances.NewInstanceManager(),
 		Fabric:          fabric.NewFabric(),
 		Modrinth:        modrinth.NewModrinth(),
+		Mrpack:          modpacks.NewMrpack(),
 	}
 }
 
