@@ -101,6 +101,7 @@ func (m *Mrpack) ParseModpack(path string) (*ModrinthPack, error) {
 }
 
 func (m *Mrpack) InstallModpack(path string) (string, error) {
+	var candidates []download.AssetCandidate
 	instManager := instances.NewInstanceManager()
 	appdata, err := os.UserConfigDir()
 	if err != nil {
@@ -144,18 +145,22 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		_, err = dl.Downloader(mod, m.Downloads[0])
+		candidates = append(candidates, download.AssetCandidate{
+			URL:      m.Downloads[0],
+			DestPath: mod,
+			Hash:     m.Hashes.Sha1,
+		})
+	}
+	failures, err := dl.BatchDownloader(candidates)
+	if err != nil {
+		return "", err
+	}
+	if len(failures) > 0 {
+		undFailures, err := dl.BatchDownloader(failures)
 		if err != nil {
 			return "", err
 		}
-		sha1, err := dl.GetFileSha1(mod)
-		if err != nil {
-			return "", err
-		}
-		if sha1 != m.Hashes.Sha1 {
-			os.Remove(mod)
-			return "", fmt.Errorf("sha1 mismatch for %s", m.Path)
-		}
+		return "", fmt.Errorf("failed to install %d elements", len(undFailures))
 	}
 	return inst.Uuid, nil
 }
