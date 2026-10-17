@@ -16,6 +16,7 @@ import {
   InstallContent,
   OpenContentFolder,
   RemoveContent,
+  ToggleContent,
 } from '../../../wailsjs/go/main/App';
 
 export function ContentList({ uuid, contentType }) {
@@ -33,11 +34,37 @@ export function ContentList({ uuid, contentType }) {
   }, [uuid, contentType]);
 
   useEffect(() => {
-    const off = onFileDrop((x, y, paths) => {
+    const off = onFileDrop(async (x, y, paths) => {
+      console.log('[ContentList] Received drop event from wrapper!', {
+        x,
+        y,
+        paths,
+      });
+
       const els = document.elementsFromPoint(x, y);
-      const zone = els.find((el) => el?.hasAttribute?.('data-srm-list'));
-      if (!zone) return;
-      if (zone.dataset.uuid !== uuid) return;
+      console.log('[ContentList] Elements at drop coordinates:', els);
+
+      const zone = els
+        .map((el) => el?.closest?.('[data-srm-list]'))
+        .find(Boolean);
+
+      console.log('[ContentList] Found drop zone:', zone);
+
+      if (!zone) {
+        console.warn(
+          '[ContentList] ERROR: No drop zone found at these coordinates.'
+        );
+        return;
+      }
+      if (zone.dataset.uuid !== uuid) {
+        console.warn(
+          '[ContentList] ERROR: UUID mismatch. Dropped on',
+          zone.dataset.uuid,
+          'but active is',
+          uuid
+        );
+        return;
+      }
 
       const allowed = paths.every((p) =>
         config.extensions.some((ext) => p.toLowerCase().endsWith(ext))
@@ -50,8 +77,14 @@ export function ContentList({ uuid, contentType }) {
         return;
       }
 
-      setDropMessage('Backend endpoint pending - install from file instead!');
-      window.setTimeout(() => setDropMessage(null), 4000);
+      try {
+        for (const path of paths) {
+          await InstallContent(uuid, config.backendKey, path);
+        }
+      } catch (e) {
+        setDropMessage(e?.message ?? String(e));
+        window.setTimeout(() => setDropMessage(null), 4000);
+      }
     });
     return () => {
       if (typeof off === 'function') off();
@@ -60,7 +93,7 @@ export function ContentList({ uuid, contentType }) {
 
   const handleInstall = async () => {
     try {
-      await InstallContent(uuid, config.backendKey);
+      await InstallContent(uuid, config.backendKey, '');
     } catch (e) {
       setDropMessage(e?.message ?? String(e));
       window.setTimeout(() => setDropMessage(null), 4000);
@@ -70,6 +103,17 @@ export function ContentList({ uuid, contentType }) {
   const handleRemove = async (item) => {
     try {
       await RemoveContent(uuid, config.backendKey, item.filename);
+    } catch (e) {
+      setDropMessage(e?.message ?? String(e));
+      window.setTimeout(() => setDropMessage(null), 4000);
+    }
+  };
+
+  const handleToggle = async (item) => {
+    try {
+      await ToggleContent(uuid, config.backendKey, item.filename);
+      // Force a silent refresh since the backend doesn't emit 'instance:changed' for toggles yet
+      void loadContent(uuid, contentType, { silent: true });
     } catch (e) {
       setDropMessage(e?.message ?? String(e));
       window.setTimeout(() => setDropMessage(null), 4000);
@@ -128,6 +172,7 @@ export function ContentList({ uuid, contentType }) {
                   key={item.filename}
                   item={item}
                   onRemove={handleRemove}
+                  onToggle={handleToggle}
                 />
               ))}
             </div>
@@ -178,7 +223,7 @@ function ContentHeader({ query, onQueryChange, onInstall, onOpenFolder }) {
   );
 }
 
-function ContentRow({ item, onRemove }) {
+function ContentRow({ item, onRemove, onToggle }) {
   const Icon = item.ext === '.jar' ? Package : FileArchive;
 
   return (
@@ -208,7 +253,7 @@ function ContentRow({ item, onRemove }) {
       <span className="text-muted-foreground w-14 shrink-0 text-right text-xs font-thin tabular-nums">
         {formatSize(item.sizeBytes)}
       </span>
-      <ContentSwitch enabled={item.enabled} />
+      <ContentSwitch enabled={item.enabled} onToggle={() => onToggle(item)} />
       <button
         type="button"
         onClick={() => onRemove(item)}
@@ -222,17 +267,16 @@ function ContentRow({ item, onRemove }) {
   );
 }
 
-function ContentSwitch({ enabled }) {
+function ContentSwitch({ enabled, onToggle }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={enabled}
-      aria-disabled="true"
-      data-tooltip="Toggle pending backend"
-      onClick={(e) => e.preventDefault()}
+      data-tooltip={enabled ? 'Disable' : 'Enable'}
+      onClick={onToggle}
       className={[
-        'relative inline-flex h-4 w-8 shrink-0 cursor-not-allowed items-center rounded-full opacity-80 transition-colors',
+        'focus-visible:ring-offset-background relative inline-flex h-4 w-8 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-(--chip-border-hover) focus-visible:ring-offset-2 focus-visible:outline-none',
         enabled ? 'bg-saturn-500' : 'bg-(--surface-active)',
       ].join(' ')}
     >

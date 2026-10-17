@@ -382,6 +382,11 @@ textarea,
   z-index: 10;
 }
 
+[data-srm-list].wails-drop-target-active {
+  outline: 4px solid #00ff00 !important;
+  background: rgba(0, 255, 0, 0.1) !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

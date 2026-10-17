@@ -35,6 +35,8 @@ export function logout() {
   return Logout();
 }
 
+const eventListeners = new Map();
+
 export function onBackendEvent(eventName, callback) {
   if (!isWails) {
     console.warn(
@@ -43,9 +45,49 @@ export function onBackendEvent(eventName, callback) {
     return () => {};
   }
 
-  EventsOn(eventName, callback);
+  if (!eventListeners.has(eventName)) {
+    eventListeners.set(eventName, new Set());
+    EventsOn(eventName, (...args) => {
+      eventListeners.get(eventName)?.forEach((cb) => cb(...args));
+    });
+  }
+
+  const listenersForEvent = eventListeners.get(eventName);
+  listenersForEvent.add(callback);
+
   return () => {
-    EventsOff(eventName);
+    listenersForEvent.delete(callback);
+    if (listenersForEvent.size === 0) {
+      eventListeners.delete(eventName);
+      EventsOff(eventName);
+    }
+  };
+}
+
+let currentFileDropCallback = null;
+
+export function onFileDrop(callback) {
+  if (!isWails) {
+    console.warn("Saturn isn't running inside Wails. onFileDrop was skipped");
+    return () => {};
+  }
+
+  currentFileDropCallback = callback;
+
+  console.log('[FileDrop] Registering native Wails listener');
+
+  OnFileDrop((x, y, paths) => {
+    console.log('[FileDrop] Wails native event fired!', { x, y, paths });
+    if (currentFileDropCallback) {
+      currentFileDropCallback(x, y, paths);
+    }
+  }, true);
+
+  return () => {
+    if (currentFileDropCallback === callback) {
+      currentFileDropCallback = null;
+      OnFileDropOff();
+    }
   };
 }
 
@@ -77,20 +119,5 @@ export async function copyText(text) {
   } catch (error) {
     console.warn('Could not write to the browser clipboard: ', error);
     return false;
-  }
-}
-
-export function onFileDrop(callback) {
-  if (!isWails) {
-    console.warn("Saturn isn't running inside Wails. onFileDrop skipped.");
-    return () => {};
-  }
-
-  OnFileDrop((x, y, paths) => {
-    callback(x, y, paths);
-  }, true);
-
-  return () => {
-    OnFileDropOff()
   }
 }

@@ -74,7 +74,7 @@ function itemFromRaw(raw) {
     filename,
     enabled: !filename.endsWith('.disabled'),
     displayName,
-    sizeBytes: null, // Backend doesn't send size yet
+    sizeBytes: raw.FileSize ?? null,
     iconDataUrl: raw.Icon ? `data:image/png;base64,${raw.Icon}` : null,
     version: raw.Version || null,
     description: raw.Description || raw.Pack?.Description || null,
@@ -104,10 +104,6 @@ export async function loadContent(uuid, contentType, { silent = false } = {}) {
       loaded: true,
     });
   }
-}
-
-export function refreshContent(uuid, contentType) {
-  void loadContent(uuid, contentType, { silent: true });
 }
 
 let subsInstalled = false;
