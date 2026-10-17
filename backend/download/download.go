@@ -128,6 +128,7 @@ type ContentInfo struct {
 	Icon        string
 	Pack        pack
 	FileName    string
+	FileSize    int
 }
 
 const assetUrl = "https://resources.download.minecraft.net/"
@@ -909,6 +910,10 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 		if contentType == "mods" {
 
 			var superm ModManifest
+			stat, err := os.Stat(dirName)
+			if err != nil {
+				return nil, err
+			}
 			reader, err := zip.OpenReader(dirName)
 			if err != nil {
 				contentInfo = append(contentInfo, info)
@@ -959,11 +964,10 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 					info.Icon = base64.StdEncoding.EncodeToString(mFile)
 					break
 				}
-
 				info.Name = superm.Name
 				info.Version = superm.Version
 				info.Description = superm.Description
-
+				info.FileSize = int(stat.Size())
 				break
 			}
 			err = reader.Close()
@@ -973,6 +977,10 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 
 		} else if contentType == "resourcepacks" {
 			var superRp RpManifest
+			stat, err := os.Stat(dirName)
+			if err != nil {
+				return nil, err
+			}
 			reader, err := zip.OpenReader(dirName)
 			if err != nil {
 				contentInfo = append(contentInfo, info)
@@ -1022,6 +1030,7 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				}
 				info.Pack.Name = strings.TrimSuffix(d.Name(), ".zip")
 				info.Pack.Description = superRp.Pack.Description
+				info.FileSize = int(stat.Size())
 				break
 			}
 			err = reader.Close()
