@@ -14,7 +14,9 @@ function LogsTab() {
   const { uuid } = Route.useParams();
   const { logs } = useLogs();
   const { instances } = useLaunch();
+
   const [query, setQuery] = useState('');
+  const [levelFilter, setLevelFilter] = useState('ALL'); // 'ALL', 'INFO', 'WARN', 'ERROR', 'DEBUG'
 
   const phase = instances[uuid]?.phase ?? 'idle';
   const isLive = phase === 'running' || phase === 'launching';
@@ -27,10 +29,19 @@ function LogsTab() {
   const allLines = entry?.lines ?? [];
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return allLines;
-    const q = query.toLowerCase();
-    return allLines.filter((l) => l.message.toLowerCase().includes(q));
-  }, [allLines, query]);
+    let result = allLines;
+
+    if (levelFilter !== 'ALL') {
+      result = result.filter((l) => l.level === levelFilter);
+    }
+
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      result = result.filter((l) => l.message.toLowerCase().includes(q));
+    }
+
+    return result;
+  }, [allLines, query, levelFilter]);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col gap-4">
@@ -40,6 +51,22 @@ function LogsTab() {
         isLive={isLive}
         onOpenFolder={() => void OpenInstanceFolder(uuid)}
       />
+      <div className="flex shrink-0 items-center gap-2">
+        {['ALL', 'INFO', 'WARN', 'ERROR', 'DEBUG'].map((lvl) => (
+          <button
+            key={lvl}
+            onClick={() => setLevelFilter(lvl)}
+            className={[
+              'h-7 rounded-md border px-3 text-[0.65rem] font-thin tracking-widest uppercase transition-colors',
+              levelFilter === lvl
+                ? 'border-(--chip-border-hover) bg-(--chip-bg-hover) text-(--chip-fg-hover)'
+                : 'text-muted-foreground border-(--hairline) hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg)',
+            ].join(' ')}
+          >
+            {lvl}
+          </button>
+        ))}
+      </div>
       <LogViewer
         lines={filtered}
         loading={entry?.loading ?? true}

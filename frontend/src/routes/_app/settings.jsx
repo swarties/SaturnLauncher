@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 import { THEMES, useTheme, setTheme } from '@/stores/theme';
+import { useLaunch } from '@/stores/launch';
 
 export const Route = createFileRoute('/_app/settings')({
   component: SettingsPage,
@@ -8,6 +9,18 @@ export const Route = createFileRoute('/_app/settings')({
 
 function SettingsPage() {
   const { id: activeId } = useTheme();
+  const navigate = useNavigate();
+  const { instances } = useLaunch();
+
+  const isAnyInstanceActive = Object.values(instances).some(
+    (inst) => inst.phase === 'launching' || inst.phase === 'running'
+  );
+
+  const handleRedoOnboarding = () => {
+    if (isAnyInstanceActive) return;
+    localStorage.removeItem('saturn.onboarded');
+    void navigate({ to: '/onboarding', replace: true });
+  };
 
   return (
     <div className="flex h-full w-full flex-col p-6">
@@ -33,6 +46,31 @@ function SettingsPage() {
               onSelect={() => setTheme(theme.id)}
             />
           ))}
+        </div>
+      </section>
+      <section className="mt-10 max-w-3xl">
+        <p className="text-muted-foreground tracking- text-sm font-thin uppercase">
+          Advanced - <span className="text-red-300">Danger Zone</span>
+        </p>
+        <div className="mt-4 flex items-center justify-between rounded-md border border-(--hairline) p-4">
+          <div>
+            <p className="text-foreground text-sm font-normal">
+              Redo Onboarding
+            </p>
+            <p className="text-muted-foreground text-xs font-thin">
+              {isAnyInstanceActive
+                ? 'Cannot restart while a game is running or launching.'
+                : 'Replay the initial welcome and setup screens.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleRedoOnboarding}
+            disabled={isAnyInstanceActive}
+            className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-10 shrink-0 rounded-md border px-5 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
+          >
+            Restart
+          </button>
         </div>
       </section>
     </div>

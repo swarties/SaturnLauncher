@@ -66,15 +66,21 @@ function itemFromRaw(raw) {
       ext: getExt(raw),
     };
   }
+
+  const filename = raw.FileName ?? raw.filename ?? '';
+  const displayName = raw.Name || raw.Pack?.Name || stripExt(filename);
+
   return {
-    filename: raw.filename,
-    enabled: raw.enabled ?? !raw.filename.endsWith('.disabled'),
-    displayName: raw.name || stripExt(raw.filename),
-    sizeBytes: raw.sizeBytes ?? null,
-    iconUrl: raw.iconUrl ?? null,
-    version: raw.version ?? null,
-    source: raw.source ?? 'local',
-    ext: getExt(raw.filename),
+    filename,
+    enabled: !filename.endsWith('.disabled'),
+    displayName,
+    sizeBytes: null, // Backend doesn't send size yet
+    iconDataUrl: raw.Icon ? `data:image/png;base64,${raw.Icon}` : null,
+    version: raw.Version || null,
+    description: raw.Description || raw.Pack?.Description || null,
+    authors: raw.Authors ?? [],
+    source: 'local',
+    ext: getExt(filename),
   };
 }
 

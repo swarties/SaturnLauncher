@@ -184,9 +184,9 @@ function ContentRow({ item, onRemove }) {
   return (
     <div className="group bg-background flex items-center gap-3 rounded-md border border-(--hairline) px-3 py-2.5 transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)">
       <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-(--chip-bg) text-(--chip-fg)">
-        {item.iconUrl ? (
+        {item.iconDataUrl ? (
           <img
-            src={item.iconUrl}
+            src={item.iconDataUrl}
             draggable="false"
             alt=""
             className="size-full object-cover"
