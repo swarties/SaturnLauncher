@@ -1,8 +1,10 @@
 package download
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha1"
 	"encoding/base64"
@@ -719,56 +721,122 @@ func (d *Download) DownloadJava(majorVersion int) (string, error) {
 		return filepath.Join(javaLocation, "bin", bin), nil
 	}
 	if os.IsNotExist(err) {
-		zipPath := javaLocation + ".zip"
+		var zipPath string
+		if osName == "windows" {
+			zipPath = javaLocation + ".zip"
+		} else if osName == "linux" {
+			zipPath = javaLocation + ".tar.gz"
+		}
+
 		_, err := d.Downloader(zipPath, url)
 		if err != nil {
 			return "", err
 		}
-		reader, err := zip.OpenReader(zipPath)
-		if err != nil {
-			return "", err
-		}
-		defer reader.Close()
-		for _, f := range reader.File {
-			if f.FileInfo().IsDir() {
-				continue
+		if osName == "windows" {
+			reader, err := zip.OpenReader(zipPath)
+			if err != nil {
+				return "", err
 			}
-			segments := strings.Split(f.Name, "/")
-			if len(segments) <= 1 {
-				continue
-			}
-			relPath := filepath.Join(segments[1:]...)
-			targetPath := filepath.Join(javaLocation, relPath)
-			if strings.HasPrefix(targetPath, javaLocation+string(os.PathSeparator)) {
-				err := os.MkdirAll(filepath.Dir(targetPath), 0o755)
-				if err != nil {
-					return "", err
+			defer reader.Close()
+			for _, f := range reader.File {
+				if f.FileInfo().IsDir() {
+					continue
 				}
-				open, err := f.Open()
-				if err != nil {
-					return "", err
+				segments := strings.Split(f.Name, "/")
+				if len(segments) <= 1 {
+					continue
 				}
-				create, err := os.Create(targetPath)
-				if err != nil {
-					return "", err
-				}
-				_, err = io.Copy(create, open)
-				err = create.Close()
-				if err != nil {
-					return "", err
-				}
-				err = open.Close()
-				if err != nil {
-					return "", err
-				}
+				relPath := filepath.Join(segments[1:]...)
+				targetPath := filepath.Join(javaLocation, relPath)
+				if strings.HasPrefix(targetPath, javaLocation+string(os.PathSeparator)) {
+					err := os.MkdirAll(filepath.Dir(targetPath), 0o755)
+					if err != nil {
+						return "", err
+					}
+					open, err := f.Open()
+					if err != nil {
+						return "", err
+					}
+					create, err := os.Create(targetPath)
+					if err != nil {
+						return "", err
+					}
+					_, err = io.Copy(create, open)
+					err = create.Close()
+					if err != nil {
+						return "", err
+					}
+					err = open.Close()
+					if err != nil {
+						return "", err
+					}
 
-			} else {
-				continue
+				} else {
+					continue
+				}
 			}
-		}
-		err = reader.Close()
-		if err != nil {
-			return "", err
+			err = reader.Close()
+			if err != nil {
+				return "", err
+			}
+		} else if osName == "linux" {
+			osOpen, err := os.Open(zipPath)
+			if err != nil {
+				return "", err
+			}
+			gzipReader, err := gzip.NewReader(osOpen)
+			if err != nil {
+				return "", err
+			}
+			tarReader := tar.NewReader(gzipReader)
+			for {
+				next, err := tarReader.Next()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					return "", err
+				}
+				if next.FileInfo().IsDir() {
+					continue
+				}
+				segments := strings.Split(next.Name, "/")
+				if len(segments) <= 1 {
+					continue
+				}
+				newPath := filepath.Join(segments[1:]...)
+				targetPath := filepath.Join(javaLocation, newPath)
+				if strings.HasPrefix(targetPath, javaLocation+string(os.PathSeparator)) {
+					err := os.MkdirAll(filepath.Dir(targetPath), 0o755)
+					if err != nil {
+						return "", err
+					}
+					create, err := os.Create(targetPath)
+					if err != nil {
+						return "", err
+					}
+					_, err = io.Copy(create, tarReader)
+					if err != nil {
+						return "", err
+					}
+					err = os.Chmod(targetPath, next.FileInfo().Mode())
+					if err != nil {
+						return "", err
+					}
+					err = create.Close()
+					if err != nil {
+						return "", err
+					}
+				}
+			}
+			err = gzipReader.Close()
+			if err != nil {
+				return "", err
+			}
+			err = osOpen.Close()
+			if err != nil {
+				return "", err
+			}
 		}
 		err = os.Remove(zipPath)
 		if err != nil {

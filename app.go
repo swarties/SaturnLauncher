@@ -831,7 +831,12 @@ func (a *App) OpenContentFolder(folderId, contentType string) error {
 	return nil
 }
 
-func (a *App) ToggleContent(path string) (bool, error) {
+func (a *App) ToggleContent(folderId, contentType, filename string) (bool, error) {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return false, nil
+	}
+	path := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, contentType, filename)
 	cleanedPath := filepath.Clean(path)
 	if strings.HasSuffix(cleanedPath, ".disabled") {
 		newPath := strings.TrimSuffix(cleanedPath, ".disabled")
