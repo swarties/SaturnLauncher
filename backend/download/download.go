@@ -104,20 +104,12 @@ type AssetCandidate struct {
 	DestPath string
 	Hash     string
 }
-type Contact struct {
-	Email    string `json:"email"`
-	Homepage string `json:"homepage"`
-}
-type Authors struct {
-	Name    string  `json:"name"`
-	Contact Contact `json:"contact"`
-}
+
 type ModManifest struct {
-	Version     string    `json:"version"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Authors     []Authors `json:"authors"`
-	Icon        string    `json:"icon"`
+	Version     string `json:"version"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Icon        string `json:"icon"`
 }
 
 type pack struct {
@@ -132,7 +124,6 @@ type ContentInfo struct {
 	Version     string
 	Name        string
 	Description string
-	Authors     []Authors
 	Icon        string
 	Pack        pack
 	FileName    string
@@ -967,7 +958,6 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				info.Name = superm.Name
 				info.Version = superm.Version
 				info.Description = superm.Description
-				info.Authors = superm.Authors
 
 				break
 			}
