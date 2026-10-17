@@ -2,6 +2,7 @@ package download
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/base64"
@@ -913,6 +914,7 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				contentInfo = append(contentInfo, info)
 				continue
 			}
+
 			for _, r := range reader.File {
 
 				if r.Name != "fabric.mod.json" {
@@ -927,14 +929,17 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				if err != nil {
 					return nil, err
 				}
+				file = bytes.ReplaceAll(file, []byte("\n"), []byte(" "))
+				file = bytes.ReplaceAll(file, []byte("\r"), []byte(" "))
 				err = json.Unmarshal(file, &superm)
-				if err != nil {
+				oerr := open.Close()
+				if oerr != nil {
 					return nil, err
 				}
-				err = open.Close()
 				if err != nil {
-					return nil, err
+					break
 				}
+				superm.Icon = strings.TrimPrefix(superm.Icon, "/")
 				for _, read := range reader.File {
 					if read.Name != superm.Icon {
 						continue
@@ -987,13 +992,14 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 					return nil, err
 				}
 				err = json.Unmarshal(file, &superRp)
-				if err != nil {
+				oerr := open.Close()
+				if oerr != nil {
 					return nil, err
 				}
-				err = open.Close()
 				if err != nil {
-					return nil, err
+					break
 				}
+
 				packIconDir := "pack.png"
 				for _, read := range reader.File {
 					if read.Name != packIconDir {
