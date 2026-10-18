@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { useInstance } from '@/stores/instance.js';
+import { useInstance } from '@/stores/instance';
+import { onFileDrop } from '@/lib/backend';
 
 import {
   GetTotalRam,
@@ -110,17 +111,21 @@ function SettingsTab() {
     }
   };
 
+  const handleDropUpload = async (path) => {
+    if (iconUploading) return;
+    setIconUploading(true);
+    setIconError(null);
+    try {
+      await SetInstanceIcon(uuid, path);
+    } catch (e) {
+      setIconError(e?.message ?? String(e));
+    } finally {
+      setIconUploading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-full w-full flex-col">
-      <header className="mb-8">
-        <h1 className="text-foreground text-3xl font-normal tracking-tight">
-          Settings
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm font-thin">
-          Configure this instance.
-        </p>
-      </header>
-
       {loadError && (
         <p className="mb-6 text-xs font-thin text-red-400">
           Failed to load instance: {loadError}
@@ -129,6 +134,28 @@ function SettingsTab() {
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
         <div className="flex flex-col gap-8">
+          <header className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-foreground text-3xl font-normal tracking-tight">
+                Settings
+              </h1>
+              <p className="text-muted-foreground mt-1 text-sm font-thin">
+                Configure this instance.
+              </p>
+            </div>
+            <div className="lg:hidden">
+              <IconField
+                uuid={uuid}
+                iconSrc={iconSrc}
+                iconUploading={iconUploading}
+                iconError={iconError}
+                onUploadClick={handleUploadIcon}
+                onDropUpload={handleDropUpload}
+                onDropError={setIconError}
+                compact={true}
+              />
+            </div>
+          </header>
           <Field label="Name">
             <input
               type="text"
@@ -164,30 +191,18 @@ function SettingsTab() {
           </Field>
         </div>
 
-        <Field label="Icon">
-          <div className="mx-auto flex w-full max-w-52 flex-col">
-            <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border-2 border-(--surface-border)">
-              <img
-                src={iconSrc}
-                alt=""
-                draggable={false}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleUploadIcon}
-              disabled={iconUploading}
-              className="text-muted-foreground mt-4 h-10 w-full rounded-md border-2 border-(--surface-border) text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
-            >
-              {iconUploading ? 'Uploading...' : 'Upload Icon'}
-            </button>
-            {iconError && (
-              <p className="mt-2 text-xs font-thin text-red-400">{iconError}</p>
-            )}
-          </div>
-          <br />
-        </Field>
+        <div className="hidden lg:block lg:pt-[5.5rem]">
+          <IconField
+            uuid={uuid}
+            iconSrc={iconSrc}
+            iconUploading={iconUploading}
+            iconError={iconError}
+            onUploadClick={handleUploadIcon}
+            onDropUpload={handleDropUpload}
+            onDropError={setIconError}
+            compact={false}
+          />
+        </div>
       </div>
       {saveError && (
         <p className="mt-6 text-xs font-thin text-red-400">{saveError}</p>
@@ -214,14 +229,145 @@ function SettingsTab() {
   );
 }
 
-function Field({ label, children }) {
+function Field({
+  label,
+  children,
+  className = '',
+  labelClassName = 'text-sm',
+}) {
   return (
-    <section>
-      <p className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase">
-        {label}
-      </p>
-      <div className="mt-4">{children}</div>
+    <section className={className}>
+      {label && (
+        <p
+          className={`text-muted-foreground font-thin tracking-[0.2em] uppercase ${labelClassName}`}
+        >
+          {label}
+        </p>
+      )}
+      <div className={label ? 'mt-4' : ''}>{children}</div>
     </section>
+  );
+}
+
+function IconField({
+  uuid,
+  iconSrc,
+  iconUploading,
+  iconError,
+  onUploadClick,
+  onDropUpload,
+  onDropError,
+  compact = false,
+}) {
+  const [dragActive, setDragActive] = useState(false);
+  const dragCounter = useRef(0);
+
+  useEffect(() => {
+    const off = onFileDrop(async (x, y, paths) => {
+      setDragActive(false);
+      dragCounter.current = 0;
+
+      const zone = document
+        .elementsFromPoint(x, y)
+        .map((el) => el?.closest?.('[data-icon-drop-zone]'))
+        .find(Boolean);
+
+      if (!zone || zone.dataset.uuid !== uuid) return;
+
+      const validPaths = paths.filter((p) => /\.(png|jpe?g)$/i.test(p));
+
+      if (validPaths.length === 0) {
+        onDropError('Only .png, .jpg and .jpeg files can be dropped here');
+        return;
+      }
+      onDropUpload(validPaths[0]);
+    });
+    return off;
+  }, [uuid, onDropUpload, onDropError]);
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    dragCounter.current += 1;
+    if (dragCounter.current === 1) setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setDragActive(false);
+    }
+  };
+
+  const handleDragOver = (e) => e.preventDefault();
+  const handleDropOrEnd = (e) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setDragActive(false);
+  };
+
+  return (
+    <Field
+      label={compact ? null : 'Icon'}
+      className={compact ? '' : 'text-center'}
+      labelClassName={
+        compact ? 'text-sm' : 'text-base font-normal tracking-[0.3em]'
+      }
+    >
+      <div
+        className={`flex flex-col ${compact ? 'w-32 shrink-0' : 'mx-auto w-full max-w-64'}`}
+      >
+        <div
+          data-icon-drop-zone
+          data-uuid={uuid}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDropOrEnd}
+          onDragEnd={handleDropOrEnd}
+          style={
+            /** @type {import('react').CSSProperties} */ ({
+              '--wails-drop-target': 'drop',
+            })
+          }
+          className={`relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border-2 transition-colors ${dragActive ? 'border-saturn-500 bg-saturn-900/20' : 'border-(--surface-border)'}`}
+        >
+          <img
+            src={iconSrc}
+            alt=""
+            draggable={false}
+            className="h-full w-full object-cover"
+          />
+          {dragActive && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 p-2 text-center text-[0.65rem] font-thin text-white backdrop-blur-sm">
+              Drop image
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onUploadClick}
+          disabled={iconUploading}
+          className="text-muted-foreground mt-4 h-10 w-full rounded-md border-2 border-(--surface-border) text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
+        >
+          {iconUploading
+            ? compact
+              ? '...'
+              : 'Uploading...'
+            : compact
+              ? 'Upload'
+              : 'Upload Icon'}
+        </button>
+        {iconError && (
+          <p
+            className={`mt-2 font-thin text-red-400 ${compact ? 'text-[0.6rem]' : 'text-xs'}`}
+          >
+            {iconError}
+          </p>
+        )}
+      </div>
+    </Field>
   );
 }
 
