@@ -106,6 +106,16 @@ export async function loadContent(uuid, contentType, { silent = false } = {}) {
   }
 }
 
+export function patchContentItem(uuid, contentType, filename, updater) {
+  const key = `${uuid}:${contentType}`;
+  const entry = state.entries[key];
+  if (!entry) return;
+  const items = entry.items.map((it) =>
+    it.filename === filename ? updater(it) : it
+  );
+  setEntry(key, { items });
+}
+
 let subsInstalled = false;
 
 function installSubs() {

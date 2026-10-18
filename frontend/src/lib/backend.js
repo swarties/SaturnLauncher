@@ -64,30 +64,23 @@ export function onBackendEvent(eventName, callback) {
   };
 }
 
-let currentFileDropCallback = null;
+let isFileDropInstalled = false;
+const fileDropListeners = new Set();
 
 export function onFileDrop(callback) {
-  if (!isWails) {
-    console.warn("Saturn isn't running inside Wails. onFileDrop was skipped");
-    return () => {};
+  if (!isWails) return () => {};
+
+  fileDropListeners.add(callback);
+
+  if (!isFileDropInstalled) {
+    isFileDropInstalled = true;
+    OnFileDrop((x, y, paths) => {
+      fileDropListeners.forEach((cb) => cb(x, y, paths));
+    }, true);
   }
 
-  currentFileDropCallback = callback;
-
-  console.log('[FileDrop] Registering native Wails listener');
-
-  OnFileDrop((x, y, paths) => {
-    console.log('[FileDrop] Wails native event fired!', { x, y, paths });
-    if (currentFileDropCallback) {
-      currentFileDropCallback(x, y, paths);
-    }
-  }, true);
-
   return () => {
-    if (currentFileDropCallback === callback) {
-      currentFileDropCallback = null;
-      OnFileDropOff();
-    }
+    fileDropListeners.delete(callback);
   };
 }
 

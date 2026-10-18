@@ -143,19 +143,19 @@ textarea,
   /* === Saturn mode-aware surface tokens — DARK defaults === */
   --surface-border: var(--color-saturn-950);
   --surface-border-hover: color-mix(
-    in oklch,
-    var(--color-saturn-700) 60%,
-    transparent
+          in oklch,
+          var(--color-saturn-700) 60%,
+          transparent
   );
   --surface-hover: color-mix(
-    in oklch,
-    var(--color-saturn-900) 20%,
-    transparent
+          in oklch,
+          var(--color-saturn-900) 20%,
+          transparent
   );
   --surface-active: color-mix(
-    in oklch,
-    var(--color-saturn-900) 40%,
-    transparent
+          in oklch,
+          var(--color-saturn-900) 40%,
+          transparent
   );
   --hairline: rgb(255 255 255 / 8%);
   --divider: color-mix(in oklch, var(--color-saturn-950) 60%, transparent);
@@ -163,14 +163,14 @@ textarea,
 
   --nav-pill: color-mix(in oklch, var(--color-saturn-900) 60%, transparent);
   --nav-account-bg: color-mix(
-    in oklch,
-    var(--color-saturn-900) 40%,
-    transparent
+          in oklch,
+          var(--color-saturn-900) 40%,
+          transparent
   );
   --nav-account-border: color-mix(
-    in oklch,
-    var(--color-saturn-700) 40%,
-    transparent
+          in oklch,
+          var(--color-saturn-700) 40%,
+          transparent
   );
   --nav-account-fg: var(--color-saturn-100);
   --nav-link-fg: color-mix(in oklch, var(--foreground) 60%, transparent);
@@ -190,14 +190,14 @@ textarea,
   --chip-bg: color-mix(in oklch, var(--color-saturn-900) 20%, transparent);
   --chip-fg: var(--color-saturn-200);
   --chip-border-hover: color-mix(
-    in oklch,
-    var(--color-saturn-500) 60%,
-    transparent
+          in oklch,
+          var(--color-saturn-500) 60%,
+          transparent
   );
   --chip-bg-hover: color-mix(
-    in oklch,
-    var(--color-saturn-900) 40%,
-    transparent
+          in oklch,
+          var(--color-saturn-900) 40%,
+          transparent
   );
   --chip-fg-hover: var(--color-saturn-100);
 
@@ -215,6 +215,9 @@ textarea,
   --code-fg: var(--color-saturn-100);
 
   --log-bg: #0e0818;
+
+  --scrollbar-thumb: color-mix(in oklch, var(--color-saturn-700) 60%, transparent);
+  --scrollbar-thumb-hover: var(--color-saturn-500);
 }
 
 .light {
@@ -254,19 +257,19 @@ textarea,
   /* === Saturn mode-aware surface tokens — LIGHT overrides === */
   --surface-border: var(--color-saturn-300);
   --surface-border-hover: color-mix(
-    in oklch,
-    var(--color-saturn-500) 50%,
-    transparent
+          in oklch,
+          var(--color-saturn-500) 50%,
+          transparent
   );
   --surface-hover: color-mix(
-    in oklch,
-    var(--color-saturn-200) 40%,
-    transparent
+          in oklch,
+          var(--color-saturn-200) 40%,
+          transparent
   );
   --surface-active: color-mix(
-    in oklch,
-    var(--color-saturn-200) 60%,
-    transparent
+          in oklch,
+          var(--color-saturn-200) 60%,
+          transparent
   );
   --hairline: rgb(0 0 0 / 8%);
   --divider: color-mix(in oklch, var(--color-saturn-300) 60%, transparent);
@@ -274,14 +277,14 @@ textarea,
 
   --nav-pill: color-mix(in oklch, var(--color-saturn-200) 60%, transparent);
   --nav-account-bg: color-mix(
-    in oklch,
-    var(--color-saturn-100) 80%,
-    transparent
+          in oklch,
+          var(--color-saturn-100) 80%,
+          transparent
   );
   --nav-account-border: color-mix(
-    in oklch,
-    var(--color-saturn-300) 60%,
-    transparent
+          in oklch,
+          var(--color-saturn-300) 60%,
+          transparent
   );
   --nav-account-fg: var(--color-saturn-950);
   --nav-link-fg: color-mix(in oklch, var(--foreground) 80%, transparent);
@@ -301,14 +304,14 @@ textarea,
   --chip-bg: var(--color-saturn-100);
   --chip-fg: var(--color-saturn-800);
   --chip-border-hover: color-mix(
-    in oklch,
-    var(--color-saturn-500) 60%,
-    transparent
+          in oklch,
+          var(--color-saturn-500) 60%,
+          transparent
   );
   --chip-bg-hover: color-mix(
-    in oklch,
-    var(--color-saturn-200) 70%,
-    transparent
+          in oklch,
+          var(--color-saturn-200) 70%,
+          transparent
   );
   --chip-fg-hover: var(--color-saturn-950);
 
@@ -326,6 +329,9 @@ textarea,
   --code-fg: var(--color-saturn-950);
 
   --log-bg: #f5f3fe;
+
+  --scrollbar-thumb: color-mix(in oklch, var(--color-saturn-300) 80%, transparent);
+  --scrollbar-thumb-hover: var(--color-saturn-500);
 }
 
 .light .font-thin {
@@ -360,31 +366,60 @@ textarea,
   transform: scale(1.15);
 }
 
-[data-srm-list].wails-drop-target-active {
-  outline: 2px dashed var(--color-saturn-500);
-  outline-offset: -8px;
-  border-radius: 0.375rem;
-}
-
-[data-srm-list].wails-drop-target-active::before {
-  content: 'Drop to install';
+.drop-overlay {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 1.125rem;
-  font-weight: 250;
-  color: var(--saturn-fg-strong);
-  background: color-mix(in oklch, var(--color-saturn-900) 30%, transparent);
+  gap: 0.75rem;
+  background: color-mix(in oklch, var(--color-saturn-950) 72%, transparent);
+  outline: 2px dashed color-mix(in oklch, var(--color-saturn-400) 80%, transparent);
+  outline-offset: -10px;
   border-radius: inherit;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+          opacity 180ms ease-out,
+          visibility 0s linear 180ms;
   pointer-events: none;
-  z-index: 10;
+  z-index: 50;
 }
 
-[data-srm-list].wails-drop-target-active {
-  outline: 4px solid #00ff00 !important;
-  background: rgba(0, 255, 0, 0.1) !important;
+[data-srm-list][data-drag-active] .drop-overlay {
+  opacity: 1;
+  visibility: visible;
+  transition:
+          opacity 180ms ease-out,
+          visibility 0s linear 0s;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 200ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 @layer base {

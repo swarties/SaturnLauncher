@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FileArchive,
   FolderOpen,
@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 import { CONTENT_TYPES } from '@/lib/content-types';
-import { loadContent, useContent } from '@/stores/content';
+import { loadContent, patchContentItem, useContent } from '@/stores/content';
 import { onFileDrop } from '@/lib/backend';
 import {
   InstallContent,
@@ -28,75 +28,100 @@ export function ContentList({ uuid, contentType }) {
 
   const [query, setQuery] = useState('');
   const [dropMessage, setDropMessage] = useState(null);
+  const dropMessageTimer = useRef(null);
+
+  const showDropMessage = (msg) => {
+    setDropMessage(msg);
+    if (dropMessageTimer.current) clearTimeout(dropMessageTimer.current);
+    dropMessageTimer.current = window.setTimeout(
+      () => setDropMessage(null),
+      4000
+    );
+  };
 
   useEffect(() => {
     void loadContent(uuid, contentType);
   }, [uuid, contentType]);
 
   useEffect(() => {
-    const off = onFileDrop(async (x, y, paths) => {
-      console.log('[ContentList] Received drop event from wrapper!', {
-        x,
-        y,
-        paths,
-      });
+    return onFileDrop(async (x, y, paths) => {
+      setDragActive(false);
+      dragCounter.current = 0;
 
-      const els = document.elementsFromPoint(x, y);
-      console.log('[ContentList] Elements at drop coordinates:', els);
-
-      const zone = els
+      const zone = document
+        .elementsFromPoint(x, y)
         .map((el) => el?.closest?.('[data-srm-list]'))
         .find(Boolean);
 
-      console.log('[ContentList] Found drop zone:', zone);
+      if (!zone || zone.dataset.uuid !== uuid) return;
 
-      if (!zone) {
-        console.warn(
-          '[ContentList] ERROR: No drop zone found at these coordinates.'
-        );
-        return;
-      }
-      if (zone.dataset.uuid !== uuid) {
-        console.warn(
-          '[ContentList] ERROR: UUID mismatch. Dropped on',
-          zone.dataset.uuid,
-          'but active is',
-          uuid
-        );
-        return;
-      }
-
-      const allowed = paths.every((p) =>
+      const validPaths = paths.filter((p) =>
         config.extensions.some((ext) => p.toLowerCase().endsWith(ext))
       );
-      if (!allowed) {
-        setDropMessage(
-          `Only ${config.extensions.join(', ')} files can be dropped here.`
+
+      const invalidCount = paths.length - validPaths.length;
+
+      if (validPaths.length === 0) {
+        showDropMessage(
+          `Only ${config.extensions.join(', ')} files can be dropped here`
         );
-        window.setTimeout(() => setDropMessage(null), 4000);
         return;
       }
 
       try {
-        for (const path of paths) {
+        for (const path of validPaths) {
           await InstallContent(uuid, config.backendKey, path);
         }
+        if (invalidCount > 0) {
+          showDropMessage(
+            `Installed ${validPaths.length} file(s). Ignored ${invalidCount} invalid file(s).`
+          );
+        }
       } catch (e) {
-        setDropMessage(e?.message ?? String(e));
-        window.setTimeout(() => setDropMessage(null), 4000);
+        showDropMessage(e?.message ?? String(e));
       }
     });
-    return () => {
-      if (typeof off === 'function') off();
-    };
   }, [uuid, contentType, config]);
+
+  useEffect(() => {
+    return () => {
+      if (dropMessageTimer.current) clearTimeout(dropMessageTimer.current);
+    };
+  }, []);
+
+  const dragCounter = useRef(0);
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    dragCounter.current += 1;
+    if (dragCounter.current === 1) setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setDragActive(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDropOrEnd = (e) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setDragActive(false);
+  };
 
   const handleInstall = async () => {
     try {
       await InstallContent(uuid, config.backendKey, '');
     } catch (e) {
-      setDropMessage(e?.message ?? String(e));
-      window.setTimeout(() => setDropMessage(null), 4000);
+      showDropMessage(e?.message ?? String(e));
     }
   };
 
@@ -104,19 +129,31 @@ export function ContentList({ uuid, contentType }) {
     try {
       await RemoveContent(uuid, config.backendKey, item.filename);
     } catch (e) {
-      setDropMessage(e?.message ?? String(e));
-      window.setTimeout(() => setDropMessage(null), 4000);
+      showDropMessage(e?.message ?? String(e));
     }
   };
 
   const handleToggle = async (item) => {
+    const newEnabled = !item.enabled;
+    const newFilename = newEnabled
+      ? item.filename.replace(/\.disabled$/i, '')
+      : `${item.filename}.disabled`;
+
+    patchContentItem(uuid, contentType, item.filename, (it) => ({
+      ...it,
+      enabled: newEnabled,
+      filename: newFilename,
+    }));
+
     try {
       await ToggleContent(uuid, config.backendKey, item.filename);
-      // Force a silent refresh since the backend doesn't emit 'instance:changed' for toggles yet
-      void loadContent(uuid, contentType, { silent: true });
     } catch (e) {
-      setDropMessage(e?.message ?? String(e));
-      window.setTimeout(() => setDropMessage(null), 4000);
+      patchContentItem(uuid, contentType, newFilename, (it) => ({
+        ...it,
+        enabled: !newEnabled,
+        filename: item.filename,
+      }));
+      showDropMessage(e?.message ?? String(e));
     }
   };
 
@@ -149,10 +186,34 @@ export function ContentList({ uuid, contentType }) {
         data-srm-list
         data-uuid={uuid}
         data-content-type={contentType}
-        style={{ '--wails-drop-target': 'copy' }}
-        className="relative min-h-0 flex-1"
+        data-drag-active={dragActive ? 'true' : undefined}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDropOrEnd}
+        onDragEnd={handleDropOrEnd}
+        style={
+          /** @type {import('react').CSSProperties} */ ({
+            '--wails-drop-target': 'drop',
+          })
+        }
+        className="relative min-h-0 flex-1 overflow-hidden rounded-md"
       >
-        <div className="h-full overflow-y-auto overscroll-contain rounded-md">
+        <div className="drop-overlay">
+          <PackagePlus className="text-saturn-300 size-12" aria-hidden="true" />
+          <p className="text-saturn-50 text-xl font-thin tracking-wide">
+            Drop file to install
+          </p>
+        </div>
+
+        <div
+          style={
+            /** @type {import('react').CSSProperties} */ ({
+              '--wails-drop-target': 'drop',
+            })
+          }
+          className="h-full [scrollbar-gutter:stable] overflow-y-auto overscroll-contain"
+        >
           {entry?.error ? (
             <EmptyState>Failed to load: {entry.error}</EmptyState>
           ) : (entry?.loading ?? true) && items.length === 0 ? (
@@ -169,7 +230,7 @@ export function ContentList({ uuid, contentType }) {
             <div className="flex flex-col gap-2 pb-2">
               {filtered.map((item) => (
                 <ContentRow
-                  key={item.filename}
+                  key={item.filename.replace(/\.disabled$/i, '')}
                   item={item}
                   onRemove={handleRemove}
                   onToggle={handleToggle}
@@ -227,7 +288,14 @@ function ContentRow({ item, onRemove, onToggle }) {
   const Icon = item.ext === '.jar' ? Package : FileArchive;
 
   return (
-    <div className="group bg-background flex items-center gap-3 rounded-md border border-(--hairline) px-3 py-2.5 transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)">
+    <div
+      style={
+        /** @type {import('react').CSSProperties} */ ({
+          '--wails-drop-target': 'drop',
+        })
+      }
+      className="group bg-background flex items-center gap-3 rounded-md border border-(--hairline) px-3 py-2.5 transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
+    >
       <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-(--chip-bg) text-(--chip-fg)">
         {item.iconDataUrl ? (
           <img
@@ -276,13 +344,13 @@ function ContentSwitch({ enabled, onToggle }) {
       data-tooltip={enabled ? 'Disable' : 'Enable'}
       onClick={onToggle}
       className={[
-        'focus-visible:ring-offset-background relative inline-flex h-4 w-8 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-(--chip-border-hover) focus-visible:ring-offset-2 focus-visible:outline-none',
+        'focus-visible:ring-offset-background relative inline-flex h-4 w-8 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-(--chip-border-hover) focus-visible:ring-offset-2 focus-visible:outline-none',
         enabled ? 'bg-saturn-500' : 'bg-(--surface-active)',
       ].join(' ')}
     >
       <span
         className={[
-          'pointer-events-none absolute size-3 rounded-full bg-white shadow-sm transition-transform',
+          'pointer-events-none absolute size-3 rounded-full bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
           enabled ? 'translate-x-4.5' : 'translate-x-0.5',
         ].join(' ')}
       />
