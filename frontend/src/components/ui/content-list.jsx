@@ -24,7 +24,17 @@ export function ContentList({ uuid, contentType }) {
   const { entries } = useContent();
   const key = `${uuid}:${contentType}`;
   const entry = entries[key];
-  const items = entry?.items ?? [];
+  const rawItems = entry?.items ?? [];
+
+  const items = useMemo(() => {
+    if (config.isShader === true) {
+      return rawItems.filter((i) => i.isShader === true);
+    }
+    if (config.isShader === false) {
+      return rawItems.filter((i) => i.isShader === false);
+    }
+    return rawItems;
+  }, [rawItems, config.isShader]);
 
   const [query, setQuery] = useState('');
   const [dropMessage, setDropMessage] = useState(null);
@@ -158,14 +168,14 @@ export function ContentList({ uuid, contentType }) {
   };
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return items;
+    if (!query.trim()) return rawItems;
     const q = query.toLowerCase();
-    return items.filter(
+    return rawItems.filter(
       (i) =>
         i.displayName.toLowerCase().includes(q) ||
         i.filename.toLowerCase().includes(q)
     );
-  }, [items, query]);
+  }, [rawItems, query]);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col gap-4">
@@ -216,9 +226,9 @@ export function ContentList({ uuid, contentType }) {
         >
           {entry?.error ? (
             <EmptyState>Failed to load: {entry.error}</EmptyState>
-          ) : (entry?.loading ?? true) && items.length === 0 ? (
+          ) : (entry?.loading ?? true) && rawItems.length === 0 ? (
             <EmptyState>Loading...</EmptyState>
-          ) : items.length === 0 ? (
+          ) : rawItems.length === 0 ? (
             <NoContentState config={config} onInstall={handleInstall} />
           ) : filtered.length === 0 ? (
             <EmptyState>No matches for &quot;{query}&quot;.</EmptyState>

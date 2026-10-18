@@ -81,6 +81,7 @@ function itemFromRaw(raw) {
     authors: raw.Authors ?? [],
     source: 'local',
     ext: getExt(filename),
+    isShader: raw.IsShader ?? false,
   };
 }
 

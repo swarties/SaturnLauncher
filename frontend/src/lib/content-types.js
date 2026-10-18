@@ -6,6 +6,7 @@ export const CONTENT_TYPES = {
     singular: 'mod',
     extensions: ['.jar'],
     emptyHint: 'Drop a .jar here or click + to install',
+    isShader: null,
   },
   resourcepacks: {
     backendKey: 'resourcepacks',
@@ -14,6 +15,7 @@ export const CONTENT_TYPES = {
     singular: 'resource pack',
     extensions: ['.zip'],
     emptyHint: 'Drop a .zip here or click + to install',
+    isShader: false,
   },
   shaderpacks: {
     backendKey: 'shaders',
@@ -22,5 +24,6 @@ export const CONTENT_TYPES = {
     singular: 'shader pack',
     extensions: ['.zip'],
     emptyHint: 'Drop a .zip here or click + to install',
+    isShader: true,
   },
 };
