@@ -298,6 +298,10 @@ func (a *App) StartGame(folderId string) error {
 	if err != nil {
 		return err
 	}
+	if instInfo.JvmArgs != "" {
+		customArgs := strings.Fields(instInfo.JvmArgs)
+		jvm = append(jvm, customArgs...)
+	}
 	jvm = append([]string{
 		fmt.Sprintf("-Xms%dM", instInfo.MinRam),
 		fmt.Sprintf("-Xmx%dM", instInfo.MaxRam),
@@ -866,12 +870,30 @@ func (a *App) ToggleContent(folderId, contentType, filename string) (bool, error
 }
 
 func (a *App) InstallMrpack(modpackPath string) (string, error) {
-	modpack, err := a.Mrpack.InstallModpack(modpackPath)
+	var err error
+	if modpackPath == "" {
+		modpackPath, err = wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+			Title: "Select a Modpack",
+			Filters: []wailsRuntime.FileFilter{
+				{
+					DisplayName: "Modpacks",
+					Pattern:     "*.mrpack",
+				},
+			},
+		})
+		if err != nil {
+			return "", err
+		}
+		if modpackPath == "" {
+			return "", nil
+		}
+	}
+	folderId, err := a.Mrpack.InstallModpack(modpackPath)
 	if err != nil {
 		return "", err
 	}
-
-	return modpack, nil
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return folderId, nil
 }
 
 func (a *App) KillGame(folderId string) error {
@@ -886,4 +908,21 @@ func (a *App) KillGame(folderId string) error {
 		return err
 	}
 	return nil
+}
+
+func (a *App) UpdateJavaArgs(folderId, args string) error {
+	err := a.InstanceManager.UpdateJavaArgs(folderId, args)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+
+func (a *App) GetJavaArgs(folderId string) (string, error) {
+	args, err := a.InstanceManager.GetJavaArgs(folderId)
+	if err != nil {
+		return "", err
+	}
+	return args, nil
 }

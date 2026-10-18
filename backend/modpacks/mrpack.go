@@ -51,20 +51,6 @@ type ModrinthPack struct {
 	} `json:"dependencies"`
 }
 
-//path, err := wailsRuntime.OpenFileDialog(m.ctx, wailsRuntime.OpenDialogOptions{
-//Title: "",
-//Filters: []wailsRuntime.FileFilter{
-//{
-//DisplayName: "Modrinth Modpacks",
-//Pattern:     "*.mrpack",
-//},
-//},
-//})
-//if err != nil {
-//return nil, err
-//}
-// dialog func to add in app.go wrapper later
-
 func (m *Mrpack) ParseModpack(path string) (*ModrinthPack, error) {
 	var mrpack ModrinthPack
 	reader, err := zip.OpenReader(path)

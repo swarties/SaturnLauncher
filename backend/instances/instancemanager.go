@@ -33,6 +33,7 @@ type Instance struct {
 	MinRam        int    `json:"minram"`
 	MaxRam        int    `json:"maxram"`
 	FabricVersion string `json:"fabricVersion,omitempty"`
+	JvmArgs       string `json:"jvmArgs,omitempty"`
 }
 type Ram struct {
 	TotalRamMB int
@@ -305,3 +306,29 @@ func (i *InstanceManager) UpdateInstanceDescription(folderId, description string
 }
 
 // add GetJavaArgs and UpdateJavaArgs
+
+func (i *InstanceManager) UpdateJavaArgs(folderId, args string) error {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	inst.JvmArgs = args
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	data, err := json.MarshalIndent(inst, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(base, data, 0o600)
+}
+
+func (i *InstanceManager) GetJavaArgs(folderId string) (string, error) {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return "", err
+	}
+	return inst.JvmArgs, nil
+}
