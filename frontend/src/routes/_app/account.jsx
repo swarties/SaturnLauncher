@@ -10,6 +10,13 @@ import {
   openExternalURL,
   startLogin,
 } from '@/lib/backend';
+import {
+  ChevronUp,
+  ChevronDown,
+  ExternalLink,
+  LogOut,
+  Plus,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { refreshAccounts, useAccounts } from '@/stores/accounts';
 import {
@@ -147,7 +154,7 @@ function AccountPage() {
 
   return (
     <div className="flex h-full w-full items-center justify-center p-6">
-      <div className="flex min-h-96 w-full max-w-3xl items-stretch gap-5">
+      <div className="flex w-full max-w-3xl items-stretch gap-5">
         <div className="flex min-h-0 flex-8 flex-col gap-3">
           {showArrows && <CarouselArrow direction="up" onClick={goPrev} />}
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-md border-2 border-(--surface-border)">
@@ -212,12 +219,11 @@ function AccountPage() {
           disabled={adding}
           className="group flex flex-4 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-(--surface-border) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-60"
         >
-          <span
+          <Plus
             aria-hidden="true"
-            className="text-saturn-500 text-9xl leading-none font-extralight transition-colors group-hover:text-(--saturn-fg-strong)"
-          >
-            +
-          </span>
+            strokeWidth={1}
+            className="text-saturn-500 size-24 transition-colors group-hover:text-(--saturn-fg-strong)"
+          />
           <span className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase transition-colors group-hover:text-(--saturn-fg)">
             {adding ? 'Waiting for sign-in...' : 'Add Account'}
           </span>
@@ -239,6 +245,7 @@ function AccountPage() {
 }
 
 function CarouselArrow({ direction, onClick }) {
+  const Icon = direction === 'up' ? ChevronUp : ChevronDown;
   return (
     <button
       type="button"
@@ -247,22 +254,7 @@ function CarouselArrow({ direction, onClick }) {
       data-tooltip={direction === 'up' ? 'Previous' : 'Next'}
       className="text-muted-foreground flex h-8 w-full shrink-0 items-center justify-center rounded-md border border-(--hairline) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
     >
-      <svg
-        viewBox="0 0 12 8"
-        className="size-3"
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {direction === 'up' ? (
-          <polyline points="1,6 6,1 11,6" />
-        ) : (
-          <polyline points="1,2 6,7 11,2" />
-        )}
-      </svg>
+      <Icon className="size-4" aria-hidden="true" />
     </button>
   );
 }
@@ -302,7 +294,7 @@ function AccountCard({
   const busy = switching || deleting;
 
   return (
-    <div className="relative flex h-full flex-col p-8">
+    <div className="relative flex flex-col p-8">
       <button
         type="button"
         onClick={onSwitch}
@@ -318,80 +310,69 @@ function AccountCard({
         {isActive ? 'Selected' : switching ? 'Switching...' : 'Select'}
       </button>
 
-      <div className="mt-10 flex items-center gap-6">
-        <img
-          src={`https://mc-heads.net/avatar/${account.uuid}/128`}
-          alt=""
-          draggable={false}
-          className="h-24 w-24 rounded-md"
-        />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="text-foreground text-3xl font-extralight tracking-tight">
-            {account.username}
-          </p>
-          <div className="flex min-w-0 overflow-hidden">
-            <p className="text-muted-foreground shrink-0 text-xs font-thin tracking-[0.2em] uppercase">
-              UUID:
+      <div className="mt-12 flex w-full flex-col gap-6">
+        <div className="flex items-center gap-6">
+          <img
+            src={`https://mc-heads.net/avatar/${account.uuid}/128`}
+            alt=""
+            draggable={false}
+            className="h-24 w-24 rounded-md"
+          />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <p className="text-foreground text-3xl font-extralight tracking-tight">
+              {account.username}
             </p>
-            <button
-              type="button"
-              data-tooltip="Copy UUID"
-              onClick={handleCopyUUID}
-              onMouseEnter={handleUuidEnter}
-              onMouseLeave={handleUuidLeave}
-              style={{ '--mx': '50%' }}
-              className={[
-                'text-muted-foreground relative text-xs font-thin tracking-[0.2em] uppercase',
-                copiedUUID ? 'cursor-default' : 'cursor-pointer',
-                'after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-(--mx) after:bg-current after:transition-transform after:duration-200',
-                uuidHover ? 'after:scale-x-100' : 'after:scale-x-0',
-                copiedUUID ? 'after:opacity-0' : 'after:opacity-100',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            >
-              {copiedUUID ? 'Copied UUID!' : account.uuid}
-            </button>
+            <div className="flex min-w-0 overflow-hidden">
+              <p className="text-muted-foreground shrink-0 text-xs font-thin tracking-[0.2em] uppercase">
+                UUID:
+              </p>
+              <button
+                type="button"
+                data-tooltip="Copy UUID"
+                onClick={handleCopyUUID}
+                onMouseEnter={handleUuidEnter}
+                onMouseLeave={handleUuidLeave}
+                style={{ '--mx': '50%' }}
+                className={[
+                  'text-muted-foreground relative text-xs font-thin tracking-[0.2em] uppercase',
+                  copiedUUID ? 'cursor-default' : 'cursor-pointer',
+                  'after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-(--mx) after:bg-current after:transition-transform after:duration-200',
+                  uuidHover ? 'after:scale-x-100' : 'after:scale-x-0',
+                  copiedUUID ? 'after:opacity-0' : 'after:opacity-100',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {copiedUUID ? 'Copied UUID!' : account.uuid}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-auto grid grid-cols-1 gap-3 border-t border-(--divider) pt-6 sm:grid-cols-2">
-        <Button
-          variant="outline"
-          onClick={() =>
-            openExternalURL('https://www.minecraft.net/en-us/msaprofile')
-          }
-          className="h-12 justify-start rounded-lg border-(--chip-border) bg-(--chip-bg) px-6 font-thin text-(--chip-fg) hover:border-(--chip-border-hover) hover:bg-(--chip-bg-hover) hover:text-(--chip-fg-hover)"
-        >
-          Manage on minecraft.net
-          <span aria-hidden="true" className="text-saturn-400 ml-auto">
-            ↗
-          </span>
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onDelete}
-          disabled={busy}
-          className="h-12 justify-start gap-2 rounded-lg border-(--danger-border) bg-(--danger-bg) px-6 font-thin text-(--danger-fg) hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover) disabled:pointer-events-none disabled:opacity-40"
-        >
-          {deleting ? 'Deleting...' : isActive ? 'Log Out' : 'Delete Account'}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="ml-auto size-4 shrink-0"
+        <div className="grid grid-cols-1 gap-3 border-t border-(--divider) pt-6 sm:grid-cols-2">
+          <Button
+            variant="outline"
+            onClick={() =>
+              openExternalURL('https://www.minecraft.net/en-us/msaprofile')
+            }
+            className="flex h-12 items-center justify-center gap-2 rounded-lg border-(--chip-border) bg-(--chip-bg) px-6 font-thin text-(--chip-fg) hover:border-(--chip-border-hover) hover:bg-(--chip-bg-hover) hover:text-(--chip-fg-hover)"
           >
-            <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
-            <path d="M9 12h12l-3 -3" />
-            <path d="M18 15l3 -3" />
-          </svg>
-        </Button>
+            Manage on minecraft.net
+            <ExternalLink
+              className="text-saturn-400 size-4 shrink-0"
+              aria-hidden="true"
+            />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onDelete}
+            disabled={busy}
+            className="flex h-12 items-center justify-center gap-2 rounded-lg border-(--danger-border) bg-(--danger-bg) px-6 font-thin text-(--danger-fg) hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover) disabled:pointer-events-none disabled:opacity-40"
+          >
+            {deleting ? 'Deleting...' : isActive ? 'Log Out' : 'Delete Account'}
+            <LogOut className="size-4 shrink-0" aria-hidden="true" />
+          </Button>
+        </div>
       </div>
     </div>
   );

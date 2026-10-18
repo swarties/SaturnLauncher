@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { createFileRoute } from '@tanstack/react-router';
 import { AnimatePresence, motion, useSpring, useTransform } from 'motion/react';
 
-import { AlertTriangle, ScrollText, Square } from 'lucide-react';
+import { AlertTriangle, ScrollText, Square, ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button.jsx';
 import { InstanceSelector } from '@/components/ui/instance-selector.jsx';
@@ -153,12 +153,10 @@ function HomePage() {
                 ) : (
                   <>
                     Launch Minecraft
-                    <span
+                    <ArrowRight
                       aria-hidden="true"
-                      className="text-saturn-300 transition-transform duration-200 group-hover:translate-x-1"
-                    >
-                      →
-                    </span>
+                      className="text-saturn-300 size-4 transition-transform duration-200 group-hover:translate-x-1"
+                    />
                   </>
                 )}
               </Button>

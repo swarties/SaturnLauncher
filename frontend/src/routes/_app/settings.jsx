@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Check } from 'lucide-react';
 
 import { THEMES, useTheme, setTheme } from '@/stores/theme';
 import { useLaunch } from '@/stores/launch';
@@ -125,9 +126,10 @@ function ThemeTitle({ theme, selected, onSelect }) {
           )}
         </div>
         {selected && (
-          <span aria-hidden="true" className="text-saturn-400 shrink-0 text-xs">
-            ●
-          </span>
+          <Check
+            aria-hidden="true"
+            className="text-saturn-400 size-4 shrink-0"
+          />
         )}
       </div>
     </button>

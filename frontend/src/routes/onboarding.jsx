@@ -16,6 +16,7 @@ import { useAuth } from '@/stores/auth';
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave.jsx';
 import { TextEffect } from '@/components/ui/text-effect.jsx';
 import { NAV_ITEMS } from '@/lib/nav-items';
+import { ArrowRight } from 'lucide-react';
 
 export const Route = createFileRoute('/onboarding')({
   component: OnboardingPage,
@@ -246,9 +247,7 @@ function StageContent({ stage, username, profile, onAdvance, onComplete }) {
             onClick={() => onAdvance(3)}
           >
             Welcome
-            <span aria-hidden="true" className={ONBOARD_ARROW}>
-              →
-            </span>
+            <ArrowRight aria-hidden="true" className={ONBOARD_ARROW} />
           </Button>
         </div>
       );
@@ -272,10 +271,8 @@ function StageContent({ stage, username, profile, onAdvance, onComplete }) {
             className={ONBOARD_BUTTON}
             onClick={() => onAdvance(4)}
           >
-            Got it
-            <span aria-hidden="true" className={ONBOARD_ARROW}>
-              →
-            </span>
+            Got it Welcome
+            <ArrowRight aria-hidden="true" className={ONBOARD_ARROW} />
           </Button>
         </div>
       );
@@ -296,10 +293,8 @@ function StageContent({ stage, username, profile, onAdvance, onComplete }) {
             className={`${ONBOARD_BUTTON} mt-[1.25vw]`}
             onClick={onComplete}
           >
-            Let's go
-            <span aria-hidden="true" className={ONBOARD_ARROW}>
-              →
-            </span>
+            Let's go Welcome
+            <ArrowRight aria-hidden="true" className={ONBOARD_ARROW} />
           </Button>
         </div>
       );

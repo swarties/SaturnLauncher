@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { AnimatePresence, motion } from 'motion/react';
+import { ChevronDown } from 'lucide-react';
 import { GetVersions } from '../../../wailsjs/go/main/App';
 
 /** @typedef {{id: string, type: string, url: string, sha1: string}} McVersion */
@@ -94,12 +95,10 @@ export function VersionPicker({ value, onChange }) {
           aria-expanded={open}
           className="flex items-center px-3.5 text-(--saturn-fg-muted) transition-colors outline-none hover:bg-(--surface-active) hover:text-(--saturn-fg-strong) focus-visible:bg-(--surface-active) focus-visible:text-(--saturn-fg-strong)"
         >
-          <span
+          <ChevronDown
             aria-hidden="true"
-            className={`text-sm transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          >
-            ▾
-          </span>
+            className={`size-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          />
         </button>
       </div>
       {createPortal(

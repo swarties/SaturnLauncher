@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
+import { Plus, X, ArrowRight } from 'lucide-react';
 
 import { VersionPicker } from '@/components/ui/version-picker.jsx';
 import { LoaderPicker } from '@/components/ui/loader-picker.jsx';
@@ -85,12 +86,7 @@ function InstancesPage() {
             </p>
             <MorphingDialogTrigger className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors">
               New Instance
-              <span
-                aria-hidden="true"
-                className="text-saturn-300 text-lg leading-none"
-              >
-                +
-              </span>
+              <Plus aria-hidden="true" className="text-saturn-300 size-5" />
             </MorphingDialogTrigger>
           </div>
         ) : (
@@ -108,12 +104,7 @@ function InstancesPage() {
               </div>
               <MorphingDialogTrigger className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors">
                 New Instance
-                <span
-                  aria-hidden="true"
-                  className="text-saturn-300 text-lg leading-none"
-                >
-                  +
-                </span>
+                <Plus aria-hidden="true" className="text-saturn-300 size-5" />
               </MorphingDialogTrigger>
             </div>
 
@@ -161,9 +152,9 @@ function InstanceCard({ instance, onDelete }) {
       >
         <MorphingDialogTrigger
           aria-label={`Delete ${instance.name}`}
-          className="text-muted-foreground absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-sm text-2xl leading-none opacity-40 transition-[opacity,color] group-hover:opacity-100 hover:text-red-400"
+          className="text-muted-foreground absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-sm opacity-40 transition-[opacity,color] group-hover:opacity-100 hover:text-red-400"
         >
-          ×
+          <X className="size-5" />
         </MorphingDialogTrigger>
 
         <Link
@@ -189,12 +180,10 @@ function InstanceCard({ instance, onDelete }) {
             <span className="text-muted-foreground text-xs font-thin">
               {formatCreated(instance.timecreated)}
             </span>
-            <span
+            <ArrowRight
               aria-hidden="true"
-              className="text-saturn-400 text-lg transition-transform group-hover:translate-x-0.5"
-            >
-              →
-            </span>
+              className="text-saturn-400 size-4 transition-transform group-hover:translate-x-0.5"
+            />
           </div>
         </Link>
       </motion.div>
