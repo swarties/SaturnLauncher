@@ -41,18 +41,21 @@ type App struct {
 	Fabric            *fabric.Fabric
 	Modrinth          *modrinth.Modrinth
 	Mrpack            *modpacks.Mrpack
+	RunningInstances  map[string]*exec.Cmd
+	mu                sync.Mutex
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{
-		Auth:            auth.NewAuth(),
-		Launch:          launch.NewLaunch(),
-		Download:        download.NewDownload(),
-		InstanceManager: instances.NewInstanceManager(),
-		Fabric:          fabric.NewFabric(),
-		Modrinth:        modrinth.NewModrinth(),
-		Mrpack:          modpacks.NewMrpack(),
+		Auth:             auth.NewAuth(),
+		Launch:           launch.NewLaunch(),
+		Download:         download.NewDownload(),
+		InstanceManager:  instances.NewInstanceManager(),
+		Fabric:           fabric.NewFabric(),
+		Modrinth:         modrinth.NewModrinth(),
+		Mrpack:           modpacks.NewMrpack(),
+		RunningInstances: make(map[string]*exec.Cmd),
 	}
 }
 
@@ -181,11 +184,6 @@ func (a *App) StartApp() {
 }
 
 func (a *App) StartGame(folderId string) error {
-	/* err := a.InstallFabric(folderId, "0.19.5")
-	if /* err != nil {
-		return /* err
-	} */
-
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
@@ -353,6 +351,9 @@ func (a *App) StartGame(folderId string) error {
 		}
 		return err
 	}
+	a.mu.Lock()
+	a.RunningInstances[folderId] = mc
+	a.mu.Unlock()
 	wailsRuntime.EventsEmit(a.ctx, "game:started", folderId)
 	go func() {
 		defer waitGroup.Done()
@@ -406,6 +407,9 @@ func (a *App) StartGame(folderId string) error {
 			"folderId": folderId,
 			"exitCode": code,
 		})
+		a.mu.Lock()
+		delete(a.RunningInstances, folderId)
+		a.mu.Unlock()
 	}()
 	return nil
 }
@@ -747,8 +751,8 @@ func (a *App) RemoveContent(folderId, contentType, filename string) error {
 	return nil
 }
 
-func (a *App) GetDiscoveryPage(projectType, version, categories string) (*modrinth.DiscoverProjects, error) {
-	discoveryPage, err := a.Modrinth.GetDiscoveryPage(projectType, version, categories)
+func (a *App) GetDiscoveryPage(projectType, version, categories, query string) (*modrinth.DiscoverProjects, error) {
+	discoveryPage, err := a.Modrinth.GetDiscoveryPage(projectType, version, categories, query)
 	if err != nil {
 		return nil, err
 	}
@@ -868,4 +872,18 @@ func (a *App) InstallMrpack(modpackPath string) (string, error) {
 	}
 
 	return modpack, nil
+}
+
+func (a *App) KillGame(folderId string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	mc, ok := a.RunningInstances[folderId]
+	if !ok {
+		return fmt.Errorf("instance does not exist")
+	}
+	err := mc.Process.Kill()
+	if err != nil {
+		return err
+	}
+	return nil
 }

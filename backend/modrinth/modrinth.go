@@ -141,7 +141,7 @@ type VersionInfo struct {
 	Dependencies    []VersionDependencies `json:"dependencies"`
 }
 
-func (m *Modrinth) GetDiscoveryPage(projectType, version, categories string) (*DiscoverProjects, error) {
+func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query string) (*DiscoverProjects, error) {
 	categories = "fabric" // hardcoded as fabric cuz it's the only mod loader supported at this time
 	var discover DiscoverProjects
 	facets := [][]string{
@@ -162,7 +162,13 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories string) (*D
 	if err != nil {
 		return nil, err
 	}
-	url := "https://api.modrinth.com/v2/search" + "?facets=" + url2.QueryEscape(string(facetsJson))
+	var url string
+	if query != "" {
+		url = "https://api.modrinth.com/v2/search" + "?facets=" + url2.QueryEscape(string(facetsJson)) + "&query=" + url2.QueryEscape(query) + "&limit=25"
+	} else {
+		url = "https://api.modrinth.com/v2/search" + "?facets=" + url2.QueryEscape(string(facetsJson)) + "&limit=25"
+	}
+
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
