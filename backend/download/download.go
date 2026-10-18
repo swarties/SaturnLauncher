@@ -131,7 +131,7 @@ type ContentInfo struct {
 	Pack        pack
 	FileName    string
 	FileSize    int
-	isShader    bool
+	IsShader    bool
 }
 
 const assetUrl = "https://resources.download.minecraft.net/"
@@ -1036,7 +1036,7 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				info.Version = superm.Version
 				info.Description = superm.Description
 				info.FileSize = int(stat.Size())
-				info.isShader = false
+				info.IsShader = false
 				break
 			}
 			err = reader.Close()
@@ -1100,7 +1100,7 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				info.Pack.Name = strings.TrimSuffix(d.Name(), ".zip")
 				info.Pack.Description = superRp.Pack.Description
 				info.FileSize = int(stat.Size())
-				info.isShader = false
+				info.IsShader = false
 				break
 			}
 			err = reader.Close()
@@ -1119,13 +1119,13 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 			defer reader.Close()
 			for _, r := range reader.File {
 				if r.Name == "pack.mcmeta" {
-					info.isShader = false
+					info.IsShader = false
 				}
 			}
 			info.Name = strings.TrimSuffix(stat.Name(), ".zip")
 			info.FileSize = int(stat.Size())
 			info.FileName = stat.Name()
-			info.isShader = true
+			info.IsShader = true
 		}
 		contentInfo = append(contentInfo, info)
 	}
