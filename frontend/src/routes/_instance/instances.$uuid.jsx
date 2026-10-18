@@ -15,7 +15,7 @@ import {
   refreshInstance,
   useInstance,
 } from '@/stores/instance.js';
-import { startLaunch, useLaunch } from '@/stores/launch';
+import { startLaunch, stopLaunch, useLaunch } from '@/stores/launch';
 
 import minecraftLogo from '@/assets/logos/minecraft.png';
 import fabricLogo from '@/assets/logos/fabric.png';
@@ -63,8 +63,11 @@ function InstanceDetailLayout() {
   const isLaunching = phase === 'launching';
   const isRunning = phase === 'running';
 
-  const handleLaunch = () => {
-    if (!isLaunching && !isRunning) {
+  const handleLaunchToggle = () => {
+    if (isLaunching) return;
+    if (isRunning) {
+      void stopLaunch(uuid);
+    } else {
       void startLaunch(uuid);
     }
   };
@@ -120,11 +123,11 @@ function InstanceDetailLayout() {
           <div className="absolute top-4 right-4">
             <button
               type="button"
-              onClick={handleLaunch}
-              disabled={isLaunching || isRunning}
+              onClick={handleLaunchToggle}
+              disabled={isLaunching}
               data-tooltip={
                 isRunning
-                  ? 'Stop (not wired)'
+                  ? 'Stop Game'
                   : isLaunching
                     ? 'Launching...'
                     : 'Launch'

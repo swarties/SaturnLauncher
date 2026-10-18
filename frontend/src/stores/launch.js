@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { onBackendEvent } from '@/lib/backend';
-import { StartGame } from '../../wailsjs/go/main/App';
+import { KillGame, StartGame } from '../../wailsjs/go/main/App';
 
 const STEP_CEILINGS = {
   'Downloading Client Jar': 15,
@@ -218,6 +218,20 @@ export async function startLaunch(uuid) {
       progress: 0,
       status: e?.message ?? String(e),
       statusKind: 'error',
+      exitCode: null,
+    });
+  }
+}
+
+export async function stopLaunch(uuid) {
+  if (!uuid) return;
+  try {
+    await KillGame(uuid);
+  } catch (e) {
+    setInstance(uuid, {
+      phase: 'error',
+      progress: 0,
+      status: e?.message ?? String(e),
       exitCode: null,
     });
   }

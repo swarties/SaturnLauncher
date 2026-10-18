@@ -4,14 +4,19 @@ import { createPortal } from 'react-dom';
 import { createFileRoute } from '@tanstack/react-router';
 import { AnimatePresence, motion, useSpring, useTransform } from 'motion/react';
 
-import { AlertTriangle, ScrollText, Square, ArrowRight } from 'lucide-react';
+import { AlertTriangle, ArrowRight, ScrollText, Square } from 'lucide-react';
 
 import { Button } from '@/components/ui/button.jsx';
 import { InstanceSelector } from '@/components/ui/instance-selector.jsx';
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave';
 
 import { useAuth } from '@/stores/auth';
-import { clearError, startLaunch, useLaunch } from '@/stores/launch';
+import {
+  clearError,
+  startLaunch,
+  stopLaunch,
+  useLaunch,
+} from '@/stores/launch';
 import { copyText } from '@/lib/backend';
 
 export const Route = createFileRoute('/_app/home')({
@@ -161,18 +166,18 @@ function HomePage() {
                 )}
               </Button>
               <AnimatePresence>
-                {(isLaunching || isRunning) && (
+                {isRunning && (
                   <motion.button
                     key="kill-button"
                     type="button"
-                    aria-label="Force Kill"
-                    data-tooltip="Force kill (not yet wired)"
-                    disabled
+                    onClick={() => stopLaunch(uuid)}
+                    aria-label="Stop Game"
+                    data-tooltip="Force Stop"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.2, ease: EASE }}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg) transition-colors disabled:pointer-events-none disabled:opacity-40"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg) transition-colors hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover)"
                   >
                     <Square
                       className="size-4 fill-current"
