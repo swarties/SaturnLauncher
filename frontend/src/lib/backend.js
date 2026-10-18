@@ -5,7 +5,6 @@ import {
   EventsOff,
   ClipboardSetText,
   OnFileDrop,
-  OnFileDropOff,
 } from '../../wailsjs/runtime/runtime';
 
 const isWails =

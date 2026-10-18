@@ -12,8 +12,6 @@ const STEP_CEILINGS = {
 const CREEP_INTERVAL_MS = 60;
 const CREEP_COEFFICIENT = 0.015;
 const CREEP_MIN_STEP = 0.02;
-// const SPRINT_COEFFICIENT = 0.08;
-// const SPRINT_MIN_STEP = 0.5;
 const MIN_LAUNCH_MS = 2200;
 const EXIT_MESSAGE_MS = 5000;
 
@@ -178,7 +176,6 @@ export async function startLaunch(uuid) {
   const existing = state.instances[uuid];
   if (existing?.phase === 'launching' || existing?.phase === 'running') return;
 
-  installSubs();
   stopCreep();
 
   const prevTimer = exitTimers.get(uuid);
@@ -225,3 +222,5 @@ export async function startLaunch(uuid) {
     });
   }
 }
+
+installSubs();

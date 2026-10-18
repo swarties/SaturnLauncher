@@ -39,8 +39,6 @@ function HomePage() {
 
   const isLaunching = phase === 'launching';
   const isRunning = phase === 'running';
-  const isExited = phase === 'exited';
-  const isCrashed = phase === 'crashed';
   const isError = phase === 'error';
 
   const smoothProgress = useSpring(progress, {
@@ -102,9 +100,6 @@ function HomePage() {
               {username}
             </p>
           </div>
-
-          {/**/}
-          {/**/}
 
           <div className="flex w-full max-w-xs flex-col items-center gap-3">
             <div className="flex items-center gap-2">
@@ -214,9 +209,6 @@ function HomePage() {
           </AnimatePresence>
 
           <LaunchErrorDialog uuid={uuid} />
-
-          {/*  */}
-          {/*  */}
         </div>
 
         <div className="flex h-full w-full flex-col items-center justify-center gap-10 rounded-md border-2 border-(--surface-border) px-6">

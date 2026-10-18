@@ -39,6 +39,9 @@ export function ContentList({ uuid, contentType }) {
     );
   };
 
+  const dragCounter = useRef(0);
+  const [dragActive, setDragActive] = useState(false);
+
   useEffect(() => {
     void loadContent(uuid, contentType);
   }, [uuid, contentType]);
@@ -88,9 +91,6 @@ export function ContentList({ uuid, contentType }) {
       if (dropMessageTimer.current) clearTimeout(dropMessageTimer.current);
     };
   }, []);
-
-  const dragCounter = useRef(0);
-  const [dragActive, setDragActive] = useState(false);
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -219,11 +219,7 @@ export function ContentList({ uuid, contentType }) {
           ) : (entry?.loading ?? true) && items.length === 0 ? (
             <EmptyState>Loading...</EmptyState>
           ) : items.length === 0 ? (
-            <NoContentState
-              contentType={contentType}
-              config={config}
-              onInstall={handleInstall}
-            />
+            <NoContentState config={config} onInstall={handleInstall} />
           ) : filtered.length === 0 ? (
             <EmptyState>No matches for &quot;{query}&quot;.</EmptyState>
           ) : (
@@ -399,7 +395,7 @@ function EmptyState({ children }) {
 }
 
 function formatSize(bytes) {
-  if (bytes === null) return '—';
+  if (!bytes) return '—';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
