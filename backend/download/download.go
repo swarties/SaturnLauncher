@@ -1050,6 +1050,7 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 			if err != nil {
 				return nil, err
 			}
+			info.FileSize = int(stat.Size())
 			reader, err := zip.OpenReader(dirName)
 			if err != nil {
 				contentInfo = append(contentInfo, info)
@@ -1071,7 +1072,7 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				err = json.Unmarshal(file, &superRp)
 				oerr := open.Close()
 				if oerr != nil {
-					return nil, err
+					return nil, oerr
 				}
 				if err != nil {
 					break
@@ -1099,7 +1100,6 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				}
 				info.Pack.Name = strings.TrimSuffix(d.Name(), ".zip")
 				info.Pack.Description = superRp.Pack.Description
-				info.FileSize = int(stat.Size())
 				info.IsShader = false
 				break
 			}
@@ -1116,16 +1116,23 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 			if err != nil {
 				return nil, err
 			}
-			defer reader.Close()
+			info.IsShader = false
 			for _, r := range reader.File {
-				if r.Name == "pack.mcmeta" {
-					info.IsShader = false
+				if strings.HasPrefix(r.Name, "shaders/") {
+					info.IsShader = true
+					break
 				}
+			}
+			err = reader.Close()
+			if err != nil {
+				return nil, err
 			}
 			info.Name = strings.TrimSuffix(stat.Name(), ".zip")
 			info.FileSize = int(stat.Size())
 			info.FileName = stat.Name()
-			info.IsShader = true
+			if !info.IsShader {
+				info.Name = info.Name + " ( Warning : this file is not a shader )"
+			}
 		}
 		contentInfo = append(contentInfo, info)
 	}

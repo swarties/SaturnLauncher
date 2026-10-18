@@ -8,6 +8,7 @@ import (
 	"SaturnLauncher/backend/launch"
 	"SaturnLauncher/backend/modpacks"
 	"SaturnLauncher/backend/modrinth"
+	"archive/zip"
 	"bufio"
 	"context"
 	"encoding/base64"
@@ -715,6 +716,45 @@ func (a *App) InstallContent(folderId, contentType, path string) (string, error)
 	file, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
+	}
+	foundPackMcmeta := false
+	if contentType == "resourcepacks" {
+		reader, err := zip.OpenReader(path)
+		if err != nil {
+			return "", err
+		}
+		defer reader.Close()
+		for _, f := range reader.File {
+			if f.FileInfo().IsDir() {
+				continue
+			}
+			if filepath.Base(f.Name) == "pack.mcmeta" {
+				foundPackMcmeta = true
+				break
+			}
+		}
+		if !foundPackMcmeta {
+			return "", fmt.Errorf("zip is not a resource pack")
+		}
+	} else if contentType == "shaders" {
+		reader, err := zip.OpenReader(path)
+		if err != nil {
+			return "", err
+		}
+		defer reader.Close()
+		isShader := false
+		for _, f := range reader.File {
+			if f.FileInfo().IsDir() {
+				continue
+			}
+			if strings.HasPrefix(f.Name, "shaders/") {
+				isShader = true
+				break
+			}
+		}
+		if !isShader {
+			return "", fmt.Errorf("zip is not a shader")
+		}
 	}
 	err = os.WriteFile(destPath, file, 0644)
 	if err != nil {
