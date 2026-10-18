@@ -3,11 +3,12 @@
 Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source Minecraft launcher!
 
 ## System Requirements:
-- OS: Windows 10/11 (Requires WebView2; Comes with a regular Windows 11 install)
+- OS: Windows 10/11 (Requires WebView2; Comes with a regular Windows 11 install) or Linux
 - CPU: 2+ cores
-- RAM: 1GB of free RAM
-- Storage: 50 MB of free storage
+- RAM: 1GB of free RAM ( 4+ gb to run minecraft )
+- Storage: 50 MB of free storage ( additional 1.5GB for java + minecraft files )
 - Network: Required for login and installing the game and mods from modrinth
+- Java: No Installation Required 
 
 ## Install Steps
 
