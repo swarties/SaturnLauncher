@@ -131,6 +131,7 @@ type ContentInfo struct {
 	Pack        pack
 	FileName    string
 	FileSize    int
+	isShader    bool
 }
 
 const assetUrl = "https://resources.download.minecraft.net/"
@@ -959,7 +960,6 @@ func (a *Argument) UnmarshalJSON(data []byte) error {
 func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentInfo, error) {
 	contentDir, _, err := d.ContentDir(folderId, contentType)
 	var contentInfo []ContentInfo
-
 	if err != nil {
 		return nil, err
 	}
@@ -1036,6 +1036,7 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				info.Version = superm.Version
 				info.Description = superm.Description
 				info.FileSize = int(stat.Size())
+				info.isShader = false
 				break
 			}
 			err = reader.Close()
@@ -1099,12 +1100,32 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				info.Pack.Name = strings.TrimSuffix(d.Name(), ".zip")
 				info.Pack.Description = superRp.Pack.Description
 				info.FileSize = int(stat.Size())
+				info.isShader = false
 				break
 			}
 			err = reader.Close()
 			if err != nil {
 				return nil, err
 			}
+		} else if contentType == "shaders" {
+			stat, err := os.Stat(dirName)
+			if err != nil {
+				return nil, err
+			}
+			reader, err := zip.OpenReader(dirName)
+			if err != nil {
+				return nil, err
+			}
+			defer reader.Close()
+			for _, r := range reader.File {
+				if r.Name == "pack.mcmeta" {
+					info.isShader = false
+				}
+			}
+			info.Name = strings.TrimSuffix(stat.Name(), ".zip")
+			info.FileSize = int(stat.Size())
+			info.FileName = stat.Name()
+			info.isShader = true
 		}
 		contentInfo = append(contentInfo, info)
 	}

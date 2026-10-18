@@ -303,3 +303,5 @@ func (i *InstanceManager) UpdateInstanceDescription(folderId, description string
 	}
 	return os.WriteFile(base, data, 0o600)
 }
+
+// add GetJavaArgs and UpdateJavaArgs

@@ -832,11 +832,16 @@ func (a *App) OpenContentFolder(folderId, contentType string) error {
 }
 
 func (a *App) ToggleContent(folderId, contentType, filename string) (bool, error) {
-	appdata, err := os.UserConfigDir()
+	//appdata, err := os.UserConfigDir()
+	//if err != nil {
+	//	return false, nil
+	//}
+	path, _, err := a.Download.ContentDir(folderId, contentType)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
-	path := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, contentType, filename)
+	path = filepath.Join(path, filename)
+	// path := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, contentType, filename)
 	cleanedPath := filepath.Clean(path)
 	if strings.HasSuffix(cleanedPath, ".disabled") {
 		newPath := strings.TrimSuffix(cleanedPath, ".disabled")
