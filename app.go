@@ -855,3 +855,12 @@ func (a *App) ToggleContent(folderId, contentType, filename string) (bool, error
 	}
 
 }
+
+func (a *App) InstallMrpack(modpackPath string) (string, error) {
+	modpack, err := a.Mrpack.InstallModpack(modpackPath)
+	if err != nil {
+		return "", err
+	}
+
+	return modpack, nil
+}

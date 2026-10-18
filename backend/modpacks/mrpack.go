@@ -116,6 +116,7 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 		return "", err
 	}
 	folderId := inst.Uuid
+	instDir := filepath.Join(appdata, "SaturnLauncher", "instances", folderId)
 	dl := download.NewDownload()
 	//instInfo, err := instManager.GetInstanceInfo(folderId)
 	//if err != nil {
@@ -161,6 +162,52 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 			return "", err
 		}
 		return "", fmt.Errorf("failed to install %d elements", len(undFailures))
+	}
+	reader, err := zip.OpenReader(path)
+	if err != nil {
+		return "", err
+	}
+	defer reader.Close()
+	for _, r := range reader.File {
+		var newPath string
+		if r.FileInfo().IsDir() {
+			continue
+		}
+		if strings.HasPrefix(r.Name, "overrides/") {
+			newPath = strings.TrimPrefix(r.Name, "overrides/")
+		} else if strings.HasPrefix(r.Name, "client-overrides/") {
+			newPath = strings.TrimPrefix(r.Name, "client-overrides/")
+		} else {
+			continue
+		}
+		destPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, newPath)
+		if !strings.Contains(destPath, instDir+string(os.PathSeparator)) {
+			continue
+		}
+		err := os.MkdirAll(filepath.Dir(destPath), 0o755)
+		if err != nil {
+			return "", err
+		}
+		fileOpen, err := r.Open()
+		if err != nil {
+			return "", err
+		}
+		fileCreate, err := os.Create(destPath)
+		if err != nil {
+			return "", err
+		}
+		_, err = io.Copy(fileCreate, fileOpen)
+		if err != nil {
+			return "", err
+		}
+		err = fileCreate.Close()
+		if err != nil {
+			return "", err
+		}
+		err = fileOpen.Close()
+		if err != nil {
+			return "", err
+		}
 	}
 	return inst.Uuid, nil
 }
