@@ -7,12 +7,15 @@ import {
 import { motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 
+import { ChevronLeft, LoaderCircle, Play, Square } from 'lucide-react';
+
 import { onBackendEvent } from '@/lib/backend.js';
 import {
   loadInstance,
   refreshInstance,
   useInstance,
 } from '@/stores/instance.js';
+import { startLaunch, useLaunch } from '@/stores/launch';
 
 import minecraftLogo from '@/assets/logos/minecraft.png';
 import fabricLogo from '@/assets/logos/fabric.png';
@@ -54,6 +57,17 @@ function InstanceDetailLayout() {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   const { data: instance, iconDataUrl } = useInstance();
+  const { instances } = useLaunch();
+  const launchState = instances[uuid];
+  const phase = launchState?.phase ?? 'idle';
+  const isLaunching = phase === 'launching';
+  const isRunning = phase === 'running';
+
+  const handleLaunch = () => {
+    if (!isLaunching && !isRunning) {
+      void startLaunch(uuid);
+    }
+  };
 
   const iconSrc = iconDataUrl
     ? `data:image/png;base64,${iconDataUrl}`
@@ -101,15 +115,47 @@ function InstanceDetailLayout() {
       {/* Sidebar */}
       <aside className="flex h-full w-64 shrink-0 flex-col">
         {/* Identity card — sits at the same top edge as the content panel */}
-        <div className="flex flex-col gap-3 rounded-md border-2 border-(--surface-border) p-4">
-          <img
-            src={iconSrc}
-            alt=""
-            draggable={false}
-            className="h-16 w-16 rounded-md"
-          />
+
+        <div className="relative flex flex-col gap-3 rounded-md border-2 border-(--surface-border) p-4">
+          <div className="absolute top-4 right-4">
+            <button
+              type="button"
+              onClick={handleLaunch}
+              disabled={isLaunching || isRunning}
+              data-tooltip={
+                isRunning
+                  ? 'Stop (not wired)'
+                  : isLaunching
+                    ? 'Launching...'
+                    : 'Launch'
+              }
+              className={[
+                'flex size-12 items-center justify-center rounded-lg border transition-all duration-300 disabled:pointer-events-none',
+                isRunning
+                  ? 'border-(--danger-border) bg-(--danger-bg) text-(--danger-fg) hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover)'
+                  : isLaunching
+                    ? 'border-(--surface-border) bg-(--surface-active) text-(--saturn-fg-muted)'
+                    : 'border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50',
+              ].join(' ')}
+            >
+              {isRunning ? (
+                <Square className="size-4 fill-current" aria-hidden="true" />
+              ) : isLaunching ? (
+                <LoaderCircle
+                  className="size-5 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Play
+                  className="ml-0.5 size-5 fill-current"
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+          </div>
+          <img src={iconSrc} alt="" className="h-16 w-16 rounded-md" />
           <div className="flex flex-col gap-0.5">
-            <p className="text-foreground text-lg font-extralight tracking-tight">
+            <p className="text-foreground truncate text-lg font-extralight tracking-tight">
               {instance?.name ?? '_'}
             </p>
             <p className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
@@ -160,7 +206,8 @@ function InstanceDetailLayout() {
           data-tooltip="Back to instances"
           className="mt-auto flex items-center justify-center gap-2 rounded-md border border-(--hairline) px-4 py-2.5 text-sm font-thin tracking-wide text-(--nav-link-fg) transition-colors hover:border-(--surface-border-hover) hover:text-(--nav-link-fg-hover)"
         >
-          ← Instances
+          <ChevronLeft className="size-4" aria-hidden="true" />
+          Instances
         </Link>
       </aside>
 

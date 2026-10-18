@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { createFileRoute } from '@tanstack/react-router';
 import { AnimatePresence, motion, useSpring, useTransform } from 'motion/react';
 
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ScrollText, Square } from 'lucide-react';
 
 import { Button } from '@/components/ui/button.jsx';
 import { InstanceSelector } from '@/components/ui/instance-selector.jsx';
@@ -52,9 +52,16 @@ function HomePage() {
     smoothProgress.set(progress);
   }, [progress, smoothProgress]);
 
+  const navigate = Route.useNavigate();
+
   const handleLaunch = () => {
     if (!uuid || isLaunching || isRunning) return;
     void startLaunch(uuid);
+  };
+
+  const handleViewLogs = () => {
+    if (!uuid) return;
+    void navigate({ to: `/instances/${uuid}` });
   };
 
   const [copiedUUID, setCopiedUUID] = useState(false);
@@ -103,6 +110,36 @@ function HomePage() {
 
           <div className="flex w-full max-w-xs flex-col items-center gap-3">
             <div className="flex items-center gap-2">
+              <AnimatePresence>
+                {(isLaunching || isRunning) && (
+                  <motion.button
+                    key="logs-button"
+                    type="button"
+                    onClick={handleViewLogs}
+                    data-tooltip="View logs"
+                    initial={{
+                      opacity: 0,
+                      scale: 0.9,
+                      width: 0,
+                      marginRight: -8,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                      width: 44,
+                      marginRight: 0,
+                    }}
+                    exit={{ opacity: 0, scale: 0.9, width: 0, marginRight: -8 }}
+                    transition={{ duration: 0.2, ease: EASE }}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-(--surface-border) bg-transparent text-(--saturn-fg-muted) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-strong)"
+                  >
+                    <ScrollText
+                      className="size-4 shrink-0"
+                      aria-hidden="true"
+                    />
+                  </motion.button>
+                )}
+              </AnimatePresence>
               <Button
                 variant="outline"
                 className="group border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-11 min-w-44 gap-2 rounded-lg border px-6 font-thin transition-colors"
@@ -139,18 +176,10 @@ function HomePage() {
                     transition={{ duration: 0.2, ease: EASE }}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg) transition-colors disabled:pointer-events-none disabled:opacity-40"
                   >
-                    <svg
-                      viewBox="0 0 12 12"
+                    <Square
+                      className="size-4 fill-current"
                       aria-hidden="true"
-                      className="size-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.75"
-                      strokeLinecap="round"
-                    >
-                      <line x1="2" y1="2" x2="10" y2="10" />
-                      <line x1="10" y1="2" x2="2" y2="10" />
-                    </svg>
+                    />
                   </motion.button>
                 )}
               </AnimatePresence>
