@@ -26,7 +26,11 @@ Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source
 >     
 
 ## Tech Stack
-Golang V1.27.1 for back-end
+
+Golang V1.27.1 for back-end 
+  - Grab Library
+  - Google/UUID
+  - GopsUtil
 React front-end with Vite
   - TanStack Router
   - shadcn
@@ -38,36 +42,77 @@ Using wailsIo V2.15.0
 
 ## Features
 
+#### Authentication + MultiAccount support
 
-- Microsoft and Minecraft authentication finished in both backend and frontend
-- Launching the app keeps the refresh key and user hash always up to date
-- Initializing the necessary folders to always exist on launch
-- Can install game assets, game libraries, extract natives, and find the right java version for the selected game version
-- Added an id based instance manager
-- Instance Page 
-- Per Instance Page 
-- Profile Page 
-- Settings Page 
-- Onboarding 
-- Added Support for linux java
-- Can Launch the game from any version starting 1.14
-- Can Select ram allocation for instances
-- Added Multi Account Support
-- Added Light And Dark Mode
-- Turned Instances to be UUID based
-- Linked logout
-- Login Page Redesign
-- Instance selector in home page
-- Alt + num navigation
-- Various FrontEnd Bug Fixes
-- Finished fabric installation
-- Added Icon and Description
-- Added Game Logs
-- Added Installing/Deleting and fetching Content ( mods, resource packs and shaders ) not connected to the frontend
-- Added Modrinth Discovery Page, Project Page, Version Page and a recursive Install Project function that gets the dependencies for a mod and the dependencies that dependency might have ( Not Connected to frontend )
-- Added Icons for vanilla and fabric
-- Default an instance's icon to its loader's icon
+- Full Microsoft login flow using OAuth code
+- Automatic token refresh on launch
+- Multi Account Support ( 1 JSON file per account + an active.json file to determine which account is active)
 
+
+#### Game Launch
+
+- Install client jar + JSON using grab downloader
+- Install libraries using grab per version
+- Extract natives
+- Assets Install ( Grab Batch Downloader (6 workers at once ))
+- Game Lifecycle to prevent launching the same instance twice
+- Self-healing game files on launch
+- Live Java + Game logs to be able to see java errors
+
+#### Java
+
+- Added a java silent installer + extraction support for linux and windows
+
+#### Instance Manager
+
+- UUID based instance system 
+- Self Healing folders
+- Easy to read instance.json file containing java args ,memory ,name ,fabric , game version, description etc...
+- Ability to select the custom java args ram icon etc for each instance
+
+#### Content Manager
+
+- Install mods, resource packs and shaders using local files
+- Fully Install modrinth modpacks and their overrides ( not implement in frontend )
+- List Mods ,Resource Packs ,and ShaderPacks ( Rich Metadata available for mods and resource packs )
+- Enable Disable Mods ,Resource Packs ,and ShaderPacks ( add .disabled to the end of the file name )
+
+#### Fabric Loader Support
+
+- Install Fabric Loader when creating an instance ( uses fabric api + libs injection instead of using the limited installer.jar fabric provides )
+
+#### Modrinth Support
+
+- Discovery Page
+- Ability to look up mods, shaders and resource packs ( installing modpacks from modrinth support is a planned feature )
+- Individual Project Page
+- Version Page for each project
+- Recursive mod + deps installation ( Installs mods and their deps (and the deps of deps ))
+
+#### Various 
+
+- Check file authenticity using size ( wayy faster than checking their SHA1 every time( it is checked after install ))
+- Light and Dark Mode
+- Alt + Num Navigation
+- Clean GUI
+- Bloat free
+- No ads
+
+
+## Planned Features
+
+- Add Forge and NeoForge
+- Friends List with built-in dms ( maybe )
+- Modrinth Updater
+- Skin Changer (lookup skin and use them or drag n drop your own skins)
+- Launcher Auto Update
+- Launcher Migration ( One Click Migration from Prism, MultiMC, modrinth launcher etc. )
+- Modpack Export
+- Java Override ( use your own java )
+- Check for mod conflicts pre-launch
+- Allow Instance Duplication
+- Token Encryption ( lots of launchers don't do it, but it's important )
+- World backups
 
 ## Motivation
 Most launchers today are aesthetically unpleasing, are filled with ads, and are too bloated. That's why we're working on a great alternative to those options.
