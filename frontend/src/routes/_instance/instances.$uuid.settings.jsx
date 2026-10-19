@@ -80,13 +80,13 @@ function SettingsTab() {
     setSaving(true);
     setSaveError(null);
     try {
-      await Promise.all([
-        RenameInstance(uuid, name.trim()),
-        UpdateInstanceDescription(uuid, description),
-        UpdateJavaArgs(uuid, jvmArgs),
-        UpdateMem(uuid, minRam, maxRam),
-        new Promise((resolve) => setTimeout(resolve, 800)),
-      ]);
+      await RenameInstance(uuid, name.trim());
+      await UpdateInstanceDescription(uuid, description);
+      await UpdateJavaArgs(uuid, jvmArgs);
+      await UpdateMem(uuid, minRam, maxRam);
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       setSaving(false);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 1500);
