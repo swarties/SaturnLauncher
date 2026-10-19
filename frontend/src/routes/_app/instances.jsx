@@ -1,20 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Plus, X, ArrowRight } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  LoaderCircle,
+  PackagePlus,
+  Plus,
+  X,
+} from 'lucide-react';
 
 import { VersionPicker } from '@/components/ui/version-picker.jsx';
 import { LoaderPicker } from '@/components/ui/loader-picker.jsx';
 import { FabricVersionPicker } from '@/components/ui/fabric-version-picker.jsx';
 import {
   MorphingDialog,
-  MorphingDialogTrigger,
+  MorphingDialogClose,
   MorphingDialogContainer,
   MorphingDialogContent,
-  MorphingDialogTitle,
   MorphingDialogDescription,
-  MorphingDialogClose,
+  MorphingDialogTitle,
+  MorphingDialogTrigger,
   useMorphingDialog,
 } from '@/components/ui/morphing-dialog';
 
@@ -22,6 +29,7 @@ import {
   CreateInstance,
   DeleteInstance,
   InstallFabric,
+  InstallMrpack,
   ListInstances,
 } from '../../../wailsjs/go/main/App';
 import { onBackendEvent } from '@/lib/backend.js';
@@ -38,6 +46,12 @@ function InstancesPage() {
     /** @type {string | null} */ (null)
   );
   const [creating, setCreating] = useState(false);
+  const [installingPack, setInstallingPack] = useState(false);
+  const [packSuccess, setPackSuccess] = useState(false);
+  const [packError, setPackError] = useState(
+    /** @type {string | null } */ (null)
+  );
+  const navigate = Route.useNavigate();
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +78,29 @@ function InstancesPage() {
     };
   }, []);
 
+  const handleInstallModpack = async (path = '') => {
+    if (installingPack) return;
+    setInstallingPack(true);
+    setPackError(null);
+
+    try {
+      const newUuid = await InstallMrpack(path);
+      if (newUuid) {
+        setInstallingPack(false);
+        setPackSuccess(true);
+        setTimeout(() => {
+          setCreating(false);
+          void navigate({ to: '/instances/$uuid', params: { uuid: newUuid } });
+        }, 2500);
+      } else {
+        setInstallingPack(false);
+      }
+    } catch (e) {
+      setPackError(e?.message ?? String(e));
+      setInstallingPack(false);
+    }
+  };
+
   const handleDelete = async (inst) => {
     await DeleteInstance(inst.uuid);
   };
@@ -79,7 +116,6 @@ function InstancesPage() {
           </p>
         )}
         {isEmpty ? (
-          /* Empty state — everything centered */
           <div className="flex flex-1 flex-col items-center justify-center gap-8">
             <p className="text-muted-foreground text-5xl font-extralight tracking-tight">
               No instances yet
@@ -90,7 +126,6 @@ function InstancesPage() {
             </MorphingDialogTrigger>
           </div>
         ) : (
-          /* Populated state — header + grid */
           <>
             <div className="mb-8 flex items-start justify-between gap-4">
               <div>
@@ -108,29 +143,119 @@ function InstancesPage() {
               </MorphingDialogTrigger>
             </div>
 
-            <div className="grid auto-rows-min grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-5">
-              {instances.map((inst) => (
-                <InstanceCard
-                  key={inst.uuid}
-                  instance={inst}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
+            <motion.div
+              layout
+              className="grid auto-rows-min grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-5"
+            >
+              <AnimatePresence>
+                {instances.map((inst, i) => (
+                  <InstanceCard
+                    key={inst.uuid}
+                    instance={inst}
+                    onDelete={handleDelete}
+                    index={i}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
           </>
         )}
 
-        {/* Dialog — same content for both states */}
         <MorphingDialogContainer>
-          <MorphingDialogContent className="bg-background relative w-full max-w-md rounded-md border-2 border-(--surface-border) p-6">
+          <MorphingDialogContent className="bg-background relative w-full max-w-4xl rounded-md border-2 border-(--surface-border) p-8">
             <MorphingDialogTitle className="text-muted-foreground text-sm font-normal tracking-[0.2em] uppercase">
               New Instance
             </MorphingDialogTitle>
-            <MorphingDialogDescription className="text-muted-foreground mt-1 text-sm font-normal">
-              Name your instance and pick a version.
+            <MorphingDialogDescription className="text-muted-foreground mt-1 mb-6 text-sm font-normal">
+              Create a vanilla/fabric instance, or drop a Modrinth Modpack to
+              install it instantly.
             </MorphingDialogDescription>
 
-            <CreateInstanceForm />
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.2fr]">
+              <div className="flex flex-col">
+                <div
+                  onClick={() => handleInstallModpack('')}
+                  className={`group hover:border-saturn-500/50 relative flex h-full min-h-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-(--surface-border) transition-colors hover:bg-(--surface-hover) ${
+                    installingPack ? 'pointer-events-none opacity-50' : ''
+                  }`}
+                >
+                  <AnimatePresence>
+                    {packSuccess ? (
+                      <motion.div
+                        key="success"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.3, type: 'spring' }}
+                        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4 text-center"
+                      >
+                        <div className="flex h-20 items-center justify-center">
+                          <Check
+                            className="size-12 text-white"
+                            strokeWidth={2.5}
+                          />
+                        </div>
+                        <div className="flex h-14 items-center justify-center">
+                          <p className="text-foreground text-lg font-thin tracking-wide">
+                            We're redirecting you, hang tight
+                            <AnimatedDots />
+                          </p>
+                        </div>
+                      </motion.div>
+                    ) : installingPack ? (
+                      <motion.div
+                        key="installing"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4"
+                      >
+                        <div className="flex h-20 items-center justify-center">
+                          <LoaderCircle className="text-saturn-400 size-12 animate-spin" />
+                        </div>
+                        <div className="flex h-14 items-center justify-center">
+                          <p className="text-foreground text-lg font-thin tracking-wide">
+                            Installing Modpack...
+                          </p>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="idle"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4"
+                      >
+                        <div className="flex h-20 items-center justify-center">
+                          <div className="group-hover:border-saturn-500/50 group-hover:bg-saturn-900/40 group-hover:text-saturn-300 flex size-20 items-center justify-center rounded-xl border border-(--surface-border) bg-(--chip-bg) text-(--chip-fg) shadow-lg shadow-black/20 transition-all duration-300 group-hover:-translate-y-1">
+                            <PackagePlus className="size-8" strokeWidth={1.5} />
+                          </div>
+                        </div>
+                        <div className="flex h-14 items-center justify-center">
+                          <p className="text-foreground text-center text-lg font-thin tracking-wide">
+                            Click or <s className="opacity-50">drag in</s>
+                            <br />a .mrpack file
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                {packError && (
+                  <p className="mt-3 text-center text-xs font-thin text-red-400">
+                    {packError}
+                  </p>
+                )}
+              </div>
+              <div
+                className={`flex flex-col transition-opacity duration-300 ${installingPack ? 'pointer-events-none opacity-20' : ''}`}
+              >
+                <CreateInstanceForm />
+              </div>
+            </div>
           </MorphingDialogContent>
         </MorphingDialogContainer>
       </MorphingDialog>
@@ -138,16 +263,19 @@ function InstancesPage() {
   );
 }
 
-/**
- * @param {{ instance: McInstance, onDelete: (inst: McInstance) => Promise<void> }} props
- */
-function InstanceCard({ instance, onDelete }) {
+function InstanceCard({ instance, onDelete, index }) {
   return (
     <MorphingDialog>
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        layout
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.38, 1] }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{
+          duration: 0.4,
+          ease: [0.22, 1, 0.38, 1],
+          delay: index * 0.05,
+        }}
         className="group relative flex min-h-48 flex-col rounded-md border-2 border-(--surface-border) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
       >
         <MorphingDialogTrigger
@@ -196,10 +324,6 @@ function InstanceCard({ instance, onDelete }) {
     </MorphingDialog>
   );
 }
-
-/**
- * @param {{ instances: McInstance, onDelete: (inst: McInstance) => Promise<void>}} props
- */
 
 function DeleteConfirmContent({ instance, onDelete }) {
   const { setIsOpen } = useMorphingDialog();
@@ -251,10 +375,6 @@ function DeleteConfirmContent({ instance, onDelete }) {
   );
 }
 
-/**
- * @param {string} iso
- */
-
 function formatCreated(iso) {
   if (!iso) return '—';
   const then = new Date(iso);
@@ -268,6 +388,18 @@ function formatCreated(iso) {
     month: 'short',
     day: 'numeric',
   });
+}
+
+function AnimatedDots() {
+  const [dots, setDots] = useState('.');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots((d) => (d.length >= 3 ? '.' : d + ','));
+    }, 400);
+    return () => clearInterval(interval);
+  }, []);
+  return <span className="inline-block w-4 text-left">{dots}</span>;
 }
 
 function CreateInstanceForm() {
@@ -337,8 +469,8 @@ function CreateInstanceForm() {
       (name.trim() && (loader !== 'fabric' || Boolean(fabricVersion))));
 
   return (
-    <>
-      <div className="mt-6 flex flex-col gap-4">
+    <div className="flex h-full flex-col">
+      <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-2">
           <span className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
             Name
@@ -393,7 +525,7 @@ function CreateInstanceForm() {
         {error && <p className="text-xs font-thin text-red-400">{error}</p>}
       </div>
 
-      <div className="mt-6 flex justify-end gap-3">
+      <div className="mt-auto flex justify-end gap-3 pt-6">
         <MorphingDialogClose
           disabled={submitting}
           className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
@@ -404,11 +536,11 @@ function CreateInstanceForm() {
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-10 rounded-md border px-6 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
+          className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 flex h-10 w-36 items-center justify-center rounded-md border text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
         >
           {buttonLabel}
         </button>
       </div>
-    </>
+    </div>
   );
 }
