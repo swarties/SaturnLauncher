@@ -1112,6 +1112,9 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 			if err != nil {
 				return nil, err
 			}
+			if !strings.HasSuffix(dirName, ".zip") {
+				continue
+			}
 			reader, err := zip.OpenReader(dirName)
 			if err != nil {
 				return nil, err

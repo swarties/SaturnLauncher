@@ -33,7 +33,7 @@ type Instance struct {
 	MinRam        int    `json:"minram"`
 	MaxRam        int    `json:"maxram"`
 	FabricVersion string `json:"fabricVersion,omitempty"`
-	JvmArgs       string `json:"jvmArgs,omitempty"`
+	JvmArgs       string `json:"jvmArgs"`
 }
 type Ram struct {
 	TotalRamMB int
