@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
+import { AnimatePresence, motion } from 'motion/react';
 
 import { useInstance } from '@/stores/instance';
 import { onFileDrop } from '@/lib/backend';
@@ -10,6 +11,7 @@ import {
   RenameInstance,
   SetInstanceIcon,
   UpdateInstanceDescription,
+  UpdateJavaArgs,
   UpdateMem,
 } from '../../../wailsjs/go/main/App';
 
@@ -30,10 +32,12 @@ function SettingsTab() {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [jvmArgs, setJvmArgs] = useState('');
   const [minRam, setMinRam] = useState(2048);
   const [maxRam, setMaxRam] = useState(4096);
   const [totalRamMB, setTotalRamMB] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [iconUploading, setIconUploading] = useState(false);
   const [iconError, setIconError] = useState(null);
@@ -48,6 +52,7 @@ function SettingsTab() {
     if (!instance) return;
     setName(instance.name ?? '');
     setDescription(instance.description ?? '');
+    setJvmArgs(instance.jvmArgs ?? '');
     setMinRam(instance.minram ?? 2048);
     setMaxRam(instance.maxram ?? 4096);
   }, [instance]);
@@ -71,16 +76,22 @@ function SettingsTab() {
   };
 
   const handleSave = async () => {
-    if (saving || !instance || !name.trim()) return;
+    if (saving || justSaved || !instance || !name.trim()) return;
     setSaving(true);
     setSaveError(null);
     try {
-      await RenameInstance(uuid, name.trim());
-      await UpdateInstanceDescription(uuid, description);
-      await UpdateMem(uuid, minRam, maxRam);
+      await Promise.all([
+        RenameInstance(uuid, name.trim()),
+        UpdateInstanceDescription(uuid, description),
+        UpdateJavaArgs(uuid, jvmArgs),
+        UpdateMem(uuid, minRam, maxRam),
+        new Promise((resolve) => setTimeout(resolve, 800)),
+      ]);
+      setSaving(false);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 1500);
     } catch (e) {
       setSaveError(e?.message ?? String(e));
-    } finally {
       setSaving(false);
     }
   };
@@ -189,9 +200,17 @@ function SettingsTab() {
               />
             </div>
           </Field>
+          <Field label="JVM Arguments">
+            <JvmArgsInput value={jvmArgs} onChange={setJvmArgs} />
+            <p className="text-muted-foreground mt-2 text-xs font-thin">
+              Additional JVM arguments passed to the game. Separate multiple
+              arguments with a space. Less is more and don't touch this if you
+              don't know what you're doing!
+            </p>
+          </Field>
         </div>
 
-        <div className="hidden lg:block lg:pt-[5.5rem]">
+        <div className="hidden lg:block lg:pt-22">
           <IconField
             uuid={uuid}
             iconSrc={iconSrc}
@@ -219,10 +238,20 @@ function SettingsTab() {
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving || !name.trim()}
-          className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-10 rounded-md border px-6 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
+          disabled={saving || justSaved || !name.trim()}
+          className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 flex h-10 w-28 items-center justify-center rounded-md border text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
         >
-          {saving ? 'Saving...' : 'Save'}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={saving ? 'saving' : justSaved ? 'saved' : 'idle'}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.15 }}
+            >
+              {saving ? 'Saving...' : justSaved ? 'Saved!' : 'Save'}
+            </motion.span>
+          </AnimatePresence>
         </button>
       </div>
     </div>
@@ -368,6 +397,107 @@ function IconField({
         )}
       </div>
     </Field>
+  );
+}
+
+function highlightJvmArgs(args) {
+  if (!args) return '';
+
+  const escaped = args
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  return escaped.replace(
+    /(\s+)|(".*?")|(-(?:[XD]|XX:)[a-zA-Z0-9_:]*)|(=)|([+\-])|(\d+[a-zA-Z]?)|([^\s=+\-]+)/g,
+    (match, space, str, flag, eq, op, num, word) => {
+      if (space) return space;
+      if (str) return `<span class="text-emerald-400">${str}</span>`;
+      if (flag)
+        return `<span class="text-saturn-400 font-medium">${flag}</span>`;
+      if (eq) return `<span class="text-foreground/30">${eq}</span>`;
+      if (op) return `<span class="text-foreground/30">${op}</span>`;
+      if (num) return `<span class="text-amber-300">${num}</span>`;
+      if (word) return `<span class="text-foreground/80">${word}</span>`;
+      return match;
+    }
+  );
+}
+
+function JvmArgsInput({ value, onChange }) {
+  const backdropRef = useRef(null);
+  const undoStackRef = useRef([]);
+  const redoStackRef = useRef([]);
+  const lastValueRef = useRef(value);
+
+  useEffect(() => {
+    if (value !== lastValueRef.current) {
+      lastValueRef.current = value;
+      undoStackRef.current = [];
+      redoStackRef.current = [];
+    }
+  }, [value]);
+
+  const handleScroll = (e) => {
+    if (backdropRef.current) {
+      backdropRef.current.scrollTop = e.target.scrollTop;
+      backdropRef.current.scrollLeft = e.target.scrollLeft;
+    }
+  };
+
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    if (newValue !== lastValueRef.current) {
+      undoStackRef.current.push(lastValueRef.current);
+      if (undoStackRef.current.length > 100) undoStackRef.current.shift();
+      redoStackRef.current = [];
+      lastValueRef.current = newValue;
+    }
+    onChange(newValue);
+  };
+
+  const handleKeyDown = (e) => {
+    const isMod = e.ctrlKey || e.metaKey;
+    if (!isMod) return;
+
+    const key = e.key.toLowerCase();
+
+    if (key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      if (undoStackRef.current.length > 0) {
+        const prev = undoStackRef.current.pop();
+        redoStackRef.current.push(lastValueRef.current);
+        lastValueRef.current = prev;
+        onChange(prev);
+      }
+    } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+      e.preventDefault();
+      if (redoStackRef.current.length > 0) {
+        const next = redoStackRef.current.pop();
+        undoStackRef.current.push(lastValueRef.current);
+        lastValueRef.current = next;
+        onChange(next);
+      }
+    }
+  };
+
+  return (
+    <div className="bg-background relative flex w-full overflow-hidden rounded-md border border-(--hairline) transition-colors focus-within:border-(--chip-border-hover)">
+      <div
+        ref={backdropRef}
+        className="pointer-events-none min-h-28 w-full overflow-hidden px-4 py-3 font-mono text-sm wrap-break-word whitespace-pre-wrap"
+        dangerouslySetInnerHTML={{ __html: highlightJvmArgs(value) + '<br />' }}
+      />
+      <textarea
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onScroll={handleScroll}
+        spellCheck={false}
+        placeholder="moreram morefps ultragraphics..."
+        className="caret-foreground absolute inset-0 h-full w-full resize-none bg-transparent px-4 py-3 font-mono text-sm wrap-break-word whitespace-pre-wrap text-transparent outline-none placeholder:text-(--muted-foreground)/50"
+      />
+    </div>
   );
 }
 
