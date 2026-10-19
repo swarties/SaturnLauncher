@@ -6,23 +6,28 @@
     <title>SaturnLauncher</title>
   </head>
   <body>
-    <div id="root"></div>
-    <script>
-      (function () {
-        try {
-          // Have to keep this list in sync with THEMES in src/stores/theme.js
-          var themeClasses = ['dark', 'light'];
-          var stored = localStorage.getItem('saturn.theme');
-          var cls = themeClasses.indexOf(stored) !== -1 ? stored : 'dark';
-          for (var i = 0; i < themeClasses.length; i++) {
-            document.documentElement.classList.remove(themeClasses[i]);
-          }
-          document.documentElement.classList.add(cls);
-        } catch (e) {
-          document.documentElement.classList.add('dark');
+  <div id="root"></div>
+  <script>
+    (function () {
+      try {
+        // Have to keep this list in sync with THEMES in src/stores/theme.js
+        var themeClasses = ['dark', 'light'];
+        var stored = localStorage.getItem('saturn.theme');
+        var cls = themeClasses.indexOf(stored) !== -1 ? stored : 'dark';
+        for (var i = 0; i < themeClasses.length; i++) {
+          document.documentElement.classList.remove(themeClasses[i]);
         }
-      })();
-    </script>
+        document.documentElement.classList.add(cls);
+
+        // Add OS class for platform-specific CSS
+        if (navigator.userAgent.includes('Windows')) {
+          document.documentElement.classList.add('is-windows');
+        }
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
     <script src="./src/main.jsx" type="module"></script>
   </body>
 </html>

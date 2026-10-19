@@ -348,6 +348,26 @@ textarea,
   font-weight: 300;
 }
 
+/* WebView2 (Windows) specific fixes */
+.is-windows.dark {
+  color-scheme: dark;
+}
+
+.is-windows.light {
+  color-scheme: light;
+}
+
+/* WebView2 (Windows) scrollbar rendering fix */
+.is-windows ::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 10px var(--scrollbar-thumb);
+}
+
+.is-windows ::-webkit-scrollbar-thumb:hover {
+  box-shadow: inset 0 0 0 10px var(--scrollbar-thumb-hover);
+}
+
 .saturn-slider {
   appearance: none;
   -webkit-appearance: none;
