@@ -726,7 +726,7 @@ func (a *App) InstallContent(folderId, contentType, path string) (string, error)
 		defer reader.Close()
 		for _, f := range reader.File {
 			if f.FileInfo().IsDir() {
-				continued
+				continue
 			}
 			if filepath.Base(f.Name) == "pack.mcmeta" {
 				foundPackMcmeta = true
