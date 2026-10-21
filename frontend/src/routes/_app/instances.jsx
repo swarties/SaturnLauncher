@@ -197,7 +197,7 @@ function InstancesPage() {
                         </div>
                         <div className="flex h-14 items-center justify-center">
                           <p className="text-foreground text-lg font-thin tracking-wide">
-                            We're redirecting you, hang tight
+                            We&#39;re redirecting you, hang tight
                             <AnimatedDots />
                           </p>
                         </div>
