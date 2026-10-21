@@ -453,7 +453,6 @@ func (a *App) GetVersions() ([]download.Version, error) {
 	return filteredManifest.Versions, nil
 }
 
-// init instancemanager
 func (a *App) ListInstances() ([]instances.Instance, error) {
 	return a.InstanceManager.ListInstances()
 }
@@ -492,6 +491,7 @@ func (a *App) UpdateMem(folderId string, minram, maxram int) error {
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
 }
+
 func (a *App) RenameInstance(folderId, name string) error {
 	err := a.InstanceManager.RenameInstance(folderId, name)
 	if err != nil {
@@ -726,7 +726,7 @@ func (a *App) InstallContent(folderId, contentType, path string) (string, error)
 		defer reader.Close()
 		for _, f := range reader.File {
 			if f.FileInfo().IsDir() {
-				continue
+				continued
 			}
 			if filepath.Base(f.Name) == "pack.mcmeta" {
 				foundPackMcmeta = true

@@ -141,6 +141,13 @@ type VersionInfo struct {
 	Dependencies    []VersionDependencies `json:"dependencies"`
 }
 
+type Manifest struct {
+	Filename  string `json:"filename"`
+	ProjectId string `json:"projectId"`
+	VersionId string `json:"versionId"`
+	Hash      string `json:"hash"`
+}
+
 func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query string) (*DiscoverProjects, error) {
 	categories = "fabric" // hardcoded as fabric cuz it's the only mod loader supported at this time
 	var discover DiscoverProjects
@@ -320,6 +327,11 @@ func (m *Modrinth) InstallModFile(v VersionInfo, folderId, contentType string) e
 		}
 		return fmt.Errorf("file sha1 mismatch. retry installing the mod")
 	}
+	err = m.SaveManifest(fileName, fileSha1, v.ID, v.ProjectID, folderId)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -357,6 +369,72 @@ func (m *Modrinth) InstallDeps(v VersionInfo, seen map[string]bool, folderId, co
 			return err
 		}
 	}
+	return nil
+}
 
+func (m *Modrinth) ReadManifest(folderId string) ([]Manifest, error) {
+	var modrinthManifest []Manifest
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	path := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "modrinth_manifest.json")
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		return []Manifest{}, nil
+	}
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(file, &modrinthManifest)
+	if err != nil {
+		return nil, err
+	}
+	return modrinthManifest, nil
+}
+
+func (m *Modrinth) SaveManifest(filename, sha1, versionId, projectId, folderId string) error {
+	var manifest []Manifest
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "modrinth_manifest.json")
+	file, err := os.ReadFile(path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	} else if len(file) > 0 {
+		err = json.Unmarshal(file, &manifest)
+		if err != nil {
+			return err
+		}
+	}
+	var modrinthManifest Manifest
+	modrinthManifest.Hash = sha1
+	modrinthManifest.Filename = filename
+	modrinthManifest.VersionId = versionId
+	modrinthManifest.ProjectId = projectId
+	found := false
+	for i, _ := range manifest {
+		if manifest[i].Filename == modrinthManifest.Filename {
+			manifest[i] = modrinthManifest
+			found = true
+			break
+		}
+	}
+	if !found {
+		manifest = append(manifest, modrinthManifest)
+	}
+	file, err = json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(path, file, 0o644)
+	if err != nil {
+		return err
+	}
 	return nil
 }
