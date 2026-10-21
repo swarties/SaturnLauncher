@@ -148,6 +148,15 @@ type Manifest struct {
 	Hash      string `json:"hash"`
 }
 
+type UpdateInfo struct {
+	OldFileName    string `json:"oldFileName"`
+	NewFileName    string `json:"newFileName"`
+	ProjectId      string `json:"projectId"`
+	CurrentVersion string `json:"currentVersion"`
+	NewVersion     string `json:"newVersion"`
+	NewDownloadUrl string `json:"newDownloadUrl"`
+}
+
 func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query string) (*DiscoverProjects, error) {
 	categories = "fabric" // hardcoded as fabric cuz it's the only mod loader supported at this time
 	var discover DiscoverProjects
@@ -437,4 +446,35 @@ func (m *Modrinth) SaveManifest(filename, sha1, versionId, projectId, folderId s
 		return err
 	}
 	return nil
+}
+
+func (m *Modrinth) GetContentUpdates(folderId, gameVersion string) ([]UpdateInfo, error) {
+	var updInfo []UpdateInfo
+	modInfo, err := m.ReadManifest(folderId)
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range modInfo {
+		versions, err := m.GetVersions(f.ProjectId, gameVersion)
+		if err != nil {
+			continue
+		}
+		latestVer := versions[0]
+		if f.VersionId != latestVer.ID {
+			var newInfo UpdateInfo
+			for _, v := range latestVer.Files {
+				if v.Primary == true {
+					newInfo.OldFileName = f.Filename
+					newInfo.NewFileName = v.Filename
+					newInfo.ProjectId = f.ProjectId
+					newInfo.CurrentVersion = f.VersionId
+					newInfo.NewVersion = latestVer.ID
+					newInfo.NewDownloadUrl = v.URL
+					updInfo = append(updInfo, newInfo)
+					break
+				}
+			}
+		}
+	}
+	return updInfo, nil
 }
