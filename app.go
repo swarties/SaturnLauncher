@@ -966,3 +966,11 @@ func (a *App) GetJavaArgs(folderId string) (string, error) {
 	}
 	return args, nil
 }
+
+func (a *App) GetContentUpdates(folderId, gameVersion string) ([]modrinth.UpdateInfo, error) {
+	updates, err := a.Modrinth.GetContentUpdates(folderId, gameVersion)
+	if err != nil {
+		return nil, err
+	}
+	return updates, nil
+}
