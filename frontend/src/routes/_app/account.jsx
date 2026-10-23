@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { createFileRoute } from '@tanstack/react-router';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 
 import {
   copyText,
@@ -11,14 +11,15 @@ import {
   startLogin,
 } from '@/lib/backend';
 import {
-  ChevronUp,
   ChevronDown,
+  ChevronUp,
   ExternalLink,
   LogOut,
   Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { refreshAccounts, useAccounts } from '@/stores/accounts';
+import { toast } from '@/stores/toasts';
 import {
   DeleteAccount,
   SetActiveAccount,
@@ -109,7 +110,7 @@ function AccountPage() {
       await SetActiveAccount(uuid);
       await StartApp();
     } catch (e) {
-      console.error('Switch failed:', e);
+      toast.error(e?.message ?? String(e));
     } finally {
       setSwitchBusy(null);
     }
@@ -131,7 +132,7 @@ function AccountPage() {
       }
       await StartApp();
     } catch (e) {
-      console.error('Delete failed:', e);
+      toast.error(e?.message ?? String(e));
     } finally {
       setDeleteBusy(null);
     }

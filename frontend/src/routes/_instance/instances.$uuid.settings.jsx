@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 
 import { useInstance } from '@/stores/instance';
 import { onFileDrop } from '@/lib/backend';
+import { toast } from '@/stores/toasts';
 
 import {
   GetTotalRam,
@@ -38,9 +39,7 @@ function SettingsTab() {
   const [totalRamMB, setTotalRamMB] = useState(null);
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
-  const [saveError, setSaveError] = useState(null);
   const [iconUploading, setIconUploading] = useState(false);
-  const [iconError, setIconError] = useState(null);
 
   useEffect(() => {
     GetTotalRam()
@@ -78,7 +77,6 @@ function SettingsTab() {
   const handleSave = async () => {
     if (saving || justSaved || !instance || !name.trim()) return;
     setSaving(true);
-    setSaveError(null);
     try {
       await RenameInstance(uuid, name.trim());
       await UpdateInstanceDescription(uuid, description);
@@ -91,13 +89,12 @@ function SettingsTab() {
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 1500);
     } catch (e) {
-      setSaveError(e?.message ?? String(e));
+      toast.error(e?.message ?? String(e));
       setSaving(false);
     }
   };
 
   const handleCancel = () => {
-    setSaveError(null);
     resetFromStore();
   };
 
@@ -110,13 +107,12 @@ function SettingsTab() {
   const handleUploadIcon = async () => {
     if (iconUploading) return;
     setIconUploading(true);
-    setIconError(null);
     try {
       const path = await PickInstanceIcon();
       if (!path) return;
       await SetInstanceIcon(uuid, path);
     } catch (e) {
-      setIconError(e?.message ?? String(e));
+      toast.error(e?.message ?? String(e));
     } finally {
       setIconUploading(false);
     }
@@ -125,11 +121,10 @@ function SettingsTab() {
   const handleDropUpload = async (path) => {
     if (iconUploading) return;
     setIconUploading(true);
-    setIconError(null);
     try {
       await SetInstanceIcon(uuid, path);
     } catch (e) {
-      setIconError(e?.message ?? String(e));
+      toast.error(e?.message ?? String(e));
     } finally {
       setIconUploading(false);
     }
@@ -162,7 +157,7 @@ function SettingsTab() {
                 iconError={iconError}
                 onUploadClick={handleUploadIcon}
                 onDropUpload={handleDropUpload}
-                onDropError={setIconError}
+                onDropError={() => toast.error(msg)}
                 compact={true}
               />
             </div>
@@ -218,14 +213,12 @@ function SettingsTab() {
             iconError={iconError}
             onUploadClick={handleUploadIcon}
             onDropUpload={handleDropUpload}
-            onDropError={setIconError}
+            onDropError={(msg) => toast.error(msg)}
             compact={false}
           />
         </div>
       </div>
-      {saveError && (
-        <p className="mt-6 text-xs font-thin text-red-400">{saveError}</p>
-      )}
+
       <div className="mt-auto flex justify-end gap-3 border-t border-(--divider) pt-6">
         <button
           type="button"
@@ -282,7 +275,6 @@ function IconField({
   uuid,
   iconSrc,
   iconUploading,
-  iconError,
   onUploadClick,
   onDropUpload,
   onDropError,
@@ -388,13 +380,6 @@ function IconField({
               ? 'Upload'
               : 'Upload Icon'}
         </button>
-        {iconError && (
-          <p
-            className={`mt-2 font-thin text-red-400 ${compact ? 'text-[0.6rem]' : 'text-xs'}`}
-          >
-            {iconError}
-          </p>
-        )}
       </div>
     </Field>
   );

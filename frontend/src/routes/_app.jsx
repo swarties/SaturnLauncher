@@ -7,15 +7,16 @@ import {
 } from '@tanstack/react-router';
 import { motion } from 'motion/react';
 import {
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
-  useLayoutEffect,
-  useCallback,
 } from 'react';
 import { GlassNavbar } from '@glinui/ui';
 import { useAuth } from '@/stores/auth';
 import { NAV_ITEMS } from '@/lib/nav-items';
+import { ToastContainer } from '@/components/ui/toast-container';
 
 export const Route = createFileRoute('/_app')({
   component: AppLayout,
@@ -224,6 +225,7 @@ function AppLayout() {
           <Outlet />
         </motion.div>
       </main>
+      <ToastContainer />
     </div>
   );
 }

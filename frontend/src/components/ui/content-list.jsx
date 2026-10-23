@@ -12,6 +12,7 @@ import {
 import { CONTENT_TYPES } from '@/lib/content-types';
 import { loadContent, patchContentItem, useContent } from '@/stores/content';
 import { onFileDrop } from '@/lib/backend';
+import { toast } from '@/stores/toasts';
 import {
   InstallContent,
   OpenContentFolder,
@@ -37,18 +38,6 @@ export function ContentList({ uuid, contentType }) {
   }, [rawItems, config.isShader]);
 
   const [query, setQuery] = useState('');
-  const [dropMessage, setDropMessage] = useState(null);
-  const dropMessageTimer = useRef(null);
-
-  const showDropMessage = (msg) => {
-    setDropMessage(msg);
-    if (dropMessageTimer.current) clearTimeout(dropMessageTimer.current);
-    dropMessageTimer.current = window.setTimeout(
-      () => setDropMessage(null),
-      4000
-    );
-  };
-
   const dragCounter = useRef(0);
   const [dragActive, setDragActive] = useState(false);
 
@@ -75,7 +64,7 @@ export function ContentList({ uuid, contentType }) {
       const invalidCount = paths.length - validPaths.length;
 
       if (validPaths.length === 0) {
-        showDropMessage(
+        toast.error(
           `Only ${config.extensions.join(', ')} files can be dropped here`
         );
         return;
@@ -86,12 +75,12 @@ export function ContentList({ uuid, contentType }) {
           await InstallContent(uuid, config.backendKey, path);
         }
         if (invalidCount > 0) {
-          showDropMessage(
+          toast.info(
             `Installed ${validPaths.length} file(s). Ignored ${invalidCount} invalid file(s).`
           );
         }
       } catch (e) {
-        showDropMessage(e?.message ?? String(e));
+        toast.error(e?.message ?? String(e));
       }
     });
   }, [uuid, contentType, config]);
@@ -131,7 +120,7 @@ export function ContentList({ uuid, contentType }) {
     try {
       await InstallContent(uuid, config.backendKey, '');
     } catch (e) {
-      showDropMessage(e?.message ?? String(e));
+      toast.error(e?.message ?? String(e));
     }
   };
 
@@ -139,7 +128,7 @@ export function ContentList({ uuid, contentType }) {
     try {
       await RemoveContent(uuid, config.backendKey, item.filename);
     } catch (e) {
-      showDropMessage(e?.message ?? String(e));
+      toast.error(e?.message ?? String(e));
     }
   };
 
@@ -163,7 +152,7 @@ export function ContentList({ uuid, contentType }) {
         enabled: !newEnabled,
         filename: item.filename,
       }));
-      showDropMessage(e?.message ?? String(e));
+      toast.error(e?.message ?? String(e));
     }
   };
 
@@ -185,12 +174,6 @@ export function ContentList({ uuid, contentType }) {
         onInstall={handleInstall}
         onOpenFolder={() => void OpenContentFolder(uuid, config.backendKey)}
       />
-
-      {dropMessage && (
-        <p className="shrink-0 text-xs font-thin text-(--warning-fg)">
-          {dropMessage}
-        </p>
-      )}
 
       <div
         data-srm-list

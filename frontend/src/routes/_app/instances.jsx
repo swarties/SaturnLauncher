@@ -14,6 +14,7 @@ import {
 import { VersionPicker } from '@/components/ui/version-picker.jsx';
 import { LoaderPicker } from '@/components/ui/loader-picker.jsx';
 import { FabricVersionPicker } from '@/components/ui/fabric-version-picker.jsx';
+import { toast } from '@/stores/toasts';
 import {
   MorphingDialog,
   MorphingDialogClose,
@@ -42,15 +43,9 @@ export const Route = createFileRoute('/_app/instances')({
 
 function InstancesPage() {
   const [instances, setInstances] = useState(/** @type {McInstance[]} */ ([]));
-  const [loadError, setLoadError] = useState(
-    /** @type {string | null} */ (null)
-  );
   const [creating, setCreating] = useState(false);
   const [installingPack, setInstallingPack] = useState(false);
   const [packSuccess, setPackSuccess] = useState(false);
-  const [packError, setPackError] = useState(
-    /** @type {string | null } */ (null)
-  );
   const navigate = Route.useNavigate();
 
   useEffect(() => {
@@ -61,11 +56,10 @@ function InstancesPage() {
         .then((list) => {
           if (cancelled) return;
           setInstances(/** @type {McInstance[]} */ (list ?? []));
-          setLoadError(null);
         })
         .catch((e) => {
           if (cancelled) return;
-          setLoadError(e?.message ?? String(e));
+          toast.error(e?.message ?? String(e));
         });
     };
 
@@ -81,7 +75,6 @@ function InstancesPage() {
   const handleInstallModpack = async (path = '') => {
     if (installingPack) return;
     setInstallingPack(true);
-    setPackError(null);
 
     try {
       const newUuid = await InstallMrpack(path);
@@ -96,7 +89,7 @@ function InstancesPage() {
         setInstallingPack(false);
       }
     } catch (e) {
-      setPackError(e?.message ?? String(e));
+      toast.error(e?.message ?? String(e));
       setInstallingPack(false);
     }
   };
@@ -110,11 +103,6 @@ function InstancesPage() {
   return (
     <div className="flex h-full w-full flex-col p-6">
       <MorphingDialog open={creating} onOpenChange={setCreating}>
-        {loadError && (
-          <p className="mb-4 text-xs font-thin text-red-400">
-            Failed to load instances: {loadError}
-          </p>
-        )}
         {isEmpty ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-8">
             <p className="text-muted-foreground text-5xl font-extralight tracking-tight">
@@ -244,11 +232,6 @@ function InstancesPage() {
                     )}
                   </AnimatePresence>
                 </div>
-                {packError && (
-                  <p className="mt-3 text-center text-xs font-thin text-red-400">
-                    {packError}
-                  </p>
-                )}
               </div>
               <div
                 className={`flex flex-col transition-opacity duration-300 ${installingPack ? 'pointer-events-none opacity-20' : ''}`}
@@ -328,17 +311,15 @@ function InstanceCard({ instance, onDelete, index }) {
 function DeleteConfirmContent({ instance, onDelete }) {
   const { setIsOpen } = useMorphingDialog();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(/** @type { string | null }*/ (null));
 
   const handleConfirm = async () => {
     if (busy) return;
     setBusy(true);
-    setError(null);
     try {
       await onDelete(instance);
       setIsOpen(false);
     } catch (e) {
-      setError(e?.message ?? String(e));
+      toast.error(e?.message ?? String(e));
     }
   };
 
@@ -352,7 +333,6 @@ function DeleteConfirmContent({ instance, onDelete }) {
         <span className="text-foreground">{instance.name}</span>? This cannot be
         undone.
       </MorphingDialogDescription>
-      {error && <p className="mt-3 text-xs font-thin text-red-400">{error}</p>}
       <div className="mt-6 flex justify-end gap-3">
         <button
           type="button"
@@ -413,8 +393,6 @@ function CreateInstanceForm() {
   const [partialUuid, setPartialUuid] = useState(
     /** @type {string | null} */ (null)
   );
-  const [error, setError] = useState(/** @type { string | null } */ (null));
-
   useEffect(() => {
     if (loader !== 'fabric') setFabricVersion('');
   }, [loader]);
@@ -426,7 +404,6 @@ function CreateInstanceForm() {
 
     setSubmitting(true);
     setPreventClose(true);
-    setError(null);
 
     let uuid = partialUuid;
 
@@ -444,7 +421,7 @@ function CreateInstanceForm() {
 
       setIsOpen(false);
     } catch (e) {
-      setError(e?.message ?? String(e));
+      toast.error(e?.message ?? String(e));
       setPartialUuid(uuid);
       setSubmitting(false);
       setPhase('idle');
@@ -522,7 +499,6 @@ function CreateInstanceForm() {
             </motion.div>
           )}
         </AnimatePresence>
-        {error && <p className="text-xs font-thin text-red-400">{error}</p>}
       </div>
 
       <div className="mt-auto flex justify-end gap-3 pt-6">
