@@ -987,3 +987,28 @@ func (a *App) ApplyContentUpdate(folderId, contentType, oldFileName, newVersionI
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
 }
+
+func (a *App) ListScreenshots(folderId string) ([]string, error) {
+	screenshots, err := a.InstanceManager.ListScreenshots(folderId)
+	if err != nil {
+		return nil, err
+	}
+	return screenshots, nil
+}
+
+func (a *App) GetScreenshot(folderId, filename string) (string, error) {
+	screenshot, err := a.InstanceManager.GetScreenshot(folderId, filename)
+	if err != nil {
+		return "", err
+	}
+	return screenshot, err
+}
+
+func (a *App) DeleteScreenshot(folderId, filename string) (bool, error) {
+	screenshot, err := a.InstanceManager.DeleteScreenshot(folderId, filename)
+	if err != nil {
+		return false, err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "screenshot:deleted", filename)
+	return screenshot, nil
+}
