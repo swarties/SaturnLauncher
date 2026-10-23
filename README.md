@@ -1,6 +1,12 @@
 # Saturn Launcher
 
 Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source Minecraft launcher!
+This project was made for the ThirdSpace YSWS.
+
+## Main Contributors
+
+- [@swarties](https://github.com/swarties) for all the front-end work
+- [@SlowOnARocketTM](https://github.com/SlowOnARocketTM) for all the back-end work
 
 ## System Requirements:
 - OS: Windows 10/11 (Requires WebView2; Comes with a regular Windows 11 install) or Linux
