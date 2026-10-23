@@ -1,6 +1,7 @@
 package main
 
 import (
+	"SaturnLauncher/backend/Skins"
 	"SaturnLauncher/backend/auth"
 	"SaturnLauncher/backend/download"
 	"SaturnLauncher/backend/fabric"
@@ -44,6 +45,7 @@ type App struct {
 	Mrpack            *modpacks.Mrpack
 	RunningInstances  map[string]*exec.Cmd
 	mu                sync.Mutex
+	Skins             *Skins.Skins
 }
 
 // NewApp creates a new App application struct
@@ -57,6 +59,7 @@ func NewApp() *App {
 		Modrinth:         modrinth.NewModrinth(),
 		Mrpack:           modpacks.NewMrpack(),
 		RunningInstances: make(map[string]*exec.Cmd),
+		Skins:            Skins.NewSkinsManager(),
 	}
 }
 
