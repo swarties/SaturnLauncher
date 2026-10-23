@@ -974,3 +974,16 @@ func (a *App) GetContentUpdates(folderId, gameVersion string) ([]modrinth.Update
 	}
 	return updates, nil
 }
+
+func (a *App) ApplyContentUpdate(folderId, contentType, oldFileName, newVersionId string) error {
+	err := a.RemoveContent(folderId, contentType, oldFileName)
+	if err != nil {
+		return err
+	}
+	_, err = a.InstallProjectContent(folderId, contentType, newVersionId)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}

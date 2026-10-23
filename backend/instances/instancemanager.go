@@ -2,6 +2,7 @@ package instances
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -305,8 +306,6 @@ func (i *InstanceManager) UpdateInstanceDescription(folderId, description string
 	return os.WriteFile(base, data, 0o600)
 }
 
-// add GetJavaArgs and UpdateJavaArgs
-
 func (i *InstanceManager) UpdateJavaArgs(folderId, args string) error {
 	inst, err := i.GetInstanceInfo(folderId)
 	if err != nil {
@@ -331,4 +330,74 @@ func (i *InstanceManager) GetJavaArgs(folderId string) (string, error) {
 		return "", err
 	}
 	return inst.JvmArgs, nil
+}
+
+func (i *InstanceManager) ListScreenshots(folderId string) ([]string, error) {
+	var ScreenshotFileNames []string
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return []string{}, err
+	}
+	ssPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "screenshots")
+	dir, err := os.ReadDir(ssPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return []string{}, err
+	}
+	for _, d := range dir {
+		if d.IsDir() {
+			continue
+		}
+		if !strings.HasSuffix(d.Name(), ".png") {
+			continue
+		}
+		ScreenshotFileNames = append(ScreenshotFileNames, d.Name())
+	}
+	return ScreenshotFileNames, nil
+}
+
+func (i *InstanceManager) GetScreenshot(folderId, filename string) (string, error) {
+	if strings.Contains(filename, "/") {
+		return "", fmt.Errorf("filename is invalid")
+	}
+	if strings.Contains(filename, "\\") {
+		return "", fmt.Errorf("filename is invalid")
+	}
+	if strings.Contains(filename, "..") {
+		return "", fmt.Errorf("filename is invalid")
+	}
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	ssPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "screenshots", filename)
+	file, err := os.ReadFile(ssPath)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(file), nil
+}
+
+func (i *InstanceManager) DeleteScreenshot(folderId, filename string) (bool, error) {
+	if strings.Contains(filename, "/") {
+		return false, fmt.Errorf("filename is invalid")
+	}
+	if strings.Contains(filename, "\\") {
+		return false, fmt.Errorf("filename is invalid")
+	}
+	if strings.Contains(filename, "..") {
+		return false, fmt.Errorf("filename is invalid")
+	}
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return false, err
+	}
+	ssPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "screenshots", filename)
+	err = os.Remove(ssPath)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
