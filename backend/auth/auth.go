@@ -91,7 +91,7 @@ func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 	if err != nil {
 		return nil, err
 	} else if resp.StatusCode == http.StatusOK {
-		fmt.Println("Successfully retrieved the OAuth Code!")
+		//fmt.Println("Successfully retrieved the OAuth Code!")
 
 		err := json.NewDecoder(resp.Body).Decode(&payload)
 		if err != nil {
@@ -127,7 +127,7 @@ func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessTok
 			return nil, err
 		}
 		if resp.StatusCode == http.StatusOK {
-			fmt.Println("User Logged In!")
+			// fmt.Println("User Logged In!")
 			err := json.NewDecoder(resp.Body).Decode(&accesstoken)
 			resp.Body.Close()
 			if err != nil {
@@ -284,7 +284,7 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 	if err != nil {
 		return MinecraftPayload{}, AuthInfo, err
 	} else if resp.StatusCode == http.StatusOK {
-		fmt.Println("Succesfully retrived the OAuth Code!")
+		//fmt.Println("Successfully retrieved the OAuth Code!")
 		err := json.NewDecoder(resp.Body).Decode(&newaccesskeys)
 		defer resp.Body.Close()
 		if err != nil {
