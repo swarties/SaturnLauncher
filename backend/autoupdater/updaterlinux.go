@@ -14,8 +14,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"golang.org/x/sys/windows/registry"
 )
 
 type Updater struct {
@@ -106,18 +104,18 @@ func (u *Updater) UpdateApp() {
 	}
 }
 
-func isNsisInstall() (bool, error) {
-	path := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\SaturnLauncherSaturnLauncher"
-
-	key, err := registry.OpenKey(registry.LOCAL_MACHINE, path, registry.QUERY_VALUE|registry.WOW64_64KEY)
-	if err != nil {
-		return false, err
-	}
-	defer key.Close()
-	value, _, err := key.GetStringValue("UninstallString")
-	if err != nil || value == "" {
-		return false, err
-	}
-
-	return true, nil
-}
+//func isNsisInstall() (bool, error) {
+//	path := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\SaturnLauncherSaturnLauncher"
+//
+//	key, err := registry.OpenKey(registry.LOCAL_MACHINE, path, registry.QUERY_VALUE|registry.WOW64_64KEY)
+//	if err != nil {
+//		return false, err
+//	}
+//	defer key.Close()
+//	value, _, err := key.GetStringValue("UninstallString")
+//	if err != nil || value == "" {
+//		return false, err
+//	}
+//
+//	return true, nil
+//}
