@@ -222,13 +222,16 @@ func (m *Modrinth) GetProject(projectId string) (*ProjectPage, error) {
 	return &modInfo, nil
 }
 
-func (m *Modrinth) GetVersions(projectId, gameVersion string) ([]VersionInfo, error) {
+func (m *Modrinth) GetVersions(projectId, gameVersion, projectType string) ([]VersionInfo, error) {
 	var verInfo []VersionInfo
 	if strings.TrimSpace(gameVersion) == "" {
 		return nil, fmt.Errorf("version is invalid")
 	}
 	gameVer := "[\"" + gameVersion + "\"]"
-	url := "https://api.modrinth.com/v2/project/" + projectId + "/version" + "&game_versions=" + url2.QueryEscape(gameVer)
+	url := "https://api.modrinth.com/v2/project/" + projectId + "/version" + "?game_versions=" + url2.QueryEscape(gameVer)
+	if projectType == "mod" {
+		url += "&loaders=" + url2.QueryEscape("[\"fabric\"]")
+	}
 	requests, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -338,7 +341,7 @@ func (m *Modrinth) InstallModFile(v VersionInfo, folderId, contentType string) e
 	return nil
 }
 
-func (m *Modrinth) InstallDeps(v VersionInfo, seen map[string]bool, folderId, contentType, gameVer string) error {
+func (m *Modrinth) InstallDeps(v VersionInfo, seen map[string]bool, folderId, contentType, gameVer, projectType string) error {
 	if seen[v.ProjectID] {
 		return nil
 	}
@@ -359,7 +362,7 @@ func (m *Modrinth) InstallDeps(v VersionInfo, seen map[string]bool, folderId, co
 			}
 			depVersion = version
 		} else if d.ProjectID != "" {
-			versions, err := m.GetVersions(d.ProjectID, gameVer)
+			versions, err := m.GetVersions(d.ProjectID, gameVer, projectType)
 			if err != nil {
 				return err
 			}
@@ -367,7 +370,7 @@ func (m *Modrinth) InstallDeps(v VersionInfo, seen map[string]bool, folderId, co
 		} else {
 			continue
 		}
-		err := m.InstallDeps(*depVersion, seen, folderId, contentType, gameVer)
+		err := m.InstallDeps(*depVersion, seen, folderId, contentType, gameVer, projectType)
 		if err != nil {
 			return err
 		}
@@ -442,14 +445,14 @@ func (m *Modrinth) SaveManifest(filename, sha1, versionId, projectId, folderId s
 	return nil
 }
 
-func (m *Modrinth) GetContentUpdates(folderId, gameVersion string) ([]UpdateInfo, error) {
+func (m *Modrinth) GetContentUpdates(folderId, gameVersion, projectType string) ([]UpdateInfo, error) {
 	var updInfo []UpdateInfo
 	modInfo, err := m.ReadManifest(folderId)
 	if err != nil {
 		return nil, err
 	}
 	for _, f := range modInfo {
-		versions, err := m.GetVersions(f.ProjectId, gameVersion)
+		versions, err := m.GetVersions(f.ProjectId, gameVersion, projectType)
 		if err != nil {
 			continue
 		}

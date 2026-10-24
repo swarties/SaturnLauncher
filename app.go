@@ -864,15 +864,15 @@ func (a *App) GetProjectPage(projectId string) (*modrinth.ProjectPage, error) {
 	return project, nil
 }
 
-func (a *App) GetProjectVersions(projectId, gameVersion string) ([]modrinth.VersionInfo, error) {
-	versions, err := a.Modrinth.GetVersions(projectId, gameVersion)
+func (a *App) GetProjectVersions(projectId, gameVersion, projectType string) ([]modrinth.VersionInfo, error) {
+	versions, err := a.Modrinth.GetVersions(projectId, gameVersion, projectType)
 	if err != nil {
 		return nil, err
 	}
 	return versions, nil
 }
 
-func (a *App) InstallProjectContent(folderId, contentType, versionId string) (string, error) {
+func (a *App) InstallProjectContent(folderId, contentType, versionId, projectType string) (string, error) {
 	instInfo, err := a.GetInstanceInfo(folderId)
 	if err != nil {
 		return "", err
@@ -882,7 +882,7 @@ func (a *App) InstallProjectContent(folderId, contentType, versionId string) (st
 		return "", err
 	}
 	seen := make(map[string]bool)
-	err = a.Modrinth.InstallDeps(*version, seen, instInfo.Uuid, contentType, instInfo.Version)
+	err = a.Modrinth.InstallDeps(*version, seen, instInfo.Uuid, contentType, instInfo.Version, projectType)
 	if err != nil {
 		return "", err
 	}
@@ -1023,20 +1023,20 @@ func (a *App) GetJavaArgs(folderId string) (string, error) {
 	return args, nil
 }
 
-func (a *App) GetContentUpdates(folderId, gameVersion string) ([]modrinth.UpdateInfo, error) {
-	updates, err := a.Modrinth.GetContentUpdates(folderId, gameVersion)
+func (a *App) GetContentUpdates(folderId, gameVersion, projectType string) ([]modrinth.UpdateInfo, error) {
+	updates, err := a.Modrinth.GetContentUpdates(folderId, gameVersion, projectType)
 	if err != nil {
 		return nil, err
 	}
 	return updates, nil
 }
 
-func (a *App) ApplyContentUpdate(folderId, contentType, oldFileName, newVersionId string) error {
+func (a *App) ApplyContentUpdate(folderId, contentType, oldFileName, newVersionId, projectType string) error {
 	err := a.RemoveContent(folderId, contentType, oldFileName)
 	if err != nil {
 		return err
 	}
-	_, err = a.InstallProjectContent(folderId, contentType, newVersionId)
+	_, err = a.InstallProjectContent(folderId, contentType, newVersionId, projectType)
 	if err != nil {
 		return err
 	}
