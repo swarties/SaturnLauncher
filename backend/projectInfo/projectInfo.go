@@ -1,5 +1,7 @@
 package projectInfo
 
-const Version = "1.1.0"
 const ContactEmail = "swarties@proton.me"
 const Name = "SaturnLauncher"
+const ReleaseTag = "1.2"
+const RepoOwner = "swarties"
+const UserAgent = "swarties/SaturnLauncher/" + ReleaseTag + " (" + ContactEmail + ")"

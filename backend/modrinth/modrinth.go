@@ -23,7 +23,7 @@ func NewModrinth() *Modrinth {
 	return &Modrinth{}
 }
 
-const userAgent = "swarties/SaturnLauncher/" + projectInfo.Version + " (" + projectInfo.ContactEmail + ")"
+const userAgent = projectInfo.UserAgent
 
 // structs made using https://transform.tools/json-to-go
 

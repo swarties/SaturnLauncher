@@ -3,6 +3,7 @@ package main
 import (
 	"SaturnLauncher/backend/Skins"
 	"SaturnLauncher/backend/auth"
+	"SaturnLauncher/backend/autoupdater"
 	"SaturnLauncher/backend/download"
 	"SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
@@ -46,6 +47,7 @@ type App struct {
 	RunningInstances  map[string]*exec.Cmd
 	mu                sync.Mutex
 	Skins             *Skins.Skins
+	Updater           *autoupdater.Updater
 }
 
 // NewApp creates a new App application struct
@@ -60,6 +62,7 @@ func NewApp() *App {
 		Mrpack:           modpacks.NewMrpack(),
 		RunningInstances: make(map[string]*exec.Cmd),
 		Skins:            Skins.NewSkinsManager(),
+		Updater:          autoupdater.NewUpdater(),
 	}
 }
 

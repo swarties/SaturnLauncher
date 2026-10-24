@@ -33,7 +33,7 @@ Unicode true
 ## Include the wails tools
 ####
 !include "wails_tools.nsh"
-
+!include "FileFunc.nsh"
 # The version information for this two must consist of 4 parts
 VIProductVersion "${INFO_PRODUCTVERSION}.0"
 VIFileVersion    "${INFO_PRODUCTVERSION}.0"
@@ -49,7 +49,9 @@ VIAddVersionKey "ProductName"     "${INFO_PRODUCTNAME}"
 ManifestDPIAware true
 
 !include "MUI.nsh"
+!insertmacro GetOptions
 
+# !define MUI_FINISHPAGE_RUN "$INSTDIR\SaturnLauncher.exe"
 !define MUI_ICON "..\icon.ico"
 !define MUI_UNICON "..\icon.ico"
 # !define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" #Include this to add a bitmap on the left side of the Welcome Page. Must be a size of 164x314
@@ -82,11 +84,25 @@ OutFile "..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the inst
   InstallDir "$PROGRAMFILES64\${INFO_COMPANYNAME}\${INFO_PRODUCTNAME}"
 !endif # Default installing folder ($PROGRAMFILES is Program Files folder).
 ShowInstDetails show # This will always show the installation details.
-
+var RelaunchApp
 Function .onInit
    !insertmacro wails.checkArchitecture
+
+   ${GetOptions} "$CMDLINE" "/RELAUNCH" $0
+
+   IfErrors no_relaunch
+        StrCpy $RelaunchApp "yes"
+        Goto done
+   no_relaunch:
+        StrCpy $RelaunchApp "no"
+   done:
 FunctionEnd
 
+
+Function .onInstSuccess
+    StrCmp $RelaunchApp "yes" 0 +2
+        Exec '"$INSTDIR\SaturnLauncher.exe"'
+FunctionEnd
 Section
     !insertmacro wails.setShellContext
 
