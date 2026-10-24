@@ -154,10 +154,9 @@ function SettingsTab() {
                 uuid={uuid}
                 iconSrc={iconSrc}
                 iconUploading={iconUploading}
-                iconError={iconError}
                 onUploadClick={handleUploadIcon}
                 onDropUpload={handleDropUpload}
-                onDropError={() => toast.error(msg)}
+                onDropError={(msg) => toast.error(msg)}
                 compact={true}
               />
             </div>
@@ -210,7 +209,6 @@ function SettingsTab() {
             uuid={uuid}
             iconSrc={iconSrc}
             iconUploading={iconUploading}
-            iconError={iconError}
             onUploadClick={handleUploadIcon}
             onDropUpload={handleDropUpload}
             onDropError={(msg) => toast.error(msg)}
@@ -293,7 +291,7 @@ function IconField({
         .map((el) => el?.closest?.('[data-icon-drop-zone]'))
         .find(Boolean);
 
-      if (!zone || zone.dataset.uuid !== uuid) return;
+      if (zone && zone.dataset.uuid !== uuid) return;
 
       const validPaths = paths.filter((p) => /\.(png|jpe?g)$/i.test(p));
 

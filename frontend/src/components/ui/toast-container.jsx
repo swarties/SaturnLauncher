@@ -11,9 +11,9 @@ const ICONS = {
 
 const STYLES = {
   success:
-    'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  error: 'border-(--danger-border) bg-(--danger-bg) text-(--danger-fg)',
-  info: 'border-(--chip-border) bg-(--chip-bg) text-(--chip-fg)',
+    'bg-card border-emerald-500/40 text-emerald-600 dark:text-emerald-400',
+  error: 'bg-card border-(--danger-border) text-(--danger-fg)',
+  info: 'bg-card border-(--chip-border) text-(--chip-fg)',
 };
 
 export function ToastContainer() {
@@ -22,7 +22,7 @@ export function ToastContainer() {
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="pointer-events-none fixed right-6 bottom-6 z-100 flex w-80 flex-col gap-3">
+    <div className="pointer-events-none fixed right-6 bottom-6 z-[100] flex w-80 flex-col gap-3">
       <AnimatePresence>
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} />
@@ -40,7 +40,7 @@ function ToastItem({ toast }) {
     <motion.div
       layout
       initial={{ opacity: 0, x: 50, scale: 0.95 }}
-      animate={{ opacity: 1, x: 100, scale: 0.95 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 100, scale: 0.95 }}
       transition={{ duration: 0.2, ease: [0.22, 1, 0.38, 1] }}
       onClick={() => toast.dismissible && removeToast(toast.id)}

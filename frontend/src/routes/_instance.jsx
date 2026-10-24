@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { ToastContainer } from '@/components/ui/toast-container';
 
 export const Route = createFileRoute('/_instance')({
   component: InstanceWindowLayout,
@@ -15,6 +16,7 @@ function InstanceWindowLayout() {
       <div className="relative z-10 h-full w-full">
         <Outlet />
       </div>
+      <ToastContainer />
     </div>
   );
 }

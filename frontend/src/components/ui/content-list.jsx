@@ -55,7 +55,7 @@ export function ContentList({ uuid, contentType }) {
         .map((el) => el?.closest?.('[data-srm-list]'))
         .find(Boolean);
 
-      if (!zone || zone.dataset.uuid !== uuid) return;
+      if (zone && zone.dataset.uuid !== uuid) return;
 
       const validPaths = paths.filter((p) =>
         config.extensions.some((ext) => p.toLowerCase().endsWith(ext))
@@ -84,12 +84,6 @@ export function ContentList({ uuid, contentType }) {
       }
     });
   }, [uuid, contentType, config]);
-
-  useEffect(() => {
-    return () => {
-      if (dropMessageTimer.current) clearTimeout(dropMessageTimer.current);
-    };
-  }, []);
 
   const handleDragEnter = (e) => {
     e.preventDefault();

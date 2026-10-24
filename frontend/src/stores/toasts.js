@@ -5,6 +5,19 @@ let nextId = 1;
 const listeners = new Set();
 const timers = new Map();
 
+const TOAST_HEIGHT_ESTIMATION = 80;
+const MAX_VIEWPORT_FRACTION = 0.9;
+
+function getMaxToasts() {
+  if (typeof window === 'undefined') return 5;
+  return Math.max(
+    2,
+    Math.floor(
+      (window.innerHeight * MAX_VIEWPORT_FRACTION) / TOAST_HEIGHT_ESTIMATION
+    )
+  );
+}
+
 function setState(patch) {
   state = { ...state, ...patch };
   listeners.forEach((l) => l());
@@ -29,7 +42,20 @@ function addToast({
 }) {
   const id = nextId++;
   const newToast = { id, message, type, duration, dismissible };
-  setState({ toasts: [...state.toasts, newToast] });
+
+  const maxToasts = getMaxToasts();
+  let currentToasts = state.toasts;
+
+  while (currentToasts.length >= maxToasts) {
+    const oldest = currentToasts[0];
+    if (timers.has(oldest.id)) {
+      clearTimeout(timers.get(oldest.id));
+      timers.delete(oldest.id);
+    }
+    currentToasts = currentToasts.slice(1);
+  }
+
+  setState({ toasts: [...currentToasts, newToast] });
 
   if (duration > 0) {
     const timer = setTimeout(() => removeToast(id), duration);
@@ -42,7 +68,7 @@ export function removeToast(id) {
     clearTimeout(timers.get(id));
     timers.delete(id);
   }
-  setState({ toast: state.toasts.filter((t) => t.id !== id) });
+  setState({ toasts: state.toasts.filter((t) => t.id !== id) });
 }
 
 export const toast = {

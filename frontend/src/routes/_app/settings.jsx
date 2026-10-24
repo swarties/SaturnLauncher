@@ -1,17 +1,22 @@
+import { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Check } from 'lucide-react';
 
-import { THEMES, useTheme, setTheme } from '@/stores/theme';
+import { setTheme, THEMES, useTheme } from '@/stores/theme';
 import { useLaunch } from '@/stores/launch';
+import { toast } from '@/stores/toasts';
 
 export const Route = createFileRoute('/_app/settings')({
   component: SettingsPage,
 });
 
+const SHOW_DEV_TOOLS = true;
+
 function SettingsPage() {
   const { id: activeId } = useTheme();
   const navigate = useNavigate();
   const { instances } = useLaunch();
+  const [toastText, setToastText] = useState('Scientists reveal the HI');
 
   const isAnyInstanceActive = Object.values(instances).some(
     (inst) => inst.phase === 'launching' || inst.phase === 'running'
@@ -49,6 +54,45 @@ function SettingsPage() {
           ))}
         </div>
       </section>
+      {SHOW_DEV_TOOLS && (
+        <section className="mt-10 max-w-3xl">
+          <p className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase">
+            Developer Tools
+          </p>
+          <div className="mt-4 flex flex-col gap-4 rounded-md border border-(--hairline) p-4">
+            <input
+              type="text"
+              value={toastText}
+              onChange={(e) => setToastText(e.target.value)}
+              placeholder="Hello stack"
+              className="bg-background text-foreground h-10 w-full rounded-md border border-(--hairline) px-3 text-sm outline-none focus:border-(--chip-border-hover)"
+            />
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => toast.info(toastText)}
+                className="h-9 flex-1 rounded-md border border-(--chip-border) bg-(--chip-bg) text-sm font-thin text-(--chip-fg) transition-colors hover:border-(--chip-border-hover) hover:bg-(--chip-bg-hover) hover:text-(--chip-fg-hover)"
+              >
+                Info
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.success(toastText)}
+                className="h-9 flex-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-sm font-thin text-emerald-600 transition-colors hover:border-emerald-500/60 hover:bg-emerald-500/20 dark:text-emerald-200"
+              >
+                Success
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.error(toastText)}
+                className="h-9 flex-1 rounded-md border border-(--danger-border) bg-(--danger-bg) text-sm font-thin text-(--danger-fg) transition-colors hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover)"
+              >
+                Error
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
       <section className="mt-10 max-w-3xl">
         <p className="text-muted-foreground tracking- text-sm font-thin uppercase">
           Advanced - <span className="text-red-300">Danger Zone</span>
