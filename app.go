@@ -91,6 +91,10 @@ func (a *App) startup(ctx context.Context) {
 		a.IsDiscordConnected = true
 		a.UpdateDiscordActivity("Idling...", "just... doing nothing i guess ?")
 	}()
+	go func() {
+		time.Sleep(3 * time.Second)
+		a.Updater.Update()
+	}()
 }
 
 func (a *App) UpdateDiscordActivity(state, details string) {

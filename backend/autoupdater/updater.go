@@ -89,17 +89,46 @@ func (u *Updater) UpdateApp() {
 				if err != nil {
 					return
 				}
-				// update using silent install ( /s )
+				// update using silent install ( /s ) + custom /RELAUNCH arg
 				cmd := exec.Command(tempDir, "/S", "/RELAUNCH")
 				err := cmd.Start()
 				if err == nil {
 					os.Exit(0)
 				}
 			} else {
-				// uhh either open browser to let user update ORRRR delete the .exe and replace it with a new one might be a tricky one
+				tempDir = filepath.Join(tempDir, "newSaturnBinary.exe")
+				for _, r := range release.Assets {
+					if strings.HasSuffix(r.Name, ".exe") && !strings.Contains(r.Name, "installer") {
+						_, err := dl.Downloader(tempDir, r.BrowserDownloadURL)
+						if err != nil {
+							return
+						}
+						break
+					}
+
+				}
+				batTemp := os.TempDir()
+				batTemp = filepath.Join(batTemp, "replaceSaturn.bat")
+				execPath, err := os.Executable()
+				if err != nil {
+					return
+				}
+				batContent := "timeout /t 2 /nobreak > NUL\n" +
+					"move /Y \"%TEMP%\\newSaturnBinary.exe\" \"" + execPath + "\"\n" +
+					"start \"\" \"" + execPath + "\"\n" +
+					"start /b \"\" cmd /c del \"%~f0\"&exit /b\n"
+
+				err = os.WriteFile(batTemp, []byte(batContent), 0644)
+				if err != nil {
+					return
+				}
+				cmd := exec.Command("cmd.exe", "/c", batTemp)
+				err = cmd.Start()
+				if err == nil {
+					os.Exit(0)
+				}
+				return
 			}
-		case "linux":
-			// nothing rn
 		default:
 			panic("vas ???????")
 		}
