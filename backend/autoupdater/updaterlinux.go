@@ -10,10 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"runtime"
-	"strings"
 )
 
 type Updater struct {
@@ -69,33 +66,11 @@ func (u *Updater) UpdateApp() {
 		// download updater
 		tempDir := os.TempDir()
 		dl := download.NewDownload()
-		isNsis, err := isNsisInstall()
+		// isNsis, err := isNsisInstall()
 		if err != nil {
 			return
 		}
 		switch osName {
-		case "windows":
-			if isNsis {
-				tempDir = filepath.Join(tempDir, "updater.exe")
-				var dlLink string
-				for _, r := range release.Assets {
-					if strings.Contains(r.Name, "installer") {
-						dlLink = r.BrowserDownloadURL
-					}
-				}
-				_, err = dl.Downloader(tempDir, dlLink)
-				if err != nil {
-					return
-				}
-				// update using silent install ( /s )
-				cmd := exec.Command(tempDir, "/S", "/RELAUNCH")
-				err := cmd.Start()
-				if err == nil {
-					os.Exit(0)
-				}
-			} else {
-				// uhh either open browser to let user update ORRRR delete the .exe and replace it with a new one might be a tricky one
-			}
 		case "linux":
 			// nothing rn
 		default:
