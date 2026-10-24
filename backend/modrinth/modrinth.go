@@ -158,20 +158,14 @@ type UpdateInfo struct {
 }
 
 func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query string) (*DiscoverProjects, error) {
-	categories = "fabric" // hardcoded as fabric cuz it's the only mod loader supported at this time
+	// categories = "fabric" // hardcoded as fabric cuz it's the only mod loader supported at this time
 	var discover DiscoverProjects
 	facets := [][]string{
 		{
-			"project_type=" + projectType,
+			"project_type:" + projectType,
 		},
 		{
-			"versions=" + version,
-		},
-		{
-			"categories=" + categories,
-		},
-		{
-			"environment=client_and_server",
+			"versions:" + version,
 		},
 	}
 	facetsJson, err := json.Marshal(facets)
