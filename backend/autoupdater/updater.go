@@ -1,3 +1,5 @@
+//go:build windows
+
 package autoupdater
 
 import (
@@ -42,7 +44,7 @@ type Assets struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
-func (u *Updater) FetchGhLatest() {
+func (u *Updater) UpdateApp() {
 	var release Release
 	osName := runtime.GOOS
 
@@ -97,7 +99,7 @@ func (u *Updater) FetchGhLatest() {
 				// uhh either open browser to let user update ORRRR delete the .exe and replace it with a new one might be a tricky one
 			}
 		case "linux":
-
+			// nothing rn
 		default:
 			panic("vas ???????")
 		}
