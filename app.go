@@ -27,27 +27,30 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/disintegration/imaging"
+	"github.com/hugolgst/rich-go/client"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
 
 type App struct {
-	ctx               context.Context
-	Auth              *auth.Auth
-	ActiveAccessToken string
-	Launch            *launch.Launch
-	Download          *download.Download
-	InstanceManager   *instances.InstanceManager
-	Fabric            *fabric.Fabric
-	Modrinth          *modrinth.Modrinth
-	Mrpack            *modpacks.Mrpack
-	RunningInstances  map[string]*exec.Cmd
-	mu                sync.Mutex
-	Skins             *Skins.Skins
-	Updater           *autoupdater.Updater
+	ctx                context.Context
+	Auth               *auth.Auth
+	ActiveAccessToken  string
+	Launch             *launch.Launch
+	Download           *download.Download
+	InstanceManager    *instances.InstanceManager
+	Fabric             *fabric.Fabric
+	Modrinth           *modrinth.Modrinth
+	Mrpack             *modpacks.Mrpack
+	RunningInstances   map[string]*exec.Cmd
+	mu                 sync.Mutex
+	Skins              *Skins.Skins
+	Updater            *autoupdater.Updater
+	IsDiscordConnected bool
 }
 
 // NewApp creates a new App application struct
@@ -80,11 +83,43 @@ func (a *App) startup(ctx context.Context) {
 	}
 	wailsRuntime.WindowSetMinSize(ctx, 1000, 700)
 	wailsRuntime.WindowSetMaxSize(ctx, 0, 0)
+	go func() {
+		err := client.Login("1563418347733786754")
+		if err != nil {
+			fmt.Print("couldn't find discord")
+		}
+		a.IsDiscordConnected = true
+		a.UpdateDiscordActivity("Idling...", "just... doing nothing i guess ?")
+	}()
+}
+
+func (a *App) UpdateDiscordActivity(state, details string) {
+	now := time.Now()
+	if a.IsDiscordConnected != true {
+		return
+	}
+	err := client.SetActivity(client.Activity{
+		Details:    details,
+		State:      state,
+		LargeImage: "",
+		LargeText:  "",
+		SmallImage: "",
+		SmallText:  "",
+		Party:      nil,
+		Timestamps: &client.Timestamps{
+			Start: &now, // why
+		},
+		Buttons: nil, // maybe use to join the same server or smth as an option ????
+	})
+	if err != nil {
+		fmt.Print("couldn't set activity")
+	}
 }
 
 // StartLogin is run in js on the login page
 func (a *App) StartLogin() {
 	go func() {
+		a.UpdateDiscordActivity("Logging In", "")
 		// 1. Get OAuth Device Code
 		payload, err := a.Auth.GetOAuthCode()
 		if err != nil {
@@ -267,6 +302,8 @@ func (a *App) StartGame(folderId string) error {
 		vInfo.Arguments.Game = append(vInfo.Arguments.Game, fInfo.Arguments.Game...)
 		vInfo.ID = fInfo.ID
 	}
+	a.UpdateDiscordActivity("Installing Game", "Installing Minecraft "+instInfo.Version)
+
 	err = a.Download.GetClientJar(*vInfo)
 	if err != nil {
 		return err
@@ -353,6 +390,7 @@ func (a *App) StartGame(folderId string) error {
 		}
 		return err
 	}
+	a.UpdateDiscordActivity("Starting Game", "Playing Minecraft "+instInfo.Version)
 	err = mc.Start()
 	if err != nil {
 		wailsRuntime.EventsEmit(a.ctx, "game:error", err.Error())
@@ -360,6 +398,7 @@ func (a *App) StartGame(folderId string) error {
 		if err != nil {
 			return err
 		}
+		a.UpdateDiscordActivity("Idling...", "just... doing nothing i guess ? Well they crashed.")
 		return err
 	}
 	a.mu.Lock()
@@ -398,6 +437,7 @@ func (a *App) StartGame(folderId string) error {
 	}()
 
 	go func() {
+		a.UpdateDiscordActivity("Playing Game", "Playing Minecraft "+instInfo.Version)
 		waitGroup.Wait()
 		err := mc.Wait()
 		var code int
@@ -418,9 +458,12 @@ func (a *App) StartGame(folderId string) error {
 			"folderId": folderId,
 			"exitCode": code,
 		})
+		a.UpdateDiscordActivity("Stopping Game", "Stopping Minecraft "+instInfo.Version)
+
 		a.mu.Lock()
 		delete(a.RunningInstances, folderId)
 		a.mu.Unlock()
+		a.UpdateDiscordActivity("Idling...", "just... doing nothing i guess ?")
 	}()
 	return nil
 }
@@ -943,6 +986,7 @@ func (a *App) InstallMrpack(modpackPath string) (string, error) {
 }
 
 func (a *App) KillGame(folderId string) error {
+	a.UpdateDiscordActivity("Killing Game", "Closing Minecraft")
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	mc, ok := a.RunningInstances[folderId]
@@ -953,6 +997,8 @@ func (a *App) KillGame(folderId string) error {
 	if err != nil {
 		return err
 	}
+	a.UpdateDiscordActivity("Idling...", "just... doing nothing i guess ?")
+
 	return nil
 }
 

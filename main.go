@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"embed"
 
+	"github.com/hugolgst/rich-go/client"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -38,6 +40,9 @@ func main() {
 		},
 		Bind: []interface{}{
 			app,
+		},
+		OnShutdown: func(ctx context.Context) {
+			client.Logout()
 		},
 	})
 
