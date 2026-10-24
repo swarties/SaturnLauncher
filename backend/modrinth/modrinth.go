@@ -228,7 +228,7 @@ func (m *Modrinth) GetVersions(projectId, gameVersion string) ([]VersionInfo, er
 		return nil, fmt.Errorf("version is invalid")
 	}
 	gameVer := "[\"" + gameVersion + "\"]"
-	url := "https://api.modrinth.com/v2/project/" + projectId + "/version" + "?loaders=" + url2.QueryEscape("[\"fabric\"]") + "&game_versions=" + url2.QueryEscape(gameVer)
+	url := "https://api.modrinth.com/v2/project/" + projectId + "/version" + "&game_versions=" + url2.QueryEscape(gameVer)
 	requests, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
