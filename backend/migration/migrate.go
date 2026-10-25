@@ -76,12 +76,12 @@ func (m *Migration) DetectLaunchers() ([]DetectedInstances, error) {
 		if !d.IsDir() {
 			continue
 		}
-		instances := DetectedInstances{
+		detectedInstances := DetectedInstances{
 			Name: d.Name(),
 			Path: filepath.Join(prismPath, d.Name()),
 			Type: "prism",
 		}
-		dInst = append(dInst, instances)
+		dInst = append(dInst, detectedInstances)
 	}
 	return dInst, nil
 }
@@ -146,6 +146,11 @@ func (m *Migration) ParsePrism(insts []DetectedInstances) ([]ParsedInstance, err
 		if exists {
 			pI.MinRam = cfg.Section("General").Key("MinMemAlloc").MustInt(1024)
 			pI.MaxRam = cfg.Section("General").Key("MaxMemAlloc").MustInt(4096)
+			if pI.MinRam > pI.MaxRam {
+				oldMax := pI.MaxRam
+				pI.MinRam = oldMax
+				pI.MaxRam = pI.MinRam
+			}
 		} else {
 			pI.MinRam = 1024
 			pI.MaxRam = 4096
@@ -260,21 +265,5 @@ func (m *Migration) TransferFromPrism(p ParsedInstance) (*instances.Instance, er
 			}
 		}
 	}
-	//folders := []string{"mods", "config", "saves", "resourcepacks", "shaderpacks"}
-	//for _, f := range folders {
-	//	srcDir := filepath.Join(p.Path, f)
-	//	dstDir := filepath.Join(newInstDir, f)
-	//	_, err := os.Stat(srcDir)
-	//	if err != nil {
-	//		if os.IsNotExist(err) {
-	//			continue
-	//		}
-	//		return nil, err
-	//	}
-	//	err = dataCopy(dstDir, srcDir)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
 	return instance, nil
 }

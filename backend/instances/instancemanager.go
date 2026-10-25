@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -132,16 +131,14 @@ func (i *InstanceManager) ListInstances() ([]Instance, error) {
 		var jsonFile Instance
 		if inst.IsDir() {
 			jsonPath := filepath.Join(base, inst.Name(), "instance.json")
-			jsonReader, err := os.Open(jsonPath)
+			bytes, err := os.ReadFile(jsonPath)
 			if err != nil {
-				continue
-			}
-			defer jsonReader.Close()
-			bytes, err := io.ReadAll(jsonReader)
-			if err != nil {
-				continue
+				return nil, err
 			}
 			err = json.Unmarshal(bytes, &jsonFile)
+			if err != nil {
+				return nil, err
+			}
 			instances = append(instances, jsonFile)
 		}
 	}
@@ -431,4 +428,32 @@ func (i *InstanceManager) UpdateJavaPath(folderId, javaPath string) error {
 		return err
 	}
 	return nil
+}
+
+func (i *InstanceManager) ListWorlds(folderId string) ([]string, error) {
+	var validWorlds []string
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	worldPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "saves")
+	dir, err := os.ReadDir(worldPath)
+	if err != nil {
+		return nil, nil
+	}
+	for _, d := range dir {
+		if !d.IsDir() {
+			continue
+		}
+		datFile := filepath.Join(worldPath, d.Name(), "level.dat")
+		_, err := os.Stat(datFile)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+		validWorlds = append(validWorlds, d.Name())
+	}
+	return validWorlds, nil
 }

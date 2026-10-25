@@ -436,15 +436,14 @@ func (a *Auth) ListAccounts() ([]AuthSession, error) {
 		dirName := filepath.Join(targetdir, d.Name())
 		file, err := os.ReadFile(dirName)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		err = json.Unmarshal(file, &auth)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		AccountList = append(AccountList, auth)
 	}
-
 	return AccountList, nil
 }
 

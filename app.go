@@ -535,6 +535,11 @@ func (a *App) CreateInstance(name string, version string) (*instances.Instance, 
 }
 
 func (a *App) DeleteInstance(id string) (bool, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if _, d := a.RunningInstances[id]; d {
+		return false, fmt.Errorf("instance is running")
+	}
 	instance, err := a.InstanceManager.DeleteInstance(id)
 	if err != nil {
 		return false, err
@@ -915,7 +920,7 @@ func (a *App) GetInstanceLogs(folderId string) (string, error) {
 	file, err := os.ReadFile(logsLocation)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil
+			return "", fmt.Errorf("no log file exists - launch the game first")
 		}
 		return "", err
 	}
