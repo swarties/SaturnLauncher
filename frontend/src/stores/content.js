@@ -95,10 +95,29 @@ export async function loadContent(uuid, contentType, { silent = false } = {}) {
 
   try {
     const backendKey = CONTENT_TYPES[contentType].backendKey;
-    const raw = await GetInstalledContent(uuid, backendKey);
+    const TIMEOUT_MS = 5000;
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              'Request timed out. The backend might be locked or hanging.'
+            )
+          ),
+        TIMEOUT_MS
+      )
+    );
+
+    const raw = await Promise.race([
+      GetInstalledContent(uuid, backendKey),
+      timeoutPromise,
+    ]);
+
     const items = (raw ?? []).map(itemFromRaw);
     setEntry(key, { items, loading: false, error: null, loaded: true });
   } catch (e) {
+    console.error('Failed to load content:', e);
     setEntry(key, {
       loading: false,
       error: e?.message ?? String(e),

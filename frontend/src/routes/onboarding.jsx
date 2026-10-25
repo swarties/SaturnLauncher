@@ -1,9 +1,9 @@
 import {
-  useEffect,
-  useState,
-  useRef,
-  useLayoutEffect,
   useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
 } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
@@ -271,7 +271,7 @@ function StageContent({ stage, username, profile, onAdvance, onComplete }) {
             className={ONBOARD_BUTTON}
             onClick={() => onAdvance(4)}
           >
-            Got it Welcome
+            Got it
             <ArrowRight aria-hidden="true" className={ONBOARD_ARROW} />
           </Button>
         </div>
@@ -293,7 +293,7 @@ function StageContent({ stage, username, profile, onAdvance, onComplete }) {
             className={`${ONBOARD_BUTTON} mt-[1.25vw]`}
             onClick={onComplete}
           >
-            Let's go Welcome
+            Let's go
             <ArrowRight aria-hidden="true" className={ONBOARD_ARROW} />
           </Button>
         </div>

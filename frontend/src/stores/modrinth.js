@@ -9,10 +9,13 @@ import { toast } from '@/stores/toasts';
 let state = {
   query: '',
   activeTab: 'mod', // mod, resourcepack, shader
+  sortBy: 'relevance',
   results: [],
   loading: false,
   error: null,
   installing: {}, // { [projectId]: boolean }
+  installed: {}, // { [projectId]: boolean }
+  versions: {}, // { [projectId]: { loading: boolean, data: Array } }
 };
 
 const listeners = new Set();
@@ -30,6 +33,10 @@ export function useModrinth() {
   return useSyncExternalStore(subscribe, () => state);
 }
 
+export function setSortBy(sortBy) {
+  setState({ sortBy });
+}
+
 export async function fetchDiscovery(uuid, version, query, tab) {
   setState({ query, activeTab: tab, loading: true, error: null });
   try {
@@ -40,26 +47,52 @@ export async function fetchDiscovery(uuid, version, query, tab) {
   }
 }
 
-export async function installMod(uuid, projectId, gameVersion, projectType) {
+export async function fetchVersions(projectId, gameVersion, projectType) {
+  if (state.versions[projectId]?.data || state.versions[projectId]?.loading)
+    return;
+
+  setState({ versions: { ...state.versions, [projectId]: { loading: true } } });
+
+  try {
+    const res = await GetProjectVersions(projectId, gameVersion, projectType);
+    setState({
+      versions: { ...state.versions, [projectId]: { data: res ?? [] } },
+    });
+  } catch (e) {
+    console.error('Failed to load versions:', e);
+    setState({ versions: { ...state.versions, [projectId]: { data: [] } } });
+    toast.error(e?.message ?? 'Failed to load versions');
+  }
+}
+
+export async function installMod(
+  uuid,
+  projectId,
+  versionId,
+  versionName,
+  projectType
+) {
   if (state.installing[projectId]) return;
 
   setState({ installing: { ...state.installing, [projectId]: true } });
 
   try {
-    const versions = await GetProjectVersions(projectId, gameVersion);
-    if (!versions || versions.length === 0) {
-      throw new Error('No compatible versions found for this instance');
-    }
-    const latestVersion = versions[0];
-
     const contentType =
       projectType === 'mod'
         ? 'mods'
         : projectType === 'resourcepack'
           ? 'resourcepacks'
           : 'shaders';
-    await InstallProjectContent(uuid, contentType, latestVersion.id);
+
+    await InstallProjectContent(uuid, contentType, versionId, projectType);
+
+    toast.success(`Installed ${versionName}`);
+    setState({ installed: { ...state.installed, [projectId]: true } });
+    setTimeout(() => {
+      setState({ installed: { ...state.installed, [projectId]: false } });
+    }, 3000);
   } catch (e) {
+    console.error('Failed to install mod:', e);
     toast.error(e?.message ?? 'Failed to install');
   } finally {
     setState({ installing: { ...state.installing, [projectId]: false } });

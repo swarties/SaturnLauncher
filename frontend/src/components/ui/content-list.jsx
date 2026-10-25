@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Compass,
   FileArchive,
   FolderOpen,
   Package,
@@ -8,6 +9,7 @@ import {
   Search,
   X,
 } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
 
 import { CONTENT_TYPES } from '@/lib/content-types';
 import { loadContent, patchContentItem, useContent } from '@/stores/content';
@@ -21,29 +23,39 @@ import {
 } from '../../../wailsjs/go/main/App';
 
 export function ContentList({ uuid, contentType }) {
+  const navigate = useNavigate();
   const config = CONTENT_TYPES[contentType];
   const { entries } = useContent();
-  const key = `${uuid}:${contentType}`;
-  const entry = entries[key];
-  const rawItems = entry?.items ?? [];
-
-  const items = useMemo(() => {
-    if (config.isShader === true) {
-      return rawItems.filter((i) => i.isShader === true);
-    }
-    if (config.isShader === false) {
-      return rawItems.filter((i) => i.isShader === false);
-    }
-    return rawItems;
-  }, [rawItems, config.isShader]);
 
   const [query, setQuery] = useState('');
   const dragCounter = useRef(0);
   const [dragActive, setDragActive] = useState(false);
+  const searchRef = useRef(null);
 
   useEffect(() => {
     void loadContent(uuid, contentType);
   }, [uuid, contentType]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const active = document.activeElement;
+      if (
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          active.isContentEditable)
+      )
+        return;
+
+      if (e.key.length === 1) {
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     return onFileDrop(async (x, y, paths) => {
@@ -84,6 +96,30 @@ export function ContentList({ uuid, contentType }) {
       }
     });
   }, [uuid, contentType, config]);
+
+  const key = `${uuid}:${contentType}`;
+  const entry = entries[key];
+  const rawItems = entry?.items ?? [];
+
+  const items = useMemo(() => {
+    if (config.isShader === true) {
+      return rawItems.filter((i) => i.isShader === true);
+    }
+    if (config.isShader === false) {
+      return rawItems.filter((i) => i.isShader === false);
+    }
+    return rawItems;
+  }, [rawItems, config.isShader]);
+
+  if (!uuid) {
+    return (
+      <div className="flex h-full items-center justify-center p-8">
+        <p className="text-center text-sm font-thin text-red-400">
+          Error: Missing Instance UUID. Please refresh the page.
+        </p>
+      </div>
+    );
+  }
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -151,14 +187,14 @@ export function ContentList({ uuid, contentType }) {
   };
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return rawItems;
+    if (!query.trim()) return items;
     const q = query.toLowerCase();
-    return rawItems.filter(
+    return items.filter(
       (i) =>
         i.displayName.toLowerCase().includes(q) ||
         i.filename.toLowerCase().includes(q)
     );
-  }, [rawItems, query]);
+  }, [items, query]);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col gap-4">
@@ -167,6 +203,10 @@ export function ContentList({ uuid, contentType }) {
         onQueryChange={setQuery}
         onInstall={handleInstall}
         onOpenFolder={() => void OpenContentFolder(uuid, config.backendKey)}
+        onBrowse={() =>
+          navigate({ to: '/instances/$uuid/modrinth', params: { uuid } })
+        }
+        searchRef={searchRef}
       />
 
       <div
@@ -199,13 +239,13 @@ export function ContentList({ uuid, contentType }) {
               '--wails-drop-target': 'drop',
             })
           }
-          className="h-full [scrollbar-gutter:stable] overflow-y-auto overscroll-contain"
+          className="h-full scrollbar-gutter-stable overflow-y-auto overscroll-contain"
         >
           {entry?.error ? (
             <EmptyState>Failed to load: {entry.error}</EmptyState>
-          ) : (entry?.loading ?? true) && rawItems.length === 0 ? (
+          ) : (entry?.loading ?? true) && items.length === 0 ? (
             <EmptyState>Loading...</EmptyState>
-          ) : rawItems.length === 0 ? (
+          ) : items.length === 0 ? (
             <NoContentState config={config} onInstall={handleInstall} />
           ) : filtered.length === 0 ? (
             <EmptyState>No matches for &quot;{query}&quot;.</EmptyState>
@@ -227,7 +267,14 @@ export function ContentList({ uuid, contentType }) {
   );
 }
 
-function ContentHeader({ query, onQueryChange, onInstall, onOpenFolder }) {
+function ContentHeader({
+  query,
+  onQueryChange,
+  onInstall,
+  onOpenFolder,
+  onBrowse,
+  searchRef,
+}) {
   return (
     <div className="flex shrink-0 items-center gap-3">
       <div className="relative flex-1">
@@ -236,6 +283,7 @@ function ContentHeader({ query, onQueryChange, onInstall, onOpenFolder }) {
           aria-hidden="true"
         />
         <input
+          ref={searchRef}
           type="text"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -245,6 +293,15 @@ function ContentHeader({ query, onQueryChange, onInstall, onOpenFolder }) {
           className="bg-background text-foreground placeholder:text-muted-foreground/50 h-10 w-full rounded-md border border-(--hairline) pr-4 pl-9 font-mono text-sm transition-colors outline-none focus:border-(--chip-border-hover)"
         />
       </div>
+      <button
+        type="button"
+        onClick={onBrowse}
+        data-tooltip="Browse Modrinth"
+        aria-label="Browse Modrinth"
+        className="text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-(--hairline) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
+      >
+        <Compass className="size-4" aria-hidden="true" />
+      </button>
       <button
         type="button"
         onClick={onInstall}
