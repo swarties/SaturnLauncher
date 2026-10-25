@@ -1068,3 +1068,27 @@ func (a *App) DeleteScreenshot(folderId, filename string) (bool, error) {
 	wailsRuntime.EventsEmit(a.ctx, "screenshot:deleted", filename)
 	return screenshot, nil
 }
+
+func (a *App) GetSkinByUsername(username string) (string, error) {
+	byUsername, err := a.Skins.GetSkinByUsername(username)
+	if err != nil {
+		return "", err
+	}
+	return byUsername, nil
+}
+
+func (a *App) UploadSkin(path, variant string) error {
+	account, err := a.Auth.GetActiveAccount()
+	if err != nil {
+		return err
+	}
+	token, _, err := a.Auth.RefreshMinecraftToken(*account)
+	if err != nil {
+		return err
+	}
+	err = a.Skins.UploadSkin(path, variant, token.AccessToken)
+	if err != nil {
+		return err
+	}
+	return nil
+}

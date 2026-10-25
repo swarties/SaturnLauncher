@@ -130,21 +130,27 @@ func (s *Skins) UploadSkin(path, variant, accessToken string) error {
 	if err != nil {
 		return err
 	}
-	writer.Close()
-
 	request, err := http.NewRequest("PUT", "https://api.minecraftservices.com/minecraft/profile/skins", &buffer)
 	if err != nil {
 		return err
 	}
 	request.Header.Add("Content-Type", writer.FormDataContentType())
-	request.Header.Add("Bearer ", accessToken)
+	request.Header.Add("Authorization", "Bearer "+accessToken)
+	err = writer.Close()
+	if err != nil {
+		return err
+	}
 	do, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
 	defer do.Body.Close()
 	if do.StatusCode != http.StatusOK {
-		return fmt.Errorf("couldn't upload the skin. error was %d. response body: %d", err, do.Body)
+		all, err := io.ReadAll(do.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("couldn't upload the skin. error was %s. response body: %v", err, all)
 	}
 	return nil
 }
