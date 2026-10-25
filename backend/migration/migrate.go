@@ -1,6 +1,8 @@
 package migration
 
 import (
+	fabric2 "SaturnLauncher/backend/fabric"
+	"SaturnLauncher/backend/instances"
 	"context"
 	"encoding/json"
 	"io"
@@ -139,15 +141,43 @@ func (m *Migration) ParsePrism(insts []DetectedInstances) ([]ParsedInstance, err
 			continue
 		}
 		pI.Name = cfg.Section("General").Key("name").String()
-		pI.MinRam = cfg.Section("General").Key("MinMemAlloc").MustInt(1024)
-		pI.MaxRam = cfg.Section("General").Key("MaxMemAlloc").MustInt(4096)
+		section := cfg.Section("General")
+		exists := section.HasKey("MinMemAlloc")
+		if exists {
+			pI.MinRam = cfg.Section("General").Key("MinMemAlloc").MustInt(1024)
+			pI.MaxRam = cfg.Section("General").Key("MaxMemAlloc").MustInt(4096)
+		} else {
+			pI.MinRam = 1024
+			pI.MaxRam = 4096
+		}
 		parsedInsts = append(parsedInsts, pI)
 	}
 	return parsedInsts, nil
 }
 
+func copyFile(src, dst string) error {
+	open, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer open.Close()
+	create, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer create.Close()
+	_, err = io.Copy(create, open)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func dataCopy(dst, src string) error {
-	os.MkdirAll(dst, 0o755)
+	err := os.MkdirAll(dst, 0o755)
+	if err != nil {
+		return err
+	}
 	dir, err := os.ReadDir(src)
 	if err != nil {
 		return err
@@ -160,26 +190,9 @@ func dataCopy(dst, src string) error {
 			if derr != nil {
 				return derr
 			}
+			continue
 		}
-		open, err := os.Open(srcPath)
-		if err != nil {
-			return err
-		}
-
-		create, err := os.Create(dstPath)
-		if err != nil {
-			return err
-		}
-
-		_, err = io.Copy(create, open)
-		if err != nil {
-			return err
-		}
-		err = open.Close()
-		if err != nil {
-			return err
-		}
-		err = create.Close()
+		err := copyFile(srcPath, dstPath)
 		if err != nil {
 			return err
 		}
@@ -187,6 +200,81 @@ func dataCopy(dst, src string) error {
 	return nil
 }
 
-func (m *Migration) TransferFromPrism(parsedInsts []ParsedInstance) {
-
+func (m *Migration) TransferFromPrism(p ParsedInstance) (*instances.Instance, error) {
+	appdata, err := os.UserConfigDir()
+	fabric := fabric2.NewFabric()
+	if err != nil {
+		return nil, err
+	}
+	i := instances.NewInstanceManager()
+	instance, err := i.CreateInstance(p.Name, p.McVersion)
+	if err != nil {
+		return nil, err
+	}
+	fId := instance.Uuid
+	if p.FabricVersion != "" {
+		f, err := fabric.InstallFabric(p.McVersion, p.FabricVersion)
+		if err != nil {
+			return nil, err
+		}
+		err = i.UpdateFabricVersion(fId, f)
+		if err != nil {
+			return nil, err
+		}
+	}
+	err = i.UpdateMemory(fId, p.MinRam, p.MaxRam)
+	if err != nil {
+		return nil, err
+	}
+	newInstDir := filepath.Join(appdata, "SaturnLauncher", "instances", instance.Uuid)
+	_, err = os.Stat(p.Path)
+	if err != nil {
+		return nil, err
+	}
+	dir, err := os.ReadDir(p.Path)
+	if err != nil {
+		return nil, err
+	}
+	skipList := []string{"mmc-pack.json", "instance.cfg", ".minecraft", "patches", ".index", "logs", "crash-reports"}
+	for _, d := range dir {
+		var skip bool
+		for _, s := range skipList {
+			if d.Name() == s {
+				skip = true
+			}
+		}
+		if skip {
+			continue
+		}
+		dstPath := filepath.Join(newInstDir, d.Name())
+		srcPath := filepath.Join(p.Path, d.Name())
+		if d.IsDir() {
+			err := dataCopy(dstPath, srcPath)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err := copyFile(srcPath, dstPath)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	//folders := []string{"mods", "config", "saves", "resourcepacks", "shaderpacks"}
+	//for _, f := range folders {
+	//	srcDir := filepath.Join(p.Path, f)
+	//	dstDir := filepath.Join(newInstDir, f)
+	//	_, err := os.Stat(srcDir)
+	//	if err != nil {
+	//		if os.IsNotExist(err) {
+	//			continue
+	//		}
+	//		return nil, err
+	//	}
+	//	err = dataCopy(dstDir, srcDir)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
+	return instance, nil
 }
