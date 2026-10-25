@@ -225,6 +225,9 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, fol
 		}
 		return nil, err
 	}
+	if len(file) == 0 {
+		return &discover, nil
+	}
 	var manifest []Manifest
 	err = json.Unmarshal(file, &manifest)
 	if err != nil {

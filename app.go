@@ -868,7 +868,7 @@ func (a *App) RemoveContent(folderId, contentType, filename string) error {
 	return nil
 }
 
-func (a *App) GetDiscoveryPage(projectType, version, categories, folderId, query string) (*modrinth.DiscoverProjects, error) {
+func (a *App) GetDiscoveryPage(projectType, version, categories, query, folderId string) (*modrinth.DiscoverProjects, error) {
 	discoveryPage, err := a.Modrinth.GetDiscoveryPage(projectType, version, categories, query, folderId)
 	if err != nil {
 		return nil, err
