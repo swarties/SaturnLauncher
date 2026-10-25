@@ -35,6 +35,7 @@ type Instance struct {
 	MaxRam        int    `json:"maxram"`
 	FabricVersion string `json:"fabricVersion,omitempty"`
 	JvmArgs       string `json:"jvmArgs"`
+	JavaPath      string `json:"javaPath,omitempty"`
 }
 type Ram struct {
 	TotalRamMB int
@@ -400,4 +401,34 @@ func (i *InstanceManager) DeleteScreenshot(folderId, filename string) (bool, err
 		return false, err
 	}
 	return true, nil
+}
+
+func (i *InstanceManager) GetJavaPath(folderId string) (string, error) {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return "", err
+	}
+	return inst.JavaPath, nil
+}
+
+func (i *InstanceManager) UpdateJavaPath(folderId, javaPath string) error {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	inst.JavaPath = javaPath
+	indent, err := json.MarshalIndent(inst, "", "  ")
+	if err != nil {
+		return err
+	}
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	jsonFile := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "instance.json")
+	err = os.WriteFile(jsonFile, indent, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
 }

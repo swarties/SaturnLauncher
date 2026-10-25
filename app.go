@@ -332,9 +332,21 @@ func (a *App) StartGame(folderId string) error {
 		return err
 	}
 	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Installing Java")
-	ensureJava, err := a.Download.EnsureJava(*vInfo)
-	if err != nil {
-		return err
+	var ensureJava *string
+	if instInfo.JavaPath != "" {
+		_, err := os.Stat(instInfo.JavaPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("custom java path not found. %s", err)
+			}
+			return err
+		}
+		ensureJava = &instInfo.JavaPath
+	} else {
+		ensureJava, err = a.Download.EnsureJava(*vInfo)
+		if err != nil {
+			return err
+		}
 	}
 	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Done!")
 	classpath, err := a.Launch.ClasspathBuilder(*vInfo)
@@ -1123,4 +1135,60 @@ func (a *App) TransferFromPrism(pi []migration.ParsedInstance) ([]*instances.Ins
 		wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	}
 	return newInsts, nil
+}
+
+func (a *App) GetJavaPath(folderId string) (string, error) {
+	path, err := a.InstanceManager.GetJavaPath(folderId)
+	if err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func (a *App) UpdateJavaPath(folderId, javaPath string) error {
+	err := a.InstanceManager.UpdateJavaPath(folderId, javaPath)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+
+func (a *App) PickJavaPath() (string, error) {
+	osName := runtime.GOOS
+	var pattern string
+	switch osName {
+	case "windows":
+		pattern = "*.exe"
+	case "linux":
+		pattern = "*"
+	}
+	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title: "Pick Java Executable",
+		Filters: []wailsRuntime.FileFilter{
+			{
+				DisplayName: "Java Executable",
+				Pattern:     pattern,
+			},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return "", err
+	}
+	stat, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	if stat.IsDir() {
+		switch osName {
+		case "windows":
+			path = filepath.Join(path, "bin", "java.exe")
+		case "linux":
+			path = filepath.Join(path, "bin", "java")
+		}
+	}
+	return path, nil
 }
