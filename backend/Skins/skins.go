@@ -2,11 +2,13 @@ package Skins
 
 import (
 	"SaturnLauncher/backend/download"
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -107,4 +109,42 @@ func (s *Skins) GetSkinByUsername(username string) (string, error) {
 	}
 	defer os.Remove(temp)
 	return base64.StdEncoding.EncodeToString(file), nil
+}
+
+func (s *Skins) UploadSkin(path, variant, accessToken string) error {
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var buffer bytes.Buffer
+	writer := multipart.NewWriter(&buffer)
+	err = writer.WriteField("variant", variant)
+	if err != nil {
+		return err
+	}
+	w, err := writer.CreateFormFile("file", "skin.png")
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(file)
+	if err != nil {
+		return err
+	}
+	writer.Close()
+
+	request, err := http.NewRequest("PUT", "https://api.minecraftservices.com/minecraft/profile/skins", &buffer)
+	if err != nil {
+		return err
+	}
+	request.Header.Add("Content-Type", writer.FormDataContentType())
+	request.Header.Add("Bearer ", accessToken)
+	do, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer do.Body.Close()
+	if do.StatusCode != http.StatusOK {
+		return fmt.Errorf("couldn't upload the skin. error was %d. response body: %d", err, do.Body)
+	}
+	return nil
 }
