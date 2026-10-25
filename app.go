@@ -7,6 +7,7 @@ import (
 	"SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/launch"
+	"SaturnLauncher/backend/migration"
 	"SaturnLauncher/backend/modpacks"
 	"SaturnLauncher/backend/modrinth"
 	"SaturnLauncher/backend/skins"
@@ -51,6 +52,7 @@ type App struct {
 	skins              *skins.Skins
 	Updater            *autoupdater.Updater
 	IsDiscordConnected bool
+	Migration          *migration.Migration
 }
 
 // NewApp creates a new App application struct
@@ -66,6 +68,7 @@ func NewApp() *App {
 		RunningInstances: make(map[string]*exec.Cmd),
 		skins:            skins.NewSkinsManager(),
 		Updater:          autoupdater.NewUpdater(),
+		Migration:        migration.NewMigration(),
 	}
 }
 
@@ -1091,4 +1094,33 @@ func (a *App) UploadSkin(path, variant string) error {
 		return err
 	}
 	return nil
+}
+
+func (a *App) DetectInstances() ([]migration.DetectedInstances, error) {
+	newInst, err := a.Migration.DetectLaunchers()
+	if err != nil {
+		return nil, err
+	}
+	return newInst, nil
+}
+
+func (a *App) ParsePrism(insts []migration.DetectedInstances) ([]migration.ParsedInstance, error) {
+	prism, err := a.Migration.ParsePrism(insts)
+	if err != nil {
+		return nil, err
+	}
+	return prism, nil
+}
+
+func (a *App) TransferFromPrism(pi []migration.ParsedInstance) ([]*instances.Instance, error) {
+	var newInsts []*instances.Instance
+	for _, p := range pi {
+		prism, err := a.Migration.TransferFromPrism(p)
+		if err != nil {
+			return newInsts, err
+		}
+		newInsts = append(newInsts, prism)
+		wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	}
+	return newInsts, nil
 }
