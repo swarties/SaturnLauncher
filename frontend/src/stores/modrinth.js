@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import {
   GetDiscoveryPage,
+  GetProjectPage,
   GetProjectVersions,
   InstallProjectContent,
 } from '../../wailsjs/go/main/App';
@@ -16,6 +17,7 @@ let state = {
   installing: {}, // { [projectId]: boolean }
   installed: {}, // { [projectId]: boolean }
   versions: {}, // { [projectId]: { loading: boolean, data: Array } }
+  projects: {}, // { [projectId]: { loading, data, error } }
 };
 
 const listeners = new Set();
@@ -62,6 +64,38 @@ export async function fetchVersions(projectId, gameVersion, projectType) {
     console.error('Failed to load versions:', e);
     setState({ versions: { ...state.versions, [projectId]: { data: [] } } });
     toast.error(e?.message ?? 'Failed to load versions');
+  }
+}
+
+export async function fetchProject(projectId) {
+  const existing = state.projects[projectId];
+  if (existing?.data || existing?.loading) return;
+
+  setState({
+    projects: {
+      ...state.projects,
+      [projectId]: { loading: true, data: null, error: null },
+    },
+  });
+
+  try {
+    const res = await GetProjectPage(projectId);
+    setState({
+      projects: {
+        ...state.projects,
+        [projectId]: { loading: false, data: res ?? null, error: null },
+      },
+    });
+  } catch (e) {
+    console.error('Failed to load project:', e);
+    setState({
+      ...state.projects,
+      [projectId]: {
+        loading: false,
+        data: null,
+        error: e?.message ?? String(e),
+      },
+    });
   }
 }
 

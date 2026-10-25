@@ -67,39 +67,55 @@ type License struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
+
+type GalleryImage struct {
+	URL         string `json:"url"`
+	Featured    bool   `json:"featured"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Created     string `json:"created"`
+	Ordering    int    `json:"ordering"`
+}
+
+type DonationURL struct {
+	ID       string `json:"id"`
+	Platform string `json:"platform"`
+	URL      string `json:"url"`
+}
+
 type ProjectPage struct {
-	ClientSide           string            `json:"client_side"`
-	ServerSide           string            `json:"server_side"`
-	GameVersions         []string          `json:"game_versions"`
-	Environment          []string          `json:"environment"`
-	ID                   string            `json:"id"`
-	Slug                 string            `json:"slug"`
-	ProjectType          string            `json:"project_type"`
-	Team                 string            `json:"team"`
-	Organization         string            `json:"organization"`
-	Title                string            `json:"title"`
-	Description          string            `json:"description"`
-	Body                 string            `json:"body"`
-	BodyURL              string            `json:"body_url"`
-	Published            string            `json:"published"`
-	Updated              string            `json:"updated"`
-	Status               string            `json:"status"`
-	License              License           `json:"license"`
-	Downloads            int               `json:"downloads"`
-	Followers            int               `json:"followers"`
-	Categories           []string          `json:"categories"`
-	AdditionalCategories []string          `json:"additional_categories"`
-	Loaders              []string          `json:"loaders"`
-	Versions             []string          `json:"versions"`
-	IconURL              string            `json:"icon_url"`
-	RawIconURL           string            `json:"raw_icon_url"`
-	IssuesURL            string            `json:"issues_url"`
-	SourceURL            string            `json:"source_url"`
-	WikiURL              string            `json:"wiki_url"`
-	DiscordURL           string            `json:"discord_url"`
-	DonationUrls         map[string]string `json:"donation_urls"`
-	Gallery              map[string]any    `json:"gallery"`
-	Color                int               `json:"color"`
+	ClientSide           string         `json:"client_side"`
+	ServerSide           string         `json:"server_side"`
+	GameVersions         []string       `json:"game_versions"`
+	Environment          []string       `json:"environment"`
+	ID                   string         `json:"id"`
+	Slug                 string         `json:"slug"`
+	ProjectType          string         `json:"project_type"`
+	Team                 string         `json:"team"`
+	Organization         string         `json:"organization"`
+	Title                string         `json:"title"`
+	Description          string         `json:"description"`
+	Body                 string         `json:"body"`
+	BodyURL              string         `json:"body_url"`
+	Published            string         `json:"published"`
+	Updated              string         `json:"updated"`
+	Status               string         `json:"status"`
+	License              License        `json:"license"`
+	Downloads            int            `json:"downloads"`
+	Followers            int            `json:"followers"`
+	Categories           []string       `json:"categories"`
+	AdditionalCategories []string       `json:"additional_categories"`
+	Loaders              []string       `json:"loaders"`
+	Versions             []string       `json:"versions"`
+	IconURL              string         `json:"icon_url"`
+	RawIconURL           string         `json:"raw_icon_url"`
+	IssuesURL            string         `json:"issues_url"`
+	SourceURL            string         `json:"source_url"`
+	WikiURL              string         `json:"wiki_url"`
+	DiscordURL           string         `json:"discord_url"`
+	DonationUrls         []DonationURL  `json:"donation_urls"`
+	Gallery              []GalleryImage `json:"gallery"`
+	Color                int            `json:"color"`
 }
 type Hashes struct {
 	Sha512 string `json:"sha512"`
