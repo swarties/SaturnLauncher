@@ -55,6 +55,7 @@ type SearchHits struct {
 	Gallery           []string `json:"gallery"`
 	FeaturedGallery   string   `json:"featured_gallery"`
 	Color             int      `json:"color"`
+	IsInstalled       bool
 }
 type DiscoverProjects struct {
 	Hits      []SearchHits `json:"hits"`
@@ -173,7 +174,7 @@ type UpdateInfo struct {
 	NewDownloadUrl string `json:"newDownloadUrl"`
 }
 
-func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query string) (*DiscoverProjects, error) {
+func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, folderId string) (*DiscoverProjects, error) {
 	// categories = "fabric" // hardcoded as fabric cuz it's the only mod loader supported at this time
 	var discover DiscoverProjects
 	facets := [][]string{
@@ -211,6 +212,31 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query stri
 	err = json.NewDecoder(do.Body).Decode(&discover)
 	if err != nil {
 		return nil, err
+	}
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	path := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "modrinth_manifest.json")
+	file, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &discover, nil
+		}
+		return nil, err
+	}
+	var manifest []Manifest
+	err = json.Unmarshal(file, &manifest)
+	if err != nil {
+		return nil, err
+	}
+	for i := range discover.Hits {
+		for _, f := range manifest {
+			if discover.Hits[i].ProjectID == f.ProjectId {
+				discover.Hits[i].IsInstalled = true
+				break
+			}
+		}
 	}
 	return &discover, nil
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"SaturnLauncher/backend/Skins"
 	"SaturnLauncher/backend/auth"
 	"SaturnLauncher/backend/autoupdater"
 	"SaturnLauncher/backend/download"
@@ -10,6 +9,7 @@ import (
 	"SaturnLauncher/backend/launch"
 	"SaturnLauncher/backend/modpacks"
 	"SaturnLauncher/backend/modrinth"
+	"SaturnLauncher/backend/skins"
 	"archive/zip"
 	"bufio"
 	"context"
@@ -48,7 +48,7 @@ type App struct {
 	Mrpack             *modpacks.Mrpack
 	RunningInstances   map[string]*exec.Cmd
 	mu                 sync.Mutex
-	Skins              *Skins.Skins
+	skins              *skins.Skins
 	Updater            *autoupdater.Updater
 	IsDiscordConnected bool
 }
@@ -64,7 +64,7 @@ func NewApp() *App {
 		Modrinth:         modrinth.NewModrinth(),
 		Mrpack:           modpacks.NewMrpack(),
 		RunningInstances: make(map[string]*exec.Cmd),
-		Skins:            Skins.NewSkinsManager(),
+		skins:            skins.NewSkinsManager(),
 		Updater:          autoupdater.NewUpdater(),
 	}
 }
@@ -848,8 +848,8 @@ func (a *App) RemoveContent(folderId, contentType, filename string) error {
 	return nil
 }
 
-func (a *App) GetDiscoveryPage(projectType, version, categories, query string) (*modrinth.DiscoverProjects, error) {
-	discoveryPage, err := a.Modrinth.GetDiscoveryPage(projectType, version, categories, query)
+func (a *App) GetDiscoveryPage(projectType, version, categories, folderId, query string) (*modrinth.DiscoverProjects, error) {
+	discoveryPage, err := a.Modrinth.GetDiscoveryPage(projectType, version, categories, query, folderId)
 	if err != nil {
 		return nil, err
 	}
@@ -1070,7 +1070,7 @@ func (a *App) DeleteScreenshot(folderId, filename string) (bool, error) {
 }
 
 func (a *App) GetSkinByUsername(username string) (string, error) {
-	byUsername, err := a.Skins.GetSkinByUsername(username)
+	byUsername, err := a.skins.GetSkinByUsername(username)
 	if err != nil {
 		return "", err
 	}
@@ -1086,7 +1086,7 @@ func (a *App) UploadSkin(path, variant string) error {
 	if err != nil {
 		return err
 	}
-	err = a.Skins.UploadSkin(path, variant, token.AccessToken)
+	err = a.skins.UploadSkin(path, variant, token.AccessToken)
 	if err != nil {
 		return err
 	}

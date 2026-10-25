@@ -1,4 +1,4 @@
-package Skins
+package skins
 
 import (
 	"SaturnLauncher/backend/download"
@@ -100,6 +100,7 @@ func (s *Skins) GetSkinByUsername(username string) (string, error) {
 
 	dl := download.NewDownload()
 	_, err = dl.Downloader(temp, skinTextures.Textures.Skin.URL)
+	defer os.Remove(temp)
 	if err != nil {
 		return "", err
 	}
@@ -107,7 +108,6 @@ func (s *Skins) GetSkinByUsername(username string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer os.Remove(temp)
 	return base64.StdEncoding.EncodeToString(file), nil
 }
 
@@ -150,7 +150,7 @@ func (s *Skins) UploadSkin(path, variant, accessToken string) error {
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("couldn't upload the skin. error was %s. response body: %v", err, all)
+		return fmt.Errorf("couldn't upload the skin. error was %s. response body: %s", err, all)
 	}
 	return nil
 }
