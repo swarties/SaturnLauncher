@@ -42,7 +42,7 @@ function getDirection(currentPath, prevPath) {
   return currentIndex > prevIndex ? 'forward' : 'backward';
 }
 
-function NavLink({ to, label, index, onHover }) {
+function NavLink({ to, label, icon: Icon, index, onHover }) {
   return (
     <Link
       to={to}
@@ -50,12 +50,13 @@ function NavLink({ to, label, index, onHover }) {
       data-nav-index={index}
       data-tooltip={label}
       onMouseEnter={onHover}
-      className="relative z-10 rounded-sm px-3 py-2.5 text-sm font-thin tracking-wide text-(--nav-link-fg) transition-colors select-none hover:text-(--nav-link-fg-hover)"
+      className="relative z-10 flex items-center gap-2 rounded-sm px-3 py-2.5 text-sm font-thin tracking-wide text-(--nav-link-fg) transition-colors select-none hover:text-(--nav-link-fg-hover)"
       activeProps={{
         className: 'text-foreground',
       }}
     >
-      {label}
+      <Icon className="size-4" aria-hidden="true" />
+      {/*{label}*/}
     </Link>
   );
 }
@@ -127,6 +128,7 @@ function NavBar({ pathname }) {
           key={item.to}
           to={item.to}
           label={item.label}
+          icon={item.icon}
           index={index}
           onHover={() => setHoveredIndex(index)}
         />
