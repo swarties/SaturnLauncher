@@ -42,7 +42,7 @@ export function setSortBy(sortBy) {
 export async function fetchDiscovery(uuid, version, query, tab) {
   setState({ query, activeTab: tab, loading: true, error: null });
   try {
-    const res = await GetDiscoveryPage(tab, version, '', query);
+    const res = await GetDiscoveryPage(tab, version, '', query, uuid);
     setState({ results: res.hits ?? [], loading: false });
   } catch (e) {
     setState({ error: e?.message ?? String(e), loading: false });

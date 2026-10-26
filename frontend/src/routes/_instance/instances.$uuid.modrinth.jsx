@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -13,14 +14,9 @@ import {
   Search,
 } from 'lucide-react';
 import { useInstance } from '@/stores/instance';
-import {
-  fetchDiscovery,
-  fetchVersions,
-  installMod,
-  setSortBy,
-  useModrinth,
-} from '@/stores/modrinth';
+import { fetchDiscovery, setSortBy, useModrinth } from '@/stores/modrinth';
 import { formatNumber, timeAgo } from '@/lib/utils';
+import { ProjectDetailsModal } from '@/components/ui/project-details-modal.jsx';
 
 export const Route = createFileRoute('/_instance/instances/$uuid/modrinth')({
   component: ModrinthBrowser,
@@ -40,12 +36,16 @@ function ModrinthBrowser() {
 
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState('mod');
-  const [openMenuId, setOpenMenuId] = useState(null);
+  const [detailsProject, setDetailsProject] = useState(null);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
   const searchRef = useRef(null);
 
-  const handleScroll = () => {
-    if (openMenuId) setOpenMenuId(null);
-  };
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortContainerRef = useRef(null);
+  const sortTriggerRef = useRef(null);
+  const [sortDropdownPos, setSortDropdownPos] = useState({ top: 0, right: 0 });
+
+  const EASE = [0.22, 1, 0.38, 1];
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -66,6 +66,39 @@ function ModrinthBrowser() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  useLayoutEffect(() => {
+    if (!sortOpen || !sortTriggerRef.current) return;
+    const rect = sortTriggerRef.current.getBoundingClientRect();
+    setSortDropdownPos({
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right,
+    });
+  }, [sortOpen]);
+
+  useEffect(() => {
+    if (!sortOpen) return;
+
+    const onDown = (e) => {
+      const el = e.target;
+      if (sortContainerRef.current?.contains(el)) return;
+      if (el instanceof Element && el.closest('[data-sort-dropdown]')) return;
+      setSortOpen(false);
+    };
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setSortOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey, true);
+    };
+  }, [sortOpen]);
 
   const sortedResults = useMemo(() => {
     if (sortBy === 'downloads') {
@@ -97,6 +130,9 @@ function ModrinthBrowser() {
     setActiveTab(tabId);
   };
 
+  const activeIndex = TABS.findIndex((t) => t.id === activeTab);
+  const targetIndex = hoveredIndex ?? activeIndex;
+
   if (!instance) return null;
 
   return (
@@ -105,54 +141,120 @@ function ModrinthBrowser() {
       <div className="mb-6 flex items-center gap-4">
         <button
           onClick={() => navigate({ to: '/instances/$uuid', params: { uuid } })}
+          data-tooltip="Back to instance"
           className="flex size-10 items-center justify-center rounded-md border border-(--hairline) text-(--saturn-fg-muted) transition-colors hover:bg-(--surface-hover)"
         >
           <ChevronLeft className="size-5" />
         </button>
-
         <div className="relative flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <input
-            ref={searchRef}
             type="text"
+            ref={searchRef}
             placeholder="Search Modrinth..."
             value={query}
             onChange={handleSearch}
             className="bg-background h-10 w-full rounded-md border border-(--hairline) pr-4 pl-9 text-sm outline-none focus:border-(--chip-border-hover)"
           />
         </div>
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="bg-background h-10 rounded-md border border-(--hairline) px-3 text-sm text-(--saturn-fg) outline-none focus:border-(--chip-border-hover)"
-        >
-          <option value="relevance">Relevance</option>
-          <option value="downloads">Downloads</option>
-          <option value="updated">Updated</option>
-        </select>
+        <div ref={sortContainerRef} className="relative">
+          <div
+            ref={sortTriggerRef}
+            className="bg-background flex h-10 min-w-32 items-stretch overflow-hidden rounded-md border border-(--hairline)"
+          >
+            <span className="flex flex-1 items-center px-4 text-sm font-normal tracking-wide text-(--saturn-fg) capitalize transition-colors hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)">
+              {sortBy}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSortOpen((o) => !o)}
+              data-tooltip="Sort results"
+              aria-expanded={sortOpen}
+              className="flex items-center px-3.5 text-(--saturn-fg-muted) transition-colors outline-none hover:bg-(--surface-active) hover:text-(--saturn-fg-strong)"
+            >
+              <ChevronDown
+                aria-hidden="true"
+                className={`size-4 transition-transform duration-200 ${sortOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
+          {createPortal(
+            <AnimatePresence>
+              {sortOpen && (
+                <motion.div
+                  data-sort-dropdown
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15, ease: EASE }}
+                  style={{
+                    position: 'fixed',
+                    top: sortDropdownPos.top,
+                    right: sortDropdownPos.right,
+                  }}
+                  className="bg-background z-60 w-48 overflow-hidden rounded-md border border-(--hairline) shadow-lg shadow-black/60"
+                >
+                  {['relevance', 'downloads', 'updated'].map((opt) => {
+                    const selected = sortBy === opt;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => {
+                          setSortBy(opt);
+                          setSortOpen(false);
+                        }}
+                        className={[
+                          'flex w-full items-center px-3.5 py-2.5 text-left text-sm font-normal tracking-wide capitalize transition-colors',
+                          selected
+                            ? 'bg-(--surface-active) text-(--saturn-fg-strong)'
+                            : 'text-(--saturn-fg-muted) hover:bg-(--surface-hover) hover:text-(--saturn-fg)',
+                        ].join(' ')}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>,
+            document.body
+          )}
+        </div>
       </div>
       {/* Tabs */}
-      <div className="mb-6 flex gap-2 border-b border-(--hairline) pb-4">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            className={`rounded-md px-4 py-1.5 text-sm font-thin transition-colors ${
-              activeTab === tab.id
-                ? 'bg-(--chip-bg-hover) text-(--chip-fg-hover)'
-                : 'text-(--saturn-fg-muted) hover:bg-(--surface-hover)'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div
+        onMouseLeave={() => setHoveredIndex(null)}
+        className="mb-6 flex gap-1 border-b border-(--hairline) pb-4"
+      >
+        {TABS.map((t, index) => {
+          const isActive = activeTab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onMouseEnter={() => setHoveredIndex(index)}
+              onClick={() => handleTabChange(t.id)}
+              className={`relative rounded-md px-4 py-1.5 text-sm font-normal tracking-wide transition-colors ${
+                isActive ? 'text-(--chip-fg-hover)' : 'text-(--saturn-fg-muted)'
+              }`}
+            >
+              {targetIndex === index && (
+                <motion.div
+                  layoutId="search-tab-bg"
+                  className="absolute inset-0 rounded-md border border-(--chip-border-hover) bg-(--chip-bg-hover)"
+                  transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                />
+              )}
+              <span className="relative z-10">{t.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Results */}
-      <div
-        onScroll={handleScroll}
-        className="min-h-0 flex-1 scrollbar-gutter-stable overflow-y-auto"
-      >
+      <div className="min-h-0 flex-1 scrollbar-gutter-stable overflow-y-auto">
         {loading ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="size-8 animate-spin text-(--saturn-500)" />
@@ -177,57 +279,54 @@ function ModrinthBrowser() {
         ) : (
           <div className="flex flex-col gap-3 pb-8">
             <AnimatePresence>
-              {sortedResults.map((project, i) => (
+              {sortedResults.map((project) => (
                 <ProjectRow
                   key={project.project_id}
                   project={project}
-                  index={i}
-                  uuid={uuid}
-                  instanceVersion={instance.version}
-                  activeTab={activeTab}
-                  openMenuId={openMenuId}
-                  setOpenMenuId={setOpenMenuId}
+                  onOpenDetails={(tab = 'description') => {
+                    setDetailsProject({ project, tab });
+                  }}
                 />
               ))}
             </AnimatePresence>
           </div>
         )}
       </div>
+      <AnimatePresence>
+        {detailsProject && (
+          <ProjectDetailsModal
+            key={`${detailsProject.project.project_id}:${detailsProject.tab}`}
+            project={detailsProject.project}
+            uuid={uuid}
+            instanceVersion={instance.version}
+            activeTab={activeTab}
+            initialTab={detailsProject.tab}
+            onClose={() => setDetailsProject(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function ProjectRow({
-  project,
-  index,
-  uuid,
-  instanceVersion,
-  activeTab,
-  openMenuId,
-  setOpenMenuId,
-}) {
-  const { installing, installed, versions } = useModrinth();
+function ProjectRow({ project, onOpenDetails }) {
+  const { installing, installed } = useModrinth();
 
-  const isInstalled = installed[project.project_id];
+  const isInstalled = installed[project.project_id] || project.IsInstalled;
   const isInstalling = installing[project.project_id];
-  const versionData = versions[project.project_id];
-  const menuOpen = openMenuId === project.project_id;
 
   const handleDownloadClick = () => {
     if (isInstalled || isInstalling) return;
-
-    if (!versionData?.data) {
-      void fetchVersions(project.project_id, instanceVersion, activeTab);
-    }
-    setOpenMenuId(menuOpen ? null : project.project_id);
+    onOpenDetails('versions');
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03 }}
-      className="group bg-background relative flex items-center gap-4 rounded-md border border-(--hairline) p-4 transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      onClick={() => onOpenDetails('description')}
+      className="group bg-background relative flex cursor-pointer items-center gap-4 rounded-md border border-(--hairline) p-4 transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
     >
       <img
         src={project.icon_url || 'https://cdn.modrinth.com/placeholder.png'}
@@ -250,7 +349,7 @@ function ProjectRow({
           {project.display_categories.slice(0, 5).map((cat) => (
             <span
               key={cat}
-              className="rounded-sm bg-(--chip-bg) px-1.5 py-0.5 text-[0.65rem] font-thin tracking-wider text-(--chip-fg) uppercase"
+              className="rounded-sm bg-(--chip-bg) px-1.5 py-0.5 text-[0.7rem] font-normal tracking-wider text-(--chip-fg) uppercase"
             >
               {cat}
             </span>
@@ -272,10 +371,11 @@ function ProjectRow({
           {timeAgo(project.date_modified)}
         </span>
       </div>
-      <div className="relative">
+      <div className="relative" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={handleDownloadClick}
           disabled={isInstalled || isInstalling}
+          data-tooltip="Choose version"
           className={[
             'flex h-10 shrink-0 items-center justify-center gap-1 rounded-md border px-3 transition-colors disabled:opacity-50',
             isInstalled
@@ -288,62 +388,9 @@ function ProjectRow({
           ) : isInstalling ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
-            <>
-              <Download className="size-4" />
-              <ChevronDown className="size-3" />
-            </>
+            <Download className="size-4" />
           )}
         </button>
-
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -4, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4, scale: 0.95 }}
-              className="bg-background absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-md border border-(--hairline) shadow-xl"
-            >
-              {versionData?.loading ? (
-                <div className="flex justify-center p-4">
-                  <Loader2 className="text-saturn-500 size-5 animate-spin" />
-                </div>
-              ) : versionData?.data?.length > 0 ? (
-                <div className="flex max-h-64 flex-col overflow-y-auto overscroll-contain">
-                  <div className="text-muted-foreground bg-(--surface-hover) px-3 py-2 text-xs font-thin tracking-wider uppercase">
-                    Select Version
-                  </div>
-                  {versionData.data.map((ver) => (
-                    <button
-                      key={ver.id}
-                      onClick={() => {
-                        void installMod(
-                          uuid,
-                          project.project_id,
-                          ver.id,
-                          ver.name,
-                          activeTab
-                        );
-                        setOpenMenuId(null);
-                      }}
-                      className="flex flex-col items-start border-b border-(--hairline) px-3 py-2 text-left transition-colors last:border-0 hover:bg-(--surface-hover)"
-                    >
-                      <span className="text-foreground w-full truncate text-sm font-medium">
-                        {ver.name}
-                      </span>
-                      <span className="text-muted-foreground text-[0.65rem] font-thin">
-                        {ver.version_number} • {timeAgo(ver.date_published)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground p-4 text-center text-sm font-thin">
-                  No compatible versions found.
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </motion.div>
   );
