@@ -89,11 +89,13 @@ export async function fetchProject(projectId) {
   } catch (e) {
     console.error('Failed to load project:', e);
     setState({
-      ...state.projects,
-      [projectId]: {
-        loading: false,
-        data: null,
-        error: e?.message ?? String(e),
+      projects: {
+        ...state.projects,
+        [projectId]: {
+          loading: false,
+          data: null,
+          error: e?.message ?? String(e),
+        },
       },
     });
   }

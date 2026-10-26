@@ -312,7 +312,7 @@ function ModrinthBrowser() {
 function ProjectRow({ project, onOpenDetails }) {
   const { installing, installed } = useModrinth();
 
-  const isInstalled = installed[project.project_id] || project.IsInstalled;
+  const isInstalled = installed[project.project_id] || project.isInstalled;
   const isInstalling = installing[project.project_id];
 
   const handleDownloadClick = () => {

@@ -85,6 +85,8 @@ function itemFromRaw(raw) {
   };
 }
 
+const contentRequestIds = {};
+
 export async function loadContent(uuid, contentType, { silent = false } = {}) {
   if (!uuid || !CONTENT_TYPES[contentType]) return;
   const key = `${uuid}:${contentType}`;
@@ -92,6 +94,9 @@ export async function loadContent(uuid, contentType, { silent = false } = {}) {
   if (!silent) {
     setEntry(key, { loading: true, error: null });
   }
+
+  const reqId = Date.now();
+  contentRequestIds[key] = reqId;
 
   try {
     const backendKey = CONTENT_TYPES[contentType].backendKey;
@@ -114,9 +119,13 @@ export async function loadContent(uuid, contentType, { silent = false } = {}) {
       timeoutPromise,
     ]);
 
+    if (contentRequestIds[key] !== reqId) return;
+
     const items = (raw ?? []).map(itemFromRaw);
     setEntry(key, { items, loading: false, error: null, loaded: true });
   } catch (e) {
+    if (contentRequestIds[key] !== reqId) return;
+
     console.error('Failed to load content:', e);
     setEntry(key, {
       loading: false,
