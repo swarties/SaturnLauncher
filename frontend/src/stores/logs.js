@@ -147,9 +147,11 @@ export function loadLogs(uuid) {
       });
     })
     .catch((e) => {
+      const msg = e?.message ?? String(e);
+      const isMissingLog = msg.toLowerCase().includes('no log file exists');
       setLog(uuid, {
         loading: false,
-        error: e?.message ?? String(e),
+        error: isMissingLog ? null : msg,
         loaded: true,
       });
     });
