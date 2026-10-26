@@ -66,10 +66,12 @@ Using wailsIo V2.15.0
 - Game Lifecycle to prevent launching the same instance twice
 - Self-healing game files on launch
 - Live Java + Game logs to be able to see java errors
+- World Listing ( preparing for quickplay )
 
 #### Java
 
 - Added a java silent installer + extraction support for linux and windows
+- Added java overrides ( select your own java )
 
 #### Instance Manager
 
@@ -96,6 +98,9 @@ Using wailsIo V2.15.0
 - Individual Project Page
 - Version Page for each project
 - Recursive mod + deps installation ( Installs mods and their deps (and the deps of deps ))
+- Modrinth Manifest
+- Modrinth Update system ( backend )
+- Installed checkmarks thanks to manifest
 
 #### Various 
 
@@ -105,18 +110,22 @@ Using wailsIo V2.15.0
 - Clean GUI
 - Bloat free
 - No ads
+- Auto-update from github on launch ( supports nsis, portable version and linux )
+- Skin lookup and select + upload to minecraft servers ( backend )
+- Screenshot manager
+- Discord Rich Presence
 
+#### Migration
+
+- Migrate from prism ( backend only )
 
 ## Planned Features
 
 - Add Forge and NeoForge
 - Friends List with built-in dms ( maybe )
-- Modrinth Updater
+- Modrinth Updater ( backend done )
 - Skin Changer (lookup skin and use them or drag n drop your own skins)
-- Launcher Auto Update
-- Launcher Migration ( One Click Migration from Prism, MultiMC, modrinth launcher etc. )
 - Modpack Export
-- Java Override ( use your own java )
 - Check for mod conflicts pre-launch
 - Allow Instance Duplication
 - Token Encryption ( lots of launchers don't do it, but it's important )
@@ -146,10 +155,22 @@ Most launchers today are aesthetically unpleasing, are filled with ads, and are 
 
 ### Instances
 
-| <img width="1262" height="721" alt="image" src="https://github.com/user-attachments/assets/6d7c2b2d-08b7-459a-a898-932010f5638f" /> | <img width="443" height="415" alt="image" src="https://github.com/user-attachments/assets/42e4ed13-67b5-4107-b366-2ad473b1c510" /> |
+| <img width="1262" height="721" alt="image" src="https://github.com/user-attachments/assets/6d7c2b2d-08b7-459a-a898-932010f5638f" /> | <img width="878" height="414" alt="image" src="https://github.com/user-attachments/assets/4bd95926-3ec6-4dd9-8b04-2d8b2327e4ab" /> |
 | :---: | :---: |
-| <img width="1258" height="722" alt="image" src="https://github.com/user-attachments/assets/97e5baa3-9980-4215-89c4-f33ef1bdeed9" /> | <img width="1258" height="725" alt="image" src="https://github.com/user-attachments/assets/5dbfcc37-493d-48d6-b262-d23eee3c4f50" /> |
+| <img width="1258" height="722" alt="image" src="https://github.com/user-attachments/assets/97e5baa3-9980-4215-89c4-f33ef1bdeed9" /> | <img width="926" height="652" alt="image" src="https://github.com/user-attachments/assets/8156e5cf-68ec-4c37-99ec-6d16315c52c3" />|
 | <img width="443" height="497" alt="image" src="https://github.com/user-attachments/assets/1eebe8c1-e8db-4ab9-afe1-d30e7f472844" /> | <img width="1260" height="725" alt="image" src="https://github.com/user-attachments/assets/01846675-0f87-422c-ae34-451f87cd791a" />
+
+
+### Modrinth
+
+| <img width="937" height="660" alt="image" src="https://github.com/user-attachments/assets/a8eb8792-3881-4e42-b67a-91ab2edc1205" /> | <img width="1262" height="722" alt="image" src="https://github.com/user-attachments/assets/6c14b10a-6d17-4c38-9bf3-0aab5ac42c12" /> |
+| :---: | :---: |
+
+### Screenshot manager
+
+| <img width="1249" height="712" alt="image" src="https://github.com/user-attachments/assets/86a51a32-343e-415e-904b-904ddd8508a7" /> | <img width="1054" height="604" alt="image" src="https://github.com/user-attachments/assets/5b9a7288-2cfd-45a0-91d5-a66f233bffdb" /> |
+| :---: | :---: |
+
 
 
 ### Multi Account :
@@ -167,7 +188,6 @@ Most launchers today are aesthetically unpleasing, are filled with ads, and are 
     </td>
   </tr>
 </table>
-
 
 
 
