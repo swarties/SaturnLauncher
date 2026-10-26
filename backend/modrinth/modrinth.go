@@ -358,11 +358,11 @@ func (m *Modrinth) InstallModFile(v VersionInfo, folderId, contentType string) e
 	if alreadyInstalled {
 		return nil
 	}
-	appdata, err := os.UserConfigDir()
+	contentT, _, err := dl.ContentDir(folderId, contentType)
 	if err != nil {
 		return err
 	}
-	fileLoc := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, contentType, fileName)
+	fileLoc := filepath.Join(contentT, fileName)
 	_, err = dl.Downloader(fileLoc, fileUrl)
 	if err != nil {
 		return err
@@ -519,4 +519,32 @@ func (m *Modrinth) GetContentUpdates(folderId, gameVersion, projectType string) 
 		}
 	}
 	return updInfo, nil
+}
+
+func (m *Modrinth) RemoveFromManifest(folderId, filename string) error {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	var newManifest []Manifest
+	manifest, err := m.ReadManifest(folderId)
+	if err != nil {
+		return err
+	}
+	for _, ma := range manifest {
+		if ma.Filename == filename {
+			continue
+		}
+		newManifest = append(newManifest, ma)
+	}
+	indent, err := json.MarshalIndent(newManifest, "", "  ")
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "modrinth_manifest.json")
+	err = os.WriteFile(path, indent, 0o644)
+	if err != nil {
+		return err
+	}
+	return nil
 }

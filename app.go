@@ -864,6 +864,10 @@ func (a *App) RemoveContent(folderId, contentType, filename string) error {
 	if err != nil {
 		return err
 	}
+	err = a.Modrinth.RemoveFromManifest(folderId, filename)
+	if err != nil {
+		return err
+	}
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
 }
