@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_app/settings')({
   component: SettingsPage,
 });
 
-const SHOW_DEV_TOOLS = true;
+const SHOW_DEV_TOOLS = false;
 
 function SettingsPage() {
   const { id: activeId } = useTheme();
