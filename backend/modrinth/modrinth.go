@@ -55,7 +55,7 @@ type SearchHits struct {
 	Gallery           []string `json:"gallery"`
 	FeaturedGallery   string   `json:"featured_gallery"`
 	Color             int      `json:"color"`
-	IsInstalled       bool
+	IsInstalled       bool     `json:"isInstalled"`
 }
 type DiscoverProjects struct {
 	Hits      []SearchHits `json:"hits"`

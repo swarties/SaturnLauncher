@@ -4,6 +4,7 @@ import (
 	"SaturnLauncher/backend/download"
 	fabric2 "SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
+	modrinth2 "SaturnLauncher/backend/modrinth"
 	"archive/zip"
 	"context"
 	"encoding/json"
@@ -119,12 +120,12 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 		return "", err
 	}
 
-	for _, m := range modpack.Files {
-		path := filepath.Clean(m.Path)
+	for _, a := range modpack.Files {
+		path := filepath.Clean(a.Path)
 		if strings.Contains(path, "..") {
 			continue
 		}
-		if m.Env.Client == "unsupported" {
+		if a.Env.Client == "unsupported" {
 			continue
 		}
 		mod := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, path)
@@ -133,9 +134,9 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 			return "", err
 		}
 		candidates = append(candidates, download.AssetCandidate{
-			URL:      m.Downloads[0],
+			URL:      a.Downloads[0],
 			DestPath: mod,
-			Hash:     m.Hashes.Sha1,
+			Hash:     a.Hashes.Sha1,
 		})
 	}
 	failures, err := dl.BatchDownloader(candidates)
@@ -148,6 +149,25 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 			return "", err
 		}
 		return "", fmt.Errorf("failed to install %d elements", len(undFailures))
+	}
+	for _, a := range modpack.Files {
+		if !strings.HasPrefix(a.Path, "mods/") && !strings.HasPrefix(a.Path, "resourcepacks/") && !strings.HasPrefix(a.Path, "shaderpacks/") {
+			continue
+		}
+		filename := filepath.Base(a.Path)
+		sha1 := a.Hashes.Sha1
+		split := strings.Split(a.Downloads[0], "/")
+		if len(split) != 8 {
+			continue
+		}
+		projectId := split[4]
+		versionId := split[6]
+		modrinth := modrinth2.NewModrinth()
+		err := modrinth.SaveManifest(filename, sha1, versionId, projectId, folderId)
+		if err != nil {
+			return "", err
+		}
+
 	}
 	reader, err := zip.OpenReader(path)
 	if err != nil {
