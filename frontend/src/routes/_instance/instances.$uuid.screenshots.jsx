@@ -17,6 +17,16 @@ import {
 
 import { onBackendEvent } from '@/lib/backend';
 import { toast } from '@/stores/toasts';
+import { cn } from '@/lib/utils';
+import {
+  MorphingDialog,
+  MorphingDialogContainer,
+  MorphingDialogContent,
+  MorphingDialogDescription,
+  MorphingDialogTitle,
+  MorphingDialogTrigger,
+  useMorphingDialog,
+} from '@/components/ui/morphing-dialog';
 import {
   DeleteScreenshot,
   GetScreenshot,
@@ -176,7 +186,7 @@ function ScreenshotsTab() {
           </div>
         ) : (
           <div className="grid auto-rows-min grid-cols-[repeat(auto-fill,minmax(22rem,1fr))] gap-5">
-            <AnimatePresence>
+            <AnimatePresence mode="popLayout">
               {sortedFiles.map((filename, i) => (
                 <ScreenshotItem
                   key={filename}
@@ -210,6 +220,81 @@ function ScreenshotsTab() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function ConfirmDeleteDialog({ filename, onConfirm, triggerClassName }) {
+  return (
+    <MorphingDialog>
+      <div onClick={(e) => e.stopPropagation()}>
+        <MorphingDialogTrigger
+          className={cn(
+            'flex items-center justify-center rounded-full transition-colors',
+            triggerClassName
+          )}
+          onClick={clearTooltip}
+          data-tooltip="Delete"
+        >
+          <Trash2 className="size-5" />
+        </MorphingDialogTrigger>
+      </div>
+
+      <MorphingDialogContainer>
+        <MorphingDialogContent className="bg-background relative w-full max-w-sm rounded-md border-2 border-(--surface-border) p-6">
+          <ConfirmDeleteContent filename={filename} onConfirm={onConfirm} />
+        </MorphingDialogContent>
+      </MorphingDialogContainer>
+    </MorphingDialog>
+  );
+}
+
+function ConfirmDeleteContent({ filename, onConfirm }) {
+  const { setIsOpen } = useMorphingDialog();
+  const [busy, setBusy] = useState(false);
+
+  const handleConfirm = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await onConfirm();
+      setIsOpen(false);
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to delete screenshot');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <MorphingDialogTitle className="text-muted-foreground text-sm font-normal tracking-[0.2em] uppercase">
+        Delete Screenshot
+      </MorphingDialogTitle>
+      <MorphingDialogDescription className="text-muted-foreground mt-2 text-sm font-normal">
+        Are you really sure you want to delete this screenshot? It'll be gone
+        for good (a long time)
+        <span className="text-foreground mt-2 block truncate font-mono text-xs">
+          {filename}
+        </span>
+      </MorphingDialogDescription>
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setIsOpen(false)}
+          disabled={busy}
+          className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={busy}
+          className="h-10 rounded-md border border-red-900/60 bg-red-950/40 px-6 text-sm font-thin text-red-200 transition-colors hover:border-red-700/60 hover:bg-red-950/60 hover:text-red-100 disabled:pointer-events-none disabled:opacity-40"
+        >
+          {busy ? 'Deleting...' : 'Delete'}
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -264,6 +349,7 @@ function ScreenshotItem({
   return (
     <motion.div
       ref={ref}
+      layout
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -304,17 +390,11 @@ function ScreenshotItem({
           >
             <Maximize2 className="size-5" />
           </button>
-          <button
-            type="button"
-            data-tooltip="Delete"
-            onClick={(e) => {
-              clearTooltip();
-              onDelete(e);
-            }}
-            className="flex size-12 items-center justify-center rounded-full bg-red-500/10 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300"
-          >
-            <Trash2 className="size-5" />
-          </button>
+          <ConfirmDeleteDialog
+            filename={filename}
+            onConfirm={() => onDelete({ stopPropagation: () => {} })}
+            triggerClassName="size-12 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+          />
         </div>
       )}
     </motion.div>
@@ -412,17 +492,11 @@ function ScreenshotLightbox({
           <span className="rounded bg-black/50 px-3 py-1.5 text-xs font-thin text-white backdrop-blur-md">
             {filename}
           </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              clearTooltip();
-              onDelete(e);
-            }}
-            data-tooltip="Delete"
-            className="flex size-10 items-center justify-center rounded-full bg-black/50 text-red-400 backdrop-blur-md transition-colors hover:bg-black/70 hover:text-red-300"
-          >
-            <Trash2 className="size-5" />
-          </button>
+          <ConfirmDeleteDialog
+            filename={filename}
+            onConfirm={() => onDelete({ stopPropagation: () => {} })}
+            triggerClassName="size-10 bg-black/50 text-red-400 backdrop-blur-md hover:bg-black/70 hover:text-red-300"
+          />
           <button
             type="button"
             onClick={() => {

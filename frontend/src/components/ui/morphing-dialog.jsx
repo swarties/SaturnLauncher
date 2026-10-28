@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { motion, AnimatePresence, MotionConfig } from 'motion/react';
+import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { XIcon } from 'lucide-react';
@@ -192,12 +192,18 @@ function MorphingDialogContainer({ children }) {
         <>
           <motion.div
             key={`backdrop-${uniqueId}`}
-            className="fixed inset-0 h-full w-full bg-(--backdrop) backdrop-blur-sm"
+            className="fixed inset-0 z-[100] h-full w-full bg-(--backdrop) backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {children}
           </div>
         </>
