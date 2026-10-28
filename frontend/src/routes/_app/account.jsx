@@ -35,7 +35,7 @@ const EASE = [0.22, 1, 0.38, 1];
 function AccountPage() {
   const { accounts, activeUuid, loading, error } = useAccounts();
 
-  const [index, setIndex] = useState(0);
+  const [selectedUuid, setSelectedUuid] = useState(null);
   const [direction, setDirection] = useState(1);
 
   const [switchBusy, setSwitchBusy] = useState(null);
@@ -46,7 +46,13 @@ function AccountPage() {
   const [addUri, setAddUri] = useState(null);
   const [addError, setAddError] = useState(null);
 
-  const safeIndex = accounts.length ? Math.min(index, accounts.length - 1) : 0;
+  const currentUuid = accounts.some((a) => a.uuid === selectedUuid)
+    ? selectedUuid
+    : activeUuid;
+  const safeIndex = Math.max(
+    0,
+    accounts.findIndex((a) => a.uuid === currentUuid)
+  );
   const current = accounts[safeIndex];
   const showArrows = accounts.length > 1;
 
@@ -59,6 +65,12 @@ function AccountPage() {
       if (typeof offLogin === 'function') offLogin();
     };
   }, []);
+
+  useEffect(() => {
+    if (activeUuid) {
+      setSelectedUuid(activeUuid);
+    }
+  }, [activeUuid]);
 
   useEffect(() => {
     if (!adding) return;
@@ -94,13 +106,15 @@ function AccountPage() {
   const goNext = () => {
     if (accounts.length < 2) return;
     setDirection(1);
-    setIndex((i) => (i + 1) % accounts.length);
+    const nextIdx = (safeIndex + 1) % accounts.length;
+    setSelectedUuid(accounts[nextIdx].uuid);
   };
 
   const goPrev = () => {
     if (accounts.length < 2) return;
     setDirection(-1);
-    setIndex((i) => (i - 1 + accounts.length) % accounts.length);
+    const prevIdx = (safeIndex - 1 + accounts.length) % accounts.length;
+    setSelectedUuid(accounts[prevIdx].uuid);
   };
 
   const handleSwitch = async (uuid) => {
