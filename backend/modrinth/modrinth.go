@@ -325,6 +325,10 @@ func (m *Modrinth) GetVersion(verId string) (*VersionInfo, error) {
 
 func (m *Modrinth) InstallModFile(v VersionInfo, folderId, contentType string) error {
 	dl := download.NewDownload()
+	contentT, _, err := dl.ContentDir(folderId, contentType)
+	if err != nil {
+		return err
+	}
 	var fileUrl string
 	var fileName string
 	var fileSha1 string
@@ -344,6 +348,29 @@ func (m *Modrinth) InstallModFile(v VersionInfo, folderId, contentType string) e
 		fileSha1 = v.Files[0].Hashes.Sha1
 		fileName = v.Files[0].Filename
 	}
+	manifest, err := m.ReadManifest(folderId)
+	if err != nil {
+		return err
+	}
+	for i, _ := range manifest {
+		if manifest[i].ProjectId == v.ProjectID {
+			if manifest[i].Filename != fileName {
+				oldFilePath := filepath.Join(contentT, manifest[i].Filename)
+				err = os.Remove(oldFilePath)
+				if err != nil {
+					oldFilePath = filepath.Join(contentT, manifest[i].Filename+".disabled")
+					err = os.Remove(oldFilePath)
+					if err != nil {
+						return err
+					}
+				}
+				err := m.RemoveFromManifest(folderId, manifest[i].Filename)
+				if err != nil {
+					continue
+				}
+			}
+		}
+	}
 	content, err := dl.GetInstalledContent(folderId, contentType)
 	if err != nil {
 		return err
@@ -357,10 +384,6 @@ func (m *Modrinth) InstallModFile(v VersionInfo, folderId, contentType string) e
 	}
 	if alreadyInstalled {
 		return nil
-	}
-	contentT, _, err := dl.ContentDir(folderId, contentType)
-	if err != nil {
-		return err
 	}
 	fileLoc := filepath.Join(contentT, fileName)
 	_, err = dl.Downloader(fileLoc, fileUrl)
