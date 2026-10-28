@@ -204,7 +204,11 @@ export function ContentList({ uuid, contentType }) {
         onInstall={handleInstall}
         onOpenFolder={() => void OpenContentFolder(uuid, config.backendKey)}
         onBrowse={() =>
-          navigate({ to: '/instances/$uuid/modrinth', params: { uuid } })
+          navigate({
+            to: '/instances/$uuid/modrinth',
+            params: { uuid },
+            search: { tab: config.projectType },
+          })
         }
         searchRef={searchRef}
       />

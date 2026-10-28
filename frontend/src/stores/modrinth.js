@@ -12,7 +12,7 @@ let state = {
   activeTab: 'mod', // mod, resourcepack, shader
   sortBy: 'relevance',
   results: [],
-  loading: false,
+  loading: true,
   error: null,
   installing: {}, // { [projectId]: boolean }
   installed: {}, // { [projectId]: boolean }
@@ -39,11 +39,45 @@ export function setSortBy(sortBy) {
   setState({ sortBy });
 }
 
+export function resetBrowser() {
+  setState({
+    query: '',
+    results: [],
+    loading: true,
+    error: null,
+  });
+}
+
+const discoveryCache = {};
+const CACHE_TTL = 10 * 60 * 1000;
+
 export async function fetchDiscovery(uuid, version, query, tab) {
+  if (query === '') {
+    const cacheKey = `${tab}_${version}`;
+    const cached = discoveryCache[cacheKey];
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      setState({
+        query,
+        activeTab: tab,
+        results: cached.data,
+        loading: false,
+        error: null,
+      });
+      return;
+    }
+  }
+
   setState({ query, activeTab: tab, loading: true, error: null });
   try {
     const res = await GetDiscoveryPage(tab, version, '', query, uuid);
-    setState({ results: res.hits ?? [], loading: false });
+    const hits = res.hits ?? [];
+
+    if (query === '') {
+      const cacheKey = `${tab}_${version}`;
+      discoveryCache[cacheKey] = { data: hits, timestamp: Date.now() };
+    }
+
+    setState({ results: hits, loading: false });
   } catch (e) {
     setState({ error: e?.message ?? String(e), loading: false });
   }

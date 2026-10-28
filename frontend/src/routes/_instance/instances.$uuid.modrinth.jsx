@@ -14,11 +14,20 @@ import {
   Search,
 } from 'lucide-react';
 import { useInstance } from '@/stores/instance';
-import { fetchDiscovery, setSortBy, useModrinth } from '@/stores/modrinth';
+import {
+  fetchDiscovery,
+  resetBrowser,
+  setSortBy,
+  useModrinth,
+} from '@/stores/modrinth';
 import { formatNumber, timeAgo } from '@/lib/utils';
 import { ProjectDetailsModal } from '@/components/ui/project-details-modal.jsx';
 
 export const Route = createFileRoute('/_instance/instances/$uuid/modrinth')({
+  validateSearch: (search) => ({
+    tab: search.tab || 'mod',
+  }),
+
   component: ModrinthBrowser,
 });
 
@@ -30,12 +39,13 @@ const TABS = [
 
 function ModrinthBrowser() {
   const { uuid } = Route.useParams();
+  const { tab } = Route.useSearch();
   const navigate = useNavigate();
   const { data: instance } = useInstance();
   const { results, loading, error, sortBy } = useModrinth();
 
   const [query, setQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('mod');
+  const [activeTab, setActiveTab] = useState(tab);
   const [detailsProject, setDetailsProject] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const searchRef = useRef(null);
@@ -46,6 +56,10 @@ function ModrinthBrowser() {
   const [sortDropdownPos, setSortDropdownPos] = useState({ top: 0, right: 0 });
 
   const EASE = [0.22, 1, 0.38, 1];
+
+  useEffect(() => {
+    return () => resetBrowser();
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -115,12 +129,16 @@ function ModrinthBrowser() {
   useEffect(() => {
     if (!instance?.version) return;
 
+    if (query.length > 0 && query.length < 3) {
+      return;
+    }
+
     const timer = setTimeout(() => {
       void fetchDiscovery(uuid, instance.version, query, activeTab);
-    }, 300);
+    }, 600);
 
     return () => clearTimeout(timer);
-  }, [instance?.version, activeTab, query]);
+  }, [instance?.version, activeTab, query, uuid]);
 
   const handleSearch = (e) => {
     setQuery(e.target.value);
@@ -133,6 +151,12 @@ function ModrinthBrowser() {
   const activeIndex = TABS.findIndex((t) => t.id === activeTab);
   const targetIndex = hoveredIndex ?? activeIndex;
 
+  const getBackRoute = () => {
+    if (activeTab === 'resourcepack') return '/instances/$uuid/resourcepacks';
+    if (activeTab === 'shader') return '/instances/$uuid/shaderpacks';
+    return '/instances/$uuid/mods';
+  };
+
   if (!instance) return null;
 
   return (
@@ -140,7 +164,7 @@ function ModrinthBrowser() {
       {/* Header */}
       <div className="mb-6 flex items-center gap-4">
         <button
-          onClick={() => navigate({ to: '/instances/$uuid', params: { uuid } })}
+          onClick={() => navigate({ to: getBackRoute(), params: { uuid } })}
           data-tooltip="Back to instance"
           className="flex size-10 items-center justify-center rounded-md border border-(--hairline) text-(--saturn-fg-muted) transition-colors hover:bg-(--surface-hover)"
         >

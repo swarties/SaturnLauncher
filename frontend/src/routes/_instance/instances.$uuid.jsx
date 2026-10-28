@@ -222,13 +222,12 @@ function InstanceDetailLayout() {
             canAnimate
               ? {
                   y: direction === 'down' ? '100%' : '-100%',
-                  opacity: 0.6,
-                  filter: 'blur(6px)',
+                  opacity: 0.8,
                 }
               : false
           }
-          animate={{ y: '0', opacity: 1, filter: 'blur(0px)' }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.38, 1] }}
+          animate={{ y: '0', opacity: 1 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.38, 1] }}
           className="h-full w-full"
         >
           <div className="h-full w-full overflow-y-auto p-8">
