@@ -114,37 +114,29 @@ function HomePage() {
           </div>
 
           <div className="flex w-full max-w-xs flex-col items-center gap-3">
-            <div className="flex items-center gap-2">
-              <AnimatePresence>
-                {(isLaunching || isRunning) && (
-                  <motion.button
-                    key="logs-button"
-                    type="button"
-                    onClick={handleViewLogs}
-                    data-tooltip="View logs"
-                    initial={{
-                      opacity: 0,
-                      scale: 0.9,
-                      width: 0,
-                      marginRight: -8,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      scale: 1,
-                      width: 44,
-                      marginRight: 0,
-                    }}
-                    exit={{ opacity: 0, scale: 0.9, width: 0, marginRight: -8 }}
-                    transition={{ duration: 0.2, ease: EASE }}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-(--surface-border) bg-transparent text-(--saturn-fg-muted) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-strong)"
-                  >
-                    <ScrollText
-                      className="size-4 shrink-0"
-                      aria-hidden="true"
-                    />
-                  </motion.button>
-                )}
-              </AnimatePresence>
+            <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2">
+              <div className="flex justify-end">
+                <AnimatePresence>
+                  {(isLaunching || isRunning) && (
+                    <motion.button
+                      key="logs-button"
+                      type="button"
+                      onClick={handleViewLogs}
+                      data-tooltip="View logs"
+                      initial={{ opacity: 0, scale: 0.5, x: '50%' }}
+                      animate={{ opacity: 1, scale: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.5, x: '50%' }}
+                      transition={{ duration: 0.3, ease: EASE }}
+                      className="flex size-11 items-center justify-center rounded-lg border border-(--surface-border) bg-transparent text-(--saturn-fg-muted) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-strong)"
+                    >
+                      <ScrollText
+                        className="size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
               <Button
                 variant="outline"
                 className="group border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 h-11 min-w-44 gap-2 rounded-lg border px-6 font-thin transition-colors"
@@ -165,27 +157,29 @@ function HomePage() {
                   </>
                 )}
               </Button>
-              <AnimatePresence>
-                {isRunning && (
-                  <motion.button
-                    key="kill-button"
-                    type="button"
-                    onClick={() => stopLaunch(uuid)}
-                    aria-label="Stop Game"
-                    data-tooltip="Force Stop"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2, ease: EASE }}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg) transition-colors hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover)"
-                  >
-                    <Square
-                      className="size-4 fill-current"
-                      aria-hidden="true"
-                    />
-                  </motion.button>
-                )}
-              </AnimatePresence>
+              <div className="flex justify-start">
+                <AnimatePresence>
+                  {isRunning && (
+                    <motion.button
+                      key="kill-button"
+                      type="button"
+                      onClick={() => stopLaunch(uuid)}
+                      aria-label="Stop Game"
+                      data-tooltip="Force Stop"
+                      initial={{ opacity: 0, scale: 0.5, x: '-50%' }}
+                      animate={{ opacity: 1, scale: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.5, x: '-50%' }}
+                      transition={{ duration: 0.3, ease: EASE }}
+                      className="flex size-11 items-center justify-center rounded-lg border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg) transition-colors hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover)"
+                    >
+                      <Square
+                        className="size-4 fill-current"
+                        aria-hidden="true"
+                      />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             {/* Progress bar */}
