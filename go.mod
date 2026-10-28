@@ -6,8 +6,11 @@ require (
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/google/uuid v1.6.0
+	github.com/hugolgst/rich-go v0.0.0-20240715122152-74618cc1ace2
 	github.com/shirou/gopsutil/v4 v4.26.9
 	github.com/wailsapp/wails/v2 v2.15.0
+	golang.org/x/sys v0.48.0
+	gopkg.in/ini.v1 v1.67.3
 )
 
 require (
@@ -43,8 +46,8 @@ require (
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/image v0.46.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
+	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
 // replace github.com/wailsapp/wails/v2 v2.16.0 => /home/swarties/go/pkg/mod
