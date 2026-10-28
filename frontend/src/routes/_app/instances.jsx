@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
@@ -17,7 +17,6 @@ import { FabricVersionPicker } from '@/components/ui/fabric-version-picker.jsx';
 import { toast } from '@/stores/toasts';
 import {
   MorphingDialog,
-  MorphingDialogClose,
   MorphingDialogContainer,
   MorphingDialogContent,
   MorphingDialogDescription,
@@ -33,7 +32,7 @@ import {
   InstallMrpack,
   ListInstances,
 } from '../../../wailsjs/go/main/App';
-import { onBackendEvent } from '@/lib/backend.js';
+import { onBackendEvent, onFileDrop } from '@/lib/backend.js';
 
 export const Route = createFileRoute('/_app/instances')({
   component: InstancesPage,
@@ -46,6 +45,10 @@ function InstancesPage() {
   const [creating, setCreating] = useState(false);
   const [installingPack, setInstallingPack] = useState(false);
   const [packSuccess, setPackSuccess] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [preventClose, setPreventClose] = useState(false);
+  const [thisIsTakingAWhile, setThisIsTakingAWhile] = useState(false);
+  const dragCounter = useRef(0);
   const navigate = Route.useNavigate();
 
   useEffect(() => {
@@ -75,9 +78,15 @@ function InstancesPage() {
   const handleInstallModpack = async (path = '') => {
     if (installingPack) return;
     setInstallingPack(true);
+    setThisIsTakingAWhile(false);
+
+    const timer = setTimeout(() => {
+      setThisIsTakingAWhile(true);
+    }, 10000);
 
     try {
       const newUuid = await InstallMrpack(path);
+      clearTimeout(timer);
       if (newUuid) {
         setInstallingPack(false);
         setPackSuccess(true);
@@ -89,6 +98,7 @@ function InstancesPage() {
         setInstallingPack(false);
       }
     } catch (e) {
+      clearTimeout(timer);
       toast.error(e?.message ?? String(e));
       setInstallingPack(false);
     }
@@ -98,20 +108,48 @@ function InstancesPage() {
     await DeleteInstance(inst.uuid);
   };
 
+  useEffect(() => {
+    if (!creating) return;
+
+    return onFileDrop((x, y, paths) => {
+      setIsDraggingOver(false);
+      dragCounter.current = 0;
+
+      const validPaths = paths.filter((p) =>
+        p.toLowerCase().endsWith('.mrpack')
+      );
+
+      if (validPaths.length === 0) {
+        toast.error('Only .mprack files can be installed here.');
+        return;
+      }
+
+      if (validPaths.length > 1) {
+        toast.error('Please drop only one modpack at a time.');
+        return;
+      }
+
+      void handleInstallModpack(validPaths[0]);
+    });
+  }, [creating, installingPack]);
+
   const isEmpty = instances.length === 0;
 
   return (
     <div className="flex h-full w-full flex-col p-6">
-      <MorphingDialog open={creating} onOpenChange={setCreating}>
+      <>
         {isEmpty ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-8">
             <p className="text-muted-foreground text-5xl font-extralight tracking-tight">
               No instances yet
             </p>
-            <MorphingDialogTrigger className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors">
+            <button
+              onClick={() => setCreating(true)}
+              className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors"
+            >
               New Instance
               <Plus aria-hidden="true" className="text-saturn-300 size-5" />
-            </MorphingDialogTrigger>
+            </button>
           </div>
         ) : (
           <>
@@ -125,10 +163,13 @@ function InstancesPage() {
                   {instances.length === 1 ? 'instance' : 'instances'}
                 </p>
               </div>
-              <MorphingDialogTrigger className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors">
+              <button
+                onClick={() => setCreating(true)}
+                className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors"
+              >
                 New Instance
                 <Plus aria-hidden="true" className="text-saturn-300 size-5" />
-              </MorphingDialogTrigger>
+              </button>
             </div>
 
             <motion.div
@@ -149,99 +190,157 @@ function InstancesPage() {
           </>
         )}
 
-        <MorphingDialogContainer>
-          <MorphingDialogContent className="bg-background relative w-full max-w-4xl rounded-md border-2 border-(--surface-border) p-8">
-            <MorphingDialogTitle className="text-muted-foreground text-sm font-normal tracking-[0.2em] uppercase">
-              New Instance
-            </MorphingDialogTitle>
-            <MorphingDialogDescription className="text-muted-foreground mt-1 mb-6 text-sm font-normal">
-              Create a vanilla/fabric instance, or drop a Modrinth Modpack to
-              install it instantly.
-            </MorphingDialogDescription>
-
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.2fr]">
-              <div className="flex flex-col">
-                <div
-                  onClick={() => handleInstallModpack('')}
-                  className={`group hover:border-saturn-500/50 relative flex h-full min-h-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-(--surface-border) transition-colors hover:bg-(--surface-hover) ${
-                    installingPack ? 'pointer-events-none opacity-50' : ''
-                  }`}
-                >
-                  <AnimatePresence>
-                    {packSuccess ? (
-                      <motion.div
-                        key="success"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.3, type: 'spring' }}
-                        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4 text-center"
-                      >
-                        <div className="flex h-20 items-center justify-center">
-                          <Check
-                            className="size-12 text-white"
-                            strokeWidth={2.5}
-                          />
-                        </div>
-                        <div className="flex h-14 items-center justify-center">
-                          <p className="text-foreground text-lg font-thin tracking-wide">
-                            We&#39;re redirecting you, hang tight
-                            <AnimatedDots />
-                          </p>
-                        </div>
-                      </motion.div>
-                    ) : installingPack ? (
-                      <motion.div
-                        key="installing"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4"
-                      >
-                        <div className="flex h-20 items-center justify-center">
-                          <LoaderCircle className="text-saturn-400 size-12 animate-spin" />
-                        </div>
-                        <div className="flex h-14 items-center justify-center">
-                          <p className="text-foreground text-lg font-thin tracking-wide">
-                            Installing Modpack...
-                          </p>
-                        </div>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="idle"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4"
-                      >
-                        <div className="flex h-20 items-center justify-center">
-                          <div className="group-hover:border-saturn-500/50 group-hover:bg-saturn-900/40 group-hover:text-saturn-300 flex size-20 items-center justify-center rounded-xl border border-(--surface-border) bg-(--chip-bg) text-(--chip-fg) shadow-lg shadow-black/20 transition-all duration-300 group-hover:-translate-y-1">
-                            <PackagePlus className="size-8" strokeWidth={1.5} />
-                          </div>
-                        </div>
-                        <div className="flex h-14 items-center justify-center">
-                          <p className="text-foreground text-center text-lg font-thin tracking-wide">
-                            Click or <s className="opacity-50">drag in</s>
-                            <br />a .mrpack file
-                          </p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-              <div
-                className={`flex flex-col transition-opacity duration-300 ${installingPack ? 'pointer-events-none opacity-20' : ''}`}
+        <AnimatePresence>
+          {creating && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-6"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget && !preventClose) {
+                  setCreating(false);
+                }
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                onMouseDown={(e) => e.stopPropagation()}
+                style={{ '--wails-drop-target': 'drop' }}
+                className="bg-background relative w-full max-w-4xl rounded-md border-2 border-(--surface-border) p-8 shadow-2xl"
               >
-                <CreateInstanceForm />
-              </div>
-            </div>
-          </MorphingDialogContent>
-        </MorphingDialogContainer>
-      </MorphingDialog>
+                <div className="text-muted-foreground text-sm font-normal tracking-[0.2em] uppercase">
+                  New Instance
+                </div>
+                <div className="text-muted-foreground mt-1 mb-6 text-sm font-normal">
+                  Create a vanilla/fabric instance, or drop a Modrinth Modpack
+                  to install it instantly.
+                </div>
+
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.2fr] md:gap-0">
+                  <div className="flex flex-col md:pr-8">
+                    <div
+                      onClick={() => handleInstallModpack('')}
+                      onDragEnter={(e) => {
+                        e.preventDefault();
+                        dragCounter.current += 1;
+                        if (dragCounter.current === 1) setIsDraggingOver(true);
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault();
+                        dragCounter.current -= 1;
+                        if (dragCounter.current <= 0) {
+                          dragCounter.current = 0;
+                          setIsDraggingOver(false);
+                        }
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        dragCounter.current = 0;
+                        setIsDraggingOver(false);
+                      }}
+                      className={`group relative flex h-full min-h-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors ${
+                        isDraggingOver
+                          ? 'border-saturn-400 bg-(--surface-hover)'
+                          : 'hover:border-saturn-500/50 border-(--surface-border) hover:bg-(--surface-hover)'
+                      } ${installingPack ? 'pointer-events-none opacity-50' : ''}`}
+                    >
+                      <AnimatePresence>
+                        {packSuccess ? (
+                          <motion.div
+                            key="success"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.3, type: 'spring' }}
+                            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4 text-center"
+                          >
+                            <div className="flex h-20 items-center justify-center">
+                              <Check
+                                className="size-12 text-white"
+                                strokeWidth={2.5}
+                              />
+                            </div>
+                            <div className="flex h-14 items-center justify-center">
+                              <p className="text-foreground text-lg font-thin tracking-wide">
+                                We&#39;re redirecting you, hang tight
+                                <AnimatedDots />
+                              </p>
+                            </div>
+                          </motion.div>
+                        ) : installingPack ? (
+                          <motion.div
+                            key="installing"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4"
+                          >
+                            <div className="flex h-20 items-center justify-center">
+                              <LoaderCircle className="text-saturn-400 size-12 animate-spin" />
+                            </div>
+                            <div className="flex h-14 items-center justify-center">
+                              <p className="text-foreground text-lg font-thin tracking-wide">
+                                Installing Modpack...
+                              </p>
+                              {thisIsTakingAWhile && (
+                                <p className="text-muted-foreground mt-1 animate-pulse text-xs font-thin">
+                                  This is taking a while, please wait...
+                                </p>
+                                //   It would be very ironic if
+                              )}
+                            </div>
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="idle"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4"
+                          >
+                            <div className="flex h-20 items-center justify-center">
+                              <div className="group-hover:border-saturn-500/50 group-hover:bg-saturn-900/40 group-hover:text-saturn-300 flex size-20 items-center justify-center rounded-xl border border-(--surface-border) bg-(--chip-bg) text-(--chip-fg) shadow-lg shadow-black/20 transition-all duration-300 group-hover:-translate-y-1">
+                                <PackagePlus
+                                  className="size-8"
+                                  strokeWidth={1.5}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex h-14 items-center justify-center">
+                              <p className="text-foreground text-center text-lg font-thin tracking-wide">
+                                Click or <s className="opacity-50">drag in</s>
+                                <br />a .mrpack file
+                              </p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                  <div
+                    className={`md:border-b-saturn-200 flex flex-col transition-opacity duration-300 md:border-l md:pl-8 ${installingPack ? 'pointer-events-none opacity-20' : ''}`}
+                  >
+                    <CreateInstanceForm
+                      onClose={() => {
+                        setCreating(false);
+                        setPreventClose(false);
+                      }}
+                      setPreventClose={setPreventClose}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </>
     </div>
   );
 }
@@ -382,8 +481,7 @@ function AnimatedDots() {
   return <span className="inline-block w-4 text-left">{dots}</span>;
 }
 
-function CreateInstanceForm() {
-  const { setIsOpen, setPreventClose } = useMorphingDialog();
+function CreateInstanceForm({ onClose, setPreventClose }) {
   const [name, setName] = useState('');
   const [version, setVersion] = useState('1.14');
   const [loader, setLoader] = useState('vanilla');
@@ -419,7 +517,7 @@ function CreateInstanceForm() {
         await InstallFabric(uuid, fabricVersion);
       }
 
-      setIsOpen(false);
+      onClose();
     } catch (e) {
       toast.error(e?.message ?? String(e));
       setPartialUuid(uuid);
@@ -502,12 +600,14 @@ function CreateInstanceForm() {
       </div>
 
       <div className="mt-auto flex justify-end gap-3 pt-6">
-        <MorphingDialogClose
+        <button
+          type="button"
+          onClick={onClose}
           disabled={submitting}
-          className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
+          className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
         >
           {partialUuid ? 'Close' : 'Cancel'}
-        </MorphingDialogClose>
+        </button>
         <button
           type="button"
           onClick={handleSubmit}
