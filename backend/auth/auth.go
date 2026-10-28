@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Auth struct {
@@ -502,4 +505,16 @@ func (a *Auth) SetActiveAccount(uuid string) error {
 		return err
 	}
 	return nil
+}
+
+func (a *Auth) GenerateOfflineUUID(username string) (string, error) {
+	unhashedUUID := "OfflinePlayer:" + username
+	hashBytes := md5.Sum([]byte(unhashedUUID))
+	hashBytes[6] = (hashBytes[6] & 0x0f) | 0x30
+	hashBytes[8] = (hashBytes[8] & 0x3f) | 0x80
+	strUUID, err := uuid.FromBytes(hashBytes[:])
+	if err != nil {
+		return "", err
+	}
+	return strUUID.String(), nil
 }
