@@ -3,7 +3,6 @@ package auth
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,8 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Auth struct {
@@ -69,6 +66,7 @@ type AuthSession struct {
 	RefreshToken string `json:"RefreshToken"`
 	Uhs          string `json:"Uhs"`
 	Xuid         string `json:"xuid"`
+	Offline      bool   `json:"offline,omitempty"`
 }
 
 type MinecraftInfo struct {
@@ -507,14 +505,44 @@ func (a *Auth) SetActiveAccount(uuid string) error {
 	return nil
 }
 
-func (a *Auth) GenerateOfflineUUID(username string) (string, error) {
-	unhashedUUID := "OfflinePlayer:" + username
-	hashBytes := md5.Sum([]byte(unhashedUUID))
-	hashBytes[6] = (hashBytes[6] & 0x0f) | 0x30
-	hashBytes[8] = (hashBytes[8] & 0x3f) | 0x80
-	strUUID, err := uuid.FromBytes(hashBytes[:])
+//func (a *Auth) GenerateOfflineUUID(username string) (string, error) {
+//	unhashedUUID := "OfflinePlayer:" + username
+//	hashBytes := md5.Sum([]byte(unhashedUUID))
+//	hashBytes[6] = (hashBytes[6] & 0x0f) | 0x30
+//	hashBytes[8] = (hashBytes[8] & 0x3f) | 0x80
+//	strUUID, err := uuid.FromBytes(hashBytes[:])
+//	if err != nil {
+//		return "", err
+//	}
+//	return strUUID.String(), nil
+//}
+// don't need it cuzzz realized offline without a valid uuid is kinda piracy
+
+func (a *Auth) SetOfflineMode(uuid string, offline bool) error {
+	var authses AuthSession
+	appdata, err := os.UserConfigDir()
 	if err != nil {
-		return "", err
+		return err
 	}
-	return strUUID.String(), nil
+	accountFileLoc := filepath.Join(appdata, "SaturnLauncher", "accounts", uuid+".json")
+	file, err := os.ReadFile(accountFileLoc)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(file, &authses)
+	if err != nil {
+		return err
+	}
+	if authses.Offline != offline {
+		authses.Offline = offline
+	}
+	newFile, err := json.MarshalIndent(authses, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(accountFileLoc, newFile, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
 }

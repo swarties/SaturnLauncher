@@ -206,8 +206,7 @@ func (a *App) StartApp() {
 		}
 		mctoken, NewAuthSession, err := a.Auth.RefreshMinecraftToken(*Keys)
 		if err != nil {
-			_ = a.DeleteAccount(Keys.UUID)
-			wailsRuntime.EventsEmit(a.ctx, "auth:required")
+			wailsRuntime.EventsEmit(a.ctx, "auth:required", err.Error())
 			return
 		}
 		if strings.TrimSpace(NewAuthSession.RefreshToken) == "" {
@@ -233,6 +232,9 @@ func (a *App) StartApp() {
 }
 
 func (a *App) StartGame(folderId string) error {
+	var mcinfo *auth.MinecraftInfo
+	var mcpayload auth.MinecraftPayload
+	var Session auth.AuthSession
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err
@@ -241,25 +243,33 @@ func (a *App) StartGame(folderId string) error {
 	if err != nil {
 		return err
 	}
-	mcpayload, Session, err := a.Auth.RefreshMinecraftToken(*Keys)
-	if err != nil {
-		return err
+	if Keys.Offline == false {
+		var authErr error
+		mcpayload, Session, authErr = a.Auth.RefreshMinecraftToken(*Keys)
+		if authErr != nil {
+			return authErr
+		}
+		authErr = a.Auth.SaveAndActivateAccount(Session)
+		if authErr != nil {
+			return authErr
+		}
+		mcinfo, authErr = a.Auth.GetAccountInfo(mcpayload)
+		if authErr != nil {
+			return authErr
+		}
+	} else {
+		Session = *Keys
+		mcpayload = auth.MinecraftPayload{AccessToken: "0"}
+		mcinfo = &auth.MinecraftInfo{Username: Keys.Username, UUID: Keys.UUID}
 	}
-	err = a.Auth.SaveAndActivateAccount(Session)
-	if err != nil {
-		return err
-	}
-	mcinfo, err := a.Auth.GetAccountInfo(mcpayload)
-	if err != nil {
-		return err
-	}
+
 	instInfo, err := a.InstanceManager.GetInstanceInfo(folderId)
 	if err != nil {
 		return err
 	}
 	version := instInfo.Version
 	if version == "" {
-		version = "26.2"
+		version = "26.3"
 	}
 	var manifest download.VersionManifest
 	base := filepath.Join(appdatadir, "SaturnLauncher")
@@ -1200,4 +1210,13 @@ func (a *App) PickJavaPath() (string, error) {
 		}
 	}
 	return path, nil
+}
+
+func (a *App) ToggleOfflineMode(uuid string, offline bool) error {
+	err := a.Auth.SetOfflineMode(uuid, offline)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "account:changed")
+	return nil
 }

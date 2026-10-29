@@ -96,7 +96,12 @@ func (l *Launch) BuildArgs(mcinfo auth.MinecraftInfo, folderId string, classpath
 	args["auth_access_token"] = mcpayload.AccessToken
 	args["auth_xuid"] = authinfo.Xuid // have to get later in auth.go in xsts func
 	args["clientid"] = "000000004C12AE6F"
-	args["user_type"] = "msa"
+	if authinfo.Offline == false {
+		args["user_type"] = "msa"
+	} else {
+		args["user_type"] = "legacy"
+	}
+
 	return args, nil
 }
 
