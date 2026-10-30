@@ -26,6 +26,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -231,7 +232,7 @@ func (a *App) StartApp() {
 	}()
 }
 
-func (a *App) StartGame(folderId string) error {
+func (a *App) StartGame(folderId, worldName string) error {
 	var mcinfo *auth.MinecraftInfo
 	var mcpayload auth.MinecraftPayload
 	var Session auth.AuthSession
@@ -270,6 +271,15 @@ func (a *App) StartGame(folderId string) error {
 	version := instInfo.Version
 	if version == "" {
 		version = "26.3"
+	}
+	if worldName != "" {
+		parts := strings.Split(version, ".")
+		if len(parts) >= 2 && parts[0] == "1" {
+			minorVersion, atoiErr := strconv.Atoi(parts[1])
+			if atoiErr == nil && minorVersion < 20 {
+				worldName = ""
+			}
+		}
 	}
 	var manifest download.VersionManifest
 	base := filepath.Join(appdatadir, "SaturnLauncher")
@@ -382,6 +392,9 @@ func (a *App) StartGame(folderId string) error {
 	game, err := a.Launch.CreateArgs(args, vInfo.Arguments.Game)
 	if err != nil {
 		return err
+	}
+	if worldName != "" {
+		game = append(game, "--quickPlaySingleplayer", worldName)
 	}
 	fullargs := make([]string, 0, len(jvm)+1+len(game))
 	fullargs = append(fullargs, jvm...)
@@ -1304,4 +1317,12 @@ func (a *App) GetTotalPlaytime() (int64, error) {
 		return 0, err
 	}
 	return playtime, nil
+}
+
+func (a *App) ListWorlds(folderId string) ([]string, error) {
+	worlds, err := a.InstanceManager.ListWorlds(folderId)
+	if err != nil {
+		return nil, err
+	}
+	return worlds, nil
 }
