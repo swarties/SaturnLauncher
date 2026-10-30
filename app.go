@@ -1263,3 +1263,18 @@ func (a *App) InstallModrinthModpack(vId string) (string, error) {
 	}
 	return modpack, nil
 }
+
+func (a *App) GetLatestCrash(folderId string) (string, error) {
+	crash, err := a.InstanceManager.GetLatestCrash(folderId)
+	if err != nil {
+		return "", err
+	}
+	if len(crash) == 0 {
+		return "", nil
+	}
+	parseCrash, err := a.InstanceManager.ParseCrash(crash)
+	if err != nil {
+		return "", err
+	}
+	return parseCrash, nil
+}

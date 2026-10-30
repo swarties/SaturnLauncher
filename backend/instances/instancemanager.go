@@ -457,3 +457,79 @@ func (i *InstanceManager) ListWorlds(folderId string) ([]string, error) {
 	}
 	return validWorlds, nil
 }
+
+func (i *InstanceManager) GetLatestCrash(folderID string) (string, error) {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	crashPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderID, "crash-reports")
+	dir, err := os.ReadDir(crashPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	var newestFile string
+	var newestTime time.Time
+	for _, d := range dir {
+		if d.IsDir() {
+			continue
+		}
+		if !strings.HasSuffix(d.Name(), ".txt") {
+			continue
+		}
+		info, derr := d.Info()
+		if derr != nil {
+			return "", derr
+		}
+		if info.ModTime().After(newestTime) {
+			newestFile = filepath.Join(crashPath, info.Name())
+			newestTime = info.ModTime()
+		}
+	}
+	if newestFile == "" {
+		return "", fmt.Errorf("couldn't find a crash report")
+	}
+	file, err := os.ReadFile(newestFile)
+	if err != nil {
+		return "", err
+	}
+	fileContents := string(file)
+	return fileContents, nil
+}
+
+func (i *InstanceManager) ParseCrash(crash string) (string, error) {
+	searchTerm := "Description: "
+	index := strings.Index(crash, searchTerm)
+	if index == -1 {
+		if len(crash) < 2000 {
+			return crash, nil
+		}
+		return crash[0:2000], nil
+	}
+	startIndex := index + len(searchTerm)
+	endIndex := strings.Index(crash[startIndex:], "\n")
+	if endIndex == -1 {
+		if len(crash) < 2000 {
+			return crash, nil
+		}
+		return crash[0:2000], nil
+	}
+	searchTerm = "Stacktrace: "
+	sindex := strings.Index(crash, searchTerm)
+	if sindex == -1 {
+		if len(crash) < 2000 {
+			return crash, nil
+		}
+		return crash[0:2000], nil
+	}
+	sindex += len(searchTerm)
+	eindex := strings.Index(crash, "-- System Details --")
+	if eindex == -1 {
+		eindex = len(crash)
+	}
+	newCrash := "Description: \n" + strings.TrimSpace(crash[startIndex:startIndex+endIndex]) + "\n" + "Stacktrace: \n" + strings.TrimSpace(crash[sindex:eindex])
+	return newCrash, nil
+}
