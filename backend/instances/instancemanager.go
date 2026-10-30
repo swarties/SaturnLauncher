@@ -25,16 +25,17 @@ func NewInstanceManager() *InstanceManager {
 }
 
 type Instance struct {
-	Name          string `json:"name"`
-	Description   string `json:"description,omitempty"`
-	Version       string `json:"version"`
-	Uuid          string `json:"uuid"`
-	TimeCreated   string `json:"timecreated"`
-	MinRam        int    `json:"minram"`
-	MaxRam        int    `json:"maxram"`
-	FabricVersion string `json:"fabricVersion,omitempty"`
-	JvmArgs       string `json:"jvmArgs"`
-	JavaPath      string `json:"javaPath,omitempty"`
+	Name            string `json:"name"`
+	Description     string `json:"description,omitempty"`
+	Version         string `json:"version"`
+	Uuid            string `json:"uuid"`
+	TimeCreated     string `json:"timecreated"`
+	MinRam          int    `json:"minram"`
+	MaxRam          int    `json:"maxram"`
+	FabricVersion   string `json:"fabricVersion,omitempty"`
+	JvmArgs         string `json:"jvmArgs"`
+	JavaPath        string `json:"javaPath,omitempty"`
+	PlaytimeSeconds int64  `json:"playtimeSeconds,omitempty"`
 }
 type Ram struct {
 	TotalRamMB int
@@ -532,4 +533,43 @@ func (i *InstanceManager) ParseCrash(crash string) (string, error) {
 	}
 	newCrash := "Description: \n" + strings.TrimSpace(crash[startIndex:startIndex+endIndex]) + "\n" + "Stacktrace: \n" + strings.TrimSpace(crash[sindex:eindex])
 	return newCrash, nil
+}
+
+func (i *InstanceManager) AddPlaytime(folderId string, playtime int64) error {
+	info, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	info.PlaytimeSeconds += playtime
+	indentFile, err := json.MarshalIndent(info, "", "  ")
+	if err != nil {
+		return err
+	}
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	return os.WriteFile(base, indentFile, 0o600)
+}
+
+func (i *InstanceManager) GetInstPlaytime(folderId string) (int64, error) {
+	info, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return 0, err
+	}
+
+	return info.PlaytimeSeconds, nil
+}
+
+func (i *InstanceManager) GetTotalPlaytime() (int64, error) {
+	instances, err := i.ListInstances()
+	if err != nil {
+		return 0, err
+	}
+	var total int64
+	for _, a := range instances {
+		total += a.PlaytimeSeconds
+	}
+	return total, nil
 }

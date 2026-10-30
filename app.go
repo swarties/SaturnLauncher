@@ -420,6 +420,7 @@ func (a *App) StartGame(folderId string) error {
 		return err
 	}
 	a.UpdateDiscordActivity("Starting Game", "Playing Minecraft "+instInfo.Version)
+	startTime := time.Now()
 	err = mc.Start()
 	if err != nil {
 		wailsRuntime.EventsEmit(a.ctx, "game:error", err.Error())
@@ -483,10 +484,20 @@ func (a *App) StartGame(folderId string) error {
 		if err != nil {
 			fmt.Println(err)
 		}
+		seconds := int64(time.Since(startTime).Seconds())
+		if seconds > 0 {
+			err = a.InstanceManager.AddPlaytime(folderId, seconds)
+			if err != nil {
+				fmt.Println("error when adding playtime.	", err)
+			}
+		}
 		wailsRuntime.EventsEmit(a.ctx, "game:stopped", map[string]any{
-			"folderId": folderId,
-			"exitCode": code,
+			"folderId":      folderId,
+			"exitCode":      code,
+			"sessionSecond": seconds,
+			"playtimeTotal": instInfo.PlaytimeSeconds + seconds,
 		})
+
 		a.UpdateDiscordActivity("Stopping Game", "Stopping Minecraft "+instInfo.Version)
 
 		a.mu.Lock()
@@ -1277,4 +1288,20 @@ func (a *App) GetLatestCrash(folderId string) (string, error) {
 		return "", err
 	}
 	return parseCrash, nil
+}
+
+func (a *App) GetInstPlaytime(folderId string) (int64, error) {
+	playtime, err := a.InstanceManager.GetInstPlaytime(folderId)
+	if err != nil {
+		return 0, err
+	}
+	return playtime, nil
+}
+
+func (a *App) GetTotalPlaytime() (int64, error) {
+	playtime, err := a.InstanceManager.GetTotalPlaytime()
+	if err != nil {
+		return 0, err
+	}
+	return playtime, nil
 }
