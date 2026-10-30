@@ -1220,3 +1220,46 @@ func (a *App) ToggleOfflineMode(uuid string, offline bool) error {
 	wailsRuntime.EventsEmit(a.ctx, "account:changed")
 	return nil
 }
+
+func (a *App) InstallModrinthModpack(vId string) (string, error) {
+	var primary modrinth.VersionFile
+	var modpack string
+	var tempPath string
+	isFabric := false
+	version, err := a.Modrinth.GetVersion(vId)
+	if err != nil {
+		return "", err
+	}
+	for _, v := range version.Loaders {
+		if v == "fabric" {
+			isFabric = true
+			// return "", fmt.Errorf("SaturnLauncher currently only supports fabric")
+		}
+	}
+	if isFabric == false {
+		return "", fmt.Errorf("SaturnLauncher currently only supports fabric")
+	}
+	for _, v := range version.Files {
+		if v.Primary == true {
+			primary = v
+			break
+		}
+	}
+	if primary.URL != "" {
+		tempdir := os.TempDir()
+		tempPath = filepath.Join(tempdir, primary.Filename)
+		_, err = a.Download.Downloader(tempPath, primary.URL)
+		if err != nil {
+			return "", err
+		}
+		defer os.Remove(tempPath)
+		modpack, err = a.Mrpack.InstallModpack(tempPath)
+		if err != nil {
+			return "", err
+		}
+		wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	} else {
+		return "", fmt.Errorf("couldn't find a primary file for this modpack")
+	}
+	return modpack, nil
+}
