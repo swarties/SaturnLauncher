@@ -3,12 +3,14 @@ module SaturnLauncher
 go 1.26.0
 
 require (
+	github.com/billgraziano/dpapi v0.5.0
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/google/uuid v1.6.0
 	github.com/hugolgst/rich-go v0.0.0-20240715122152-74618cc1ace2
 	github.com/shirou/gopsutil/v4 v4.26.9
 	github.com/wailsapp/wails/v2 v2.15.0
+	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/sys v0.48.0
 	gopkg.in/ini.v1 v1.67.3
 )
@@ -16,9 +18,10 @@ require (
 require (
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
+	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/ebitengine/purego v0.11.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/godbus/dbus/v5 v5.1.0 // indirect
+	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
 	github.com/labstack/echo/v4 v4.13.3 // indirect

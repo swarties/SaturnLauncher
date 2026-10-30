@@ -5,7 +5,6 @@ package autoupdater
 import (
 	"SaturnLauncher/backend/download"
 	"SaturnLauncher/backend/projectInfo"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -17,14 +16,6 @@ import (
 
 	"golang.org/x/sys/windows/registry"
 )
-
-type Updater struct {
-	ctx context.Context
-}
-
-func NewUpdater() *Updater {
-	return &Updater{}
-}
 
 const userAgent = projectInfo.UserAgent
 const tag = projectInfo.ReleaseTag

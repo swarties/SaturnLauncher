@@ -61,12 +61,13 @@ type MinecraftPayload struct {
 }
 
 type AuthSession struct {
-	Username     string `json:"username"`
-	UUID         string `json:"uuid"`
-	RefreshToken string `json:"RefreshToken"`
-	Uhs          string `json:"Uhs"`
-	Xuid         string `json:"xuid"`
-	Offline      bool   `json:"offline,omitempty"`
+	Username        string `json:"username"`
+	UUID            string `json:"uuid"`
+	RefreshToken    string `json:"RefreshToken"`
+	Uhs             string `json:"Uhs"`
+	Xuid            string `json:"xuid"`
+	Offline         bool   `json:"offline,omitempty"`
+	EncRefreshToken string `json:"encRefreshToken"`
 }
 
 type MinecraftInfo struct {
@@ -359,6 +360,7 @@ func (a *Auth) GetAccountInfo(mctoken MinecraftPayload) (*MinecraftInfo, error) 
 }
 
 func (a *Auth) SaveAndActivateAccount(session AuthSession) error {
+	crypto := NewCrypto()
 	var activeJson Active
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
@@ -368,7 +370,14 @@ func (a *Auth) SaveAndActivateAccount(session AuthSession) error {
 	filePath := filepath.Join(targetdir, session.UUID+".json")
 	activePath := filepath.Join(targetdir, "active.json")
 	activeJson.UUID = session.UUID
-
+	if session.RefreshToken != "" {
+		key, err := crypto.EncryptKey(session.UUID, session.RefreshToken)
+		if err != nil {
+			return err
+		}
+		session.EncRefreshToken = key
+		session.RefreshToken = ""
+	}
 	Jsonbytes, err := json.MarshalIndent(session, "", "  ")
 	if err != nil {
 		return err
@@ -390,6 +399,7 @@ func (a *Auth) SaveAndActivateAccount(session AuthSession) error {
 }
 
 func (a *Auth) GetActiveAccount() (*AuthSession, error) {
+	crypto := NewCrypto()
 	var session AuthSession
 	var active Active
 	appdatadir, err := os.UserConfigDir()
@@ -414,6 +424,13 @@ func (a *Auth) GetActiveAccount() (*AuthSession, error) {
 	err = json.Unmarshal(file, &session)
 	if err != nil {
 		return nil, err
+	}
+	if session.EncRefreshToken != "" {
+		key, err := crypto.DecryptKey(active.UUID, session.EncRefreshToken)
+		if err != nil {
+			return nil, err
+		}
+		session.RefreshToken = key
 	}
 	return &session, nil
 }
