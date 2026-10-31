@@ -115,6 +115,17 @@ type ModManifest struct {
 	Icon        string `json:"icon"`
 }
 
+type QuiltModManifest struct {
+	QuiltLoader struct {
+		Metadata struct {
+			Name        string `json:"name"`
+			Version     string `json:"version"`
+			Description string `json:"description"`
+			Icon        string `json:"icon"`
+		} `json:"metadata"`
+	} `json:"quilt_loader"`
+}
+
 type pack struct {
 	Description string `json:"description"`
 	Name        string
@@ -968,7 +979,6 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 		return nil, err
 	}
 	for _, d := range dir {
-
 		if d.IsDir() {
 			continue
 		}
@@ -976,8 +986,6 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 		dirName := filepath.Join(contentDir, d.Name())
 		info = ContentInfo{FileName: d.Name()}
 		if contentType == "mods" {
-
-			var superm ModManifest
 			stat, err := os.Stat(dirName)
 			if err != nil {
 				return nil, err
@@ -987,10 +995,9 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				contentInfo = append(contentInfo, info)
 				continue
 			}
-
+			info.FileSize = int(stat.Size())
 			for _, r := range reader.File {
-
-				if r.Name != "fabric.mod.json" {
+				if r.Name != "fabric.mod.json" && r.Name != "quilt.mod.json" {
 					continue
 				}
 				open, err := r.Open()
@@ -1002,41 +1009,60 @@ func (d *Download) GetInstalledContent(folderId, contentType string) ([]ContentI
 				if err != nil {
 					return nil, err
 				}
+
 				file = bytes.ReplaceAll(file, []byte("\n"), []byte(" "))
 				file = bytes.ReplaceAll(file, []byte("\r"), []byte(" "))
-				err = json.Unmarshal(file, &superm)
+				var iconPath string
+
+				if r.Name == "fabric.mod.json" {
+					var superm ModManifest
+					err = json.Unmarshal(file, &superm)
+					if err != nil {
+						break
+					}
+					info.Name = superm.Name
+					info.Version = superm.Version
+					info.Description = superm.Description
+					info.IsShader = false
+					iconPath = superm.Icon
+				} else if r.Name == "quilt.mod.json" {
+					var quiltM QuiltModManifest
+					err = json.Unmarshal(file, &quiltM)
+					if err != nil {
+						break
+					}
+					info.Name = quiltM.QuiltLoader.Metadata.Name
+					info.Version = quiltM.QuiltLoader.Metadata.Version
+					info.Description = quiltM.QuiltLoader.Metadata.Description
+					info.IsShader = false
+					iconPath = quiltM.QuiltLoader.Metadata.Icon
+				}
+				if iconPath != "" {
+					iconPath = strings.TrimPrefix(iconPath, "/")
+					for _, f := range reader.File {
+						if f.Name != iconPath {
+							continue
+						}
+						mOpen, err := f.Open()
+						if err != nil {
+							continue
+						}
+						mFile, err := io.ReadAll(mOpen)
+						if err != nil {
+							continue
+						}
+						err = mOpen.Close()
+						if err != nil {
+							continue
+						}
+						info.Icon = base64.StdEncoding.EncodeToString(mFile)
+						break
+					}
+				}
 				oerr := open.Close()
 				if oerr != nil {
 					return nil, err
 				}
-				if err != nil {
-					break
-				}
-				superm.Icon = strings.TrimPrefix(superm.Icon, "/")
-				for _, read := range reader.File {
-					if read.Name != superm.Icon {
-						continue
-					}
-					mOpen, err := read.Open()
-					if err != nil {
-						continue
-					}
-					mFile, err := io.ReadAll(mOpen)
-					if err != nil {
-						continue
-					}
-					err = mOpen.Close()
-					if err != nil {
-						continue
-					}
-					info.Icon = base64.StdEncoding.EncodeToString(mFile)
-					break
-				}
-				info.Name = superm.Name
-				info.Version = superm.Version
-				info.Description = superm.Description
-				info.FileSize = int(stat.Size())
-				info.IsShader = false
 				break
 			}
 			err = reader.Close()

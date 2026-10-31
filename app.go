@@ -1256,19 +1256,19 @@ func (a *App) InstallModrinthModpack(vId string) (string, error) {
 	var primary modrinth.VersionFile
 	var modpack string
 	var tempPath string
-	isFabric := false
+	isSupported := false
 	version, err := a.Modrinth.GetVersion(vId)
 	if err != nil {
 		return "", err
 	}
 	for _, v := range version.Loaders {
-		if v == "fabric" {
-			isFabric = true
+		if v == "fabric" || v == "quilt" {
+			isSupported = true
 			// return "", fmt.Errorf("SaturnLauncher currently only supports fabric")
 		}
 	}
-	if isFabric == false {
-		return "", fmt.Errorf("SaturnLauncher currently only supports fabric")
+	if isSupported == false {
+		return "", fmt.Errorf("SaturnLauncher currently only supports fabric and quilt")
 	}
 	for _, v := range version.Files {
 		if v.Primary == true {
@@ -1360,4 +1360,13 @@ func (a *App) GetQuiltLoaders(gameVersion string) ([]quilt.LoaderVersion, error)
 		return nil, err
 	}
 	return versions, nil
+}
+
+func (a *App) UninstallQuilt(folderId string) error {
+	err := a.InstanceManager.UpdateQuiltVersion(folderId, "")
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
 }
