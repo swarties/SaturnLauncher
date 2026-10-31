@@ -1378,3 +1378,35 @@ func (a *App) BackupInstance(folderId string) (string, error) {
 	}
 	return instance, nil
 }
+
+func (a *App) ExportInstanceAsModpack(folderId string) (string, error) {
+	info, err := a.InstanceManager.GetInstanceInfo(folderId)
+	if err != nil {
+		return "", err
+	}
+	dst, err := wailsRuntime.SaveFileDialog(a.ctx, wailsRuntime.SaveDialogOptions{
+		DefaultFilename: info.Name + ".mrpack",
+		Title:           "",
+		Filters: []wailsRuntime.FileFilter{
+			{
+				DisplayName: "modrinth modpacks",
+				Pattern:     "*.mrpack",
+			},
+		},
+		CanCreateDirectories: true,
+	})
+	if err != nil {
+		return "", err
+	}
+	if dst == "" {
+		return "", nil
+	}
+	if !strings.HasSuffix(dst, ".mrpack") {
+		dst += ".mrpack"
+	}
+	err = a.Mrpack.ExportModpack(folderId, dst)
+	if err != nil {
+		return "", err
+	}
+	return dst, nil
+}
