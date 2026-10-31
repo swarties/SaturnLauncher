@@ -615,11 +615,11 @@ func (i *InstanceManager) BackupInstance(folderId string) (string, error) {
 	}
 	defer file.Close()
 	zipWrite := zip.NewWriter(file)
-	err = AddToZip(filepath.Join(instLocation, "saves"), "saves", zipWrite)
+	err = i.AddToZip(filepath.Join(instLocation, "saves"), "saves", zipWrite)
 	if err != nil {
 		return "", err
 	}
-	err = AddToZip(filepath.Join(instLocation, "config"), "config", zipWrite)
+	err = i.AddToZip(filepath.Join(instLocation, "config"), "config", zipWrite)
 	if err != nil {
 		return "", err
 	}
@@ -650,7 +650,7 @@ func (i *InstanceManager) BackupInstance(folderId string) (string, error) {
 	return zipPath, nil
 }
 
-func AddToZip(src, zipPrefix string, zipWrite *zip.Writer) error {
+func (i *InstanceManager) AddToZip(src, zipPrefix string, zipWrite *zip.Writer) error {
 	_, err := os.Stat(src)
 	if err != nil {
 		if os.IsNotExist(err) {

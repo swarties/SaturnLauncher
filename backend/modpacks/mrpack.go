@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Mrpack struct {
@@ -224,4 +225,112 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 		}
 	}
 	return inst.Uuid, nil
+}
+
+func (m *Mrpack) ExportModpack(folderId, dst string) error {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	instPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId)
+	var mpack ModrinthPack
+	iMgr := instances.NewInstanceManager()
+	info, err := iMgr.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	mr := modrinth2.NewModrinth()
+	manifest, err := mr.ReadManifest(folderId)
+	if err != nil {
+		return err
+	}
+	mpack.Name = info.Name
+	mpack.VersionID = time.Now().Format("20060102150405")
+	mpack.Game = "minecraft"
+	mpack.FormatVersion = 1
+	mpack.Dependencies.Minecraft = info.Version
+	if info.FabricVersion != "" {
+		mpack.Dependencies.FabricLoader = info.FabricVersion
+	}
+	if info.QuiltVersion != "" {
+		mpack.Dependencies.QuiltLoader = info.QuiltVersion
+	}
+	for _, ma := range manifest {
+		var files Files
+		files.Hashes.Sha1 = ma.Hash
+		_, err := os.Stat(filepath.Join(instPath, "mods", ma.Filename))
+		if err == nil {
+			files.Path = "mods/" + ma.Filename
+		}
+		_, err = os.Stat(filepath.Join(instPath, "resourcepacks", ma.Filename))
+		if err == nil {
+			files.Path = "resourcepacks/" + ma.Filename
+		}
+		_, err = os.Stat(filepath.Join(instPath, "shaderpacks", ma.Filename))
+		if err == nil {
+			files.Path = "shaderpacks/" + ma.Filename
+		}
+		files.Downloads = []string{"https://cdn.modrinth.com/data/" + ma.ProjectId + "/versions/" + ma.VersionId + "/" + ma.Filename}
+		files.Env.Client = "required"
+		files.Env.Server = "required"
+		if files.Path == "" {
+			continue
+		}
+		mpack.Files = append(mpack.Files, files)
+	}
+	indent, err := json.MarshalIndent(mpack, "", "  ")
+	if err != nil {
+		return err
+	}
+	create, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	zipWriter := zip.NewWriter(create)
+	writer, err := zipWriter.Create("modrinth.index.json")
+	if err != nil {
+		return err
+	}
+	_, err = writer.Write(indent)
+	if err != nil {
+		return err
+	}
+	err = iMgr.AddToZip(filepath.Join(instPath, "config"), "overrides/config", zipWriter)
+	if err != nil {
+		return err
+	}
+	err = iMgr.AddToZip(filepath.Join(instPath, "saves"), "overrides/saves", zipWriter)
+	if err != nil {
+		return err
+	}
+	optionsPath := filepath.Join(instPath, "options.txt")
+	_, err = os.Stat(optionsPath)
+	if err == nil {
+		open, err := os.Open(optionsPath)
+		if err != nil {
+			return err
+		}
+		defer open.Close()
+		zipEntry, err := zipWriter.Create("overrides/options.txt")
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(zipEntry, open)
+		if err != nil {
+			return err
+		}
+		err = open.Close()
+		if err != nil {
+			return err
+		}
+	}
+	err = zipWriter.Close()
+	if err != nil {
+		return err
+	}
+	err = create.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }
