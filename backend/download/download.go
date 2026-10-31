@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/sha1"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -224,6 +225,21 @@ func (d *Download) GetFileSha1(filePath string) (string, error) {
 	defer file.Close()
 	hasher := sha1.New()
 	_, err = io.Copy(hasher, file)
+	if err != nil {
+		return "", err
+	}
+	hashInBytes := hasher.Sum(nil)
+	return hex.EncodeToString(hashInBytes), nil
+}
+
+func (d *Download) GetFileSha512(filePath string) (string, error) {
+	open, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer open.Close()
+	hasher := sha512.New()
+	_, err = io.Copy(hasher, open)
 	if err != nil {
 		return "", err
 	}

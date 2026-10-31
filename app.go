@@ -1379,7 +1379,7 @@ func (a *App) BackupInstance(folderId string) (string, error) {
 	return instance, nil
 }
 
-func (a *App) ExportInstanceAsModpack(folderId string) (string, error) {
+func (a *App) ExportInstanceAsModpack(folderId string, includeWorlds, includeOptions bool) (string, error) {
 	info, err := a.InstanceManager.GetInstanceInfo(folderId)
 	if err != nil {
 		return "", err
@@ -1404,7 +1404,7 @@ func (a *App) ExportInstanceAsModpack(folderId string) (string, error) {
 	if !strings.HasSuffix(dst, ".mrpack") {
 		dst += ".mrpack"
 	}
-	err = a.Mrpack.ExportModpack(folderId, dst)
+	err = a.Mrpack.ExportModpack(folderId, dst, includeWorlds, includeOptions)
 	if err != nil {
 		return "", err
 	}

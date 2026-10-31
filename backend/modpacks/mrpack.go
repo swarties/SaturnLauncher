@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -227,7 +228,8 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 	return inst.Uuid, nil
 }
 
-func (m *Mrpack) ExportModpack(folderId, dst string) error {
+func (m *Mrpack) ExportModpack(folderId, dst string, includeWorlds, includeOptions bool) error {
+	dl := download.NewDownload()
 	appdata, err := os.UserConfigDir()
 	if err != nil {
 		return err
@@ -250,11 +252,27 @@ func (m *Mrpack) ExportModpack(folderId, dst string) error {
 	mpack.FormatVersion = 1
 	mpack.Dependencies.Minecraft = info.Version
 	if info.FabricVersion != "" {
-		mpack.Dependencies.FabricLoader = info.FabricVersion
+		parts := strings.Split(info.FabricVersion, "-")
+		if len(parts) >= 3 {
+			mpack.Dependencies.FabricLoader = parts[2]
+		}
 	}
 	if info.QuiltVersion != "" {
-		mpack.Dependencies.QuiltLoader = info.QuiltVersion
+		parts := strings.Split(info.QuiltVersion, "-")
+		if len(parts) >= 3 {
+			mpack.Dependencies.QuiltLoader = parts[2]
+		}
 	}
+	create, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	zipWriter := zip.NewWriter(create)
+	writer, err := zipWriter.Create("modrinth.index.json")
+	if err != nil {
+		return err
+	}
+	trackedFiles := make(map[string]bool)
 	for _, ma := range manifest {
 		var files Files
 		files.Hashes.Sha1 = ma.Hash
@@ -270,24 +288,26 @@ func (m *Mrpack) ExportModpack(folderId, dst string) error {
 		if err == nil {
 			files.Path = "shaderpacks/" + ma.Filename
 		}
-		files.Downloads = []string{"https://cdn.modrinth.com/data/" + ma.ProjectId + "/versions/" + ma.VersionId + "/" + ma.Filename}
+		trackedFiles[files.Path] = true
+		files.Downloads = []string{"https://cdn.modrinth.com/data/" + ma.ProjectId + "/versions/" + ma.VersionId + "/" + url.PathEscape(ma.Filename)}
 		files.Env.Client = "required"
 		files.Env.Server = "required"
 		if files.Path == "" {
 			continue
 		}
+		sha512, err := dl.GetFileSha512(filepath.Join(instPath, files.Path))
+		if err != nil {
+			return err
+		}
+		files.Hashes.Sha512 = sha512
+		stat, err := os.Stat(filepath.Join(instPath, files.Path))
+		if err != nil {
+			return err
+		}
+		files.FileSize = int(stat.Size())
 		mpack.Files = append(mpack.Files, files)
 	}
 	indent, err := json.MarshalIndent(mpack, "", "  ")
-	if err != nil {
-		return err
-	}
-	create, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	zipWriter := zip.NewWriter(create)
-	writer, err := zipWriter.Create("modrinth.index.json")
 	if err != nil {
 		return err
 	}
@@ -295,35 +315,124 @@ func (m *Mrpack) ExportModpack(folderId, dst string) error {
 	if err != nil {
 		return err
 	}
+	modsDir, err := os.ReadDir(filepath.Join(instPath, "mods"))
+	if err == nil {
+		for _, mod := range modsDir {
+			if mod.IsDir() {
+				continue
+			}
+			present, _ := trackedFiles["mods/"+mod.Name()]
+			if present {
+				continue
+			}
+			open, err := os.Open(filepath.Join(instPath, "mods", mod.Name()))
+			if err != nil {
+				return err
+			}
+			zipEntry, err := zipWriter.Create("overrides/mods/" + mod.Name())
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(zipEntry, open)
+			if err != nil {
+				return err
+			}
+			err = open.Close()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	resourceDir, err := os.ReadDir(filepath.Join(instPath, "resourcepacks"))
+	if err == nil {
+		for _, rp := range resourceDir {
+			if rp.IsDir() {
+				continue
+			}
+			present, _ := trackedFiles["resourcepacks/"+rp.Name()]
+			if present {
+				continue
+			}
+			open, err := os.Open(filepath.Join(instPath, "resourcepacks", rp.Name()))
+			if err != nil {
+				return err
+			}
+			zipEntry, err := zipWriter.Create("overrides/resourcepacks/" + rp.Name())
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(zipEntry, open)
+			if err != nil {
+				return err
+			}
+			err = open.Close()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	shaderDir, err := os.ReadDir(filepath.Join(instPath, "shaderpacks"))
+	if err == nil {
+		for _, shader := range shaderDir {
+			if shader.IsDir() {
+				continue
+			}
+			present, _ := trackedFiles["shaderpacks/"+shader.Name()]
+			if present {
+				continue
+			}
+			open, err := os.Open(filepath.Join(instPath, "shaderpacks", shader.Name()))
+			if err != nil {
+				return err
+			}
+			zipEntry, err := zipWriter.Create("overrides/shaderpacks/" + shader.Name())
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(zipEntry, open)
+			if err != nil {
+				return err
+			}
+			err = open.Close()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	err = iMgr.AddToZip(filepath.Join(instPath, "config"), "overrides/config", zipWriter)
 	if err != nil {
 		return err
 	}
-	err = iMgr.AddToZip(filepath.Join(instPath, "saves"), "overrides/saves", zipWriter)
-	if err != nil {
-		return err
-	}
-	optionsPath := filepath.Join(instPath, "options.txt")
-	_, err = os.Stat(optionsPath)
-	if err == nil {
-		open, err := os.Open(optionsPath)
-		if err != nil {
-			return err
-		}
-		defer open.Close()
-		zipEntry, err := zipWriter.Create("overrides/options.txt")
-		if err != nil {
-			return err
-		}
-		_, err = io.Copy(zipEntry, open)
-		if err != nil {
-			return err
-		}
-		err = open.Close()
+	if includeWorlds {
+		err = iMgr.AddToZip(filepath.Join(instPath, "saves"), "overrides/saves", zipWriter)
 		if err != nil {
 			return err
 		}
 	}
+	if includeOptions {
+		optionsPath := filepath.Join(instPath, "options.txt")
+		_, err = os.Stat(optionsPath)
+		if err == nil {
+			open, err := os.Open(optionsPath)
+			if err != nil {
+				return err
+			}
+			zipEntry, err := zipWriter.Create("overrides/options.txt")
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(zipEntry, open)
+			if err != nil {
+				return err
+			}
+			err = open.Close()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	err = zipWriter.Close()
 	if err != nil {
 		return err

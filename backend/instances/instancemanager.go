@@ -670,7 +670,7 @@ func (i *InstanceManager) AddToZip(src, zipPrefix string, zipWrite *zip.Writer) 
 		if err != nil {
 			return err
 		}
-		create, err := zipWrite.Create(filepath.Join(zipPrefix, relPath))
+		create, err := zipWrite.Create(filepath.ToSlash(filepath.Join(zipPrefix, relPath)))
 		if err != nil {
 			return err
 		}
