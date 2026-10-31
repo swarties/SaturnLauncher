@@ -1,10 +1,13 @@
 package instances
 
 import (
+	"archive/zip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -591,4 +594,98 @@ func (i *InstanceManager) UpdateQuiltVersion(folderId, quiltVersion string) erro
 		return err
 	}
 	return os.WriteFile(base, data, 0o600)
+}
+
+func (i *InstanceManager) BackupInstance(folderId string) (string, error) {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	instLocation := filepath.Join(appdata, "SaturnLauncher", "instances", folderId)
+	backupDir := filepath.Join(instLocation, "backups")
+	err = os.MkdirAll(backupDir, 0o755)
+	if err != nil {
+		return "", err
+	}
+	fileName := time.Now().Format("2006-01-02_15-04-05")
+	zipPath := filepath.Join(backupDir, "backup-"+fileName+".zip")
+	file, err := os.Create(zipPath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	zipWrite := zip.NewWriter(file)
+	err = AddToZip(filepath.Join(instLocation, "saves"), "saves", zipWrite)
+	if err != nil {
+		return "", err
+	}
+	err = AddToZip(filepath.Join(instLocation, "config"), "config", zipWrite)
+	if err != nil {
+		return "", err
+	}
+	optionsPath := filepath.Join(instLocation, "options.txt")
+	_, err = os.Stat(optionsPath)
+	if err == nil {
+		open, err := os.Open(optionsPath)
+		if err != nil {
+			return "", err
+		}
+		create, err := zipWrite.Create("options.txt")
+		if err != nil {
+			return "", err
+		}
+		_, err = io.Copy(create, open)
+		if err != nil {
+			return "", err
+		}
+		err = open.Close()
+		if err != nil {
+			return "", err
+		}
+	}
+	err = zipWrite.Close()
+	if err != nil {
+		return "", err
+	}
+	return zipPath, nil
+}
+
+func AddToZip(src, zipPrefix string, zipWrite *zip.Writer) error {
+	_, err := os.Stat(src)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	err = filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		relPath, _ := filepath.Rel(src, path)
+		open, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		create, err := zipWrite.Create(filepath.Join(zipPrefix, relPath))
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(create, open)
+		if err != nil {
+			return err
+		}
+		err = open.Close()
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

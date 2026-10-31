@@ -1370,3 +1370,11 @@ func (a *App) UninstallQuilt(folderId string) error {
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
 }
+
+func (a *App) BackupInstance(folderId string) (string, error) {
+	instance, err := a.InstanceManager.BackupInstance(folderId)
+	if err != nil {
+		return "", err
+	}
+	return instance, nil
+}

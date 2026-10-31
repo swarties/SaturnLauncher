@@ -191,8 +191,8 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, fol
 			fac := strings.TrimSpace(s)
 			catFacets = append(catFacets, "categories:"+fac)
 		}
+		facets = append(facets, catFacets)
 	}
-	facets = append(facets, catFacets)
 	facetsJson, err := json.Marshal(facets)
 	if err != nil {
 		return nil, err
@@ -208,6 +208,7 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, fol
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(url)
 	request.Header.Set("User-Agent", userAgent)
 	do, err := http.DefaultClient.Do(request)
 	if err != nil {
