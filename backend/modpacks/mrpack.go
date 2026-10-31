@@ -5,6 +5,7 @@ import (
 	fabric2 "SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
 	modrinth2 "SaturnLauncher/backend/modrinth"
+	"SaturnLauncher/backend/quilt"
 	"archive/zip"
 	"context"
 	"encoding/json"
@@ -49,6 +50,7 @@ type ModrinthPack struct {
 	Dependencies  struct {
 		Minecraft    string `json:"minecraft"`
 		FabricLoader string `json:"fabric-loader"`
+		QuiltLoader  string `json:"quilt-loader"`
 	} `json:"dependencies"`
 }
 
@@ -105,21 +107,27 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 	folderId := inst.Uuid
 	instDir := filepath.Join(appdata, "SaturnLauncher", "instances", folderId)
 	dl := download.NewDownload()
-	//instInfo, err := instManager.GetInstanceInfo(folderId)
-	//if err != nil {
-	//	return err
-	//}
-	//fabric := fmt.Sprintf("fabric-loader-%s-%s", modpack.Dependencies.FabricLoader, instInfo.Version)
-	f := fabric2.NewFabric()
-	id, err := f.InstallFabric(inst.Version, modpack.Dependencies.FabricLoader)
-	if err != nil {
-		return "", err
+	if modpack.Dependencies.QuiltLoader != "" {
+		q := quilt.NewQuilt()
+		id, err := q.InstallQuilt(inst.Version, modpack.Dependencies.QuiltLoader)
+		if err != nil {
+			return "", err
+		}
+		err = instManager.UpdateQuiltVersion(folderId, id)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		f := fabric2.NewFabric()
+		id, err := f.InstallFabric(inst.Version, modpack.Dependencies.FabricLoader)
+		if err != nil {
+			return "", err
+		}
+		err = instManager.UpdateFabricVersion(folderId, id)
+		if err != nil {
+			return "", err
+		}
 	}
-	err = instManager.UpdateFabricVersion(folderId, id)
-	if err != nil {
-		return "", err
-	}
-
 	for _, a := range modpack.Files {
 		path := filepath.Clean(a.Path)
 		if strings.Contains(path, "..") {

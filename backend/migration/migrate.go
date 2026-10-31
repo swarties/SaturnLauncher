@@ -267,3 +267,5 @@ func (m *Migration) TransferFromPrism(p ParsedInstance) (*instances.Instance, er
 	}
 	return instance, nil
 }
+
+// soo im not doing vanilla migration its such a messy launcher

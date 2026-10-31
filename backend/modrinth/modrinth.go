@@ -175,7 +175,6 @@ type UpdateInfo struct {
 }
 
 func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, folderId string) (*DiscoverProjects, error) {
-	// categories = "fabric" // hardcoded as fabric cuz it's the only mod loader supported at this time
 	var discover DiscoverProjects
 	facets := [][]string{
 		{
@@ -185,6 +184,15 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, fol
 			"versions:" + version,
 		},
 	}
+	var catFacets []string
+	if strings.TrimSpace(categories) != "" {
+		split := strings.Split(categories, ",")
+		for _, s := range split {
+			fac := strings.TrimSpace(s)
+			catFacets = append(catFacets, "categories:"+fac)
+		}
+	}
+	facets = append(facets, catFacets)
 	facetsJson, err := json.Marshal(facets)
 	if err != nil {
 		return nil, err

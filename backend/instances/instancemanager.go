@@ -33,6 +33,7 @@ type Instance struct {
 	MinRam          int    `json:"minram"`
 	MaxRam          int    `json:"maxram"`
 	FabricVersion   string `json:"fabricVersion,omitempty"`
+	QuiltVersion    string `json:"quiltVersion,omitempty"`
 	JvmArgs         string `json:"jvmArgs"`
 	JavaPath        string `json:"javaPath,omitempty"`
 	PlaytimeSeconds int64  `json:"playtimeSeconds,omitempty"`
@@ -572,4 +573,22 @@ func (i *InstanceManager) GetTotalPlaytime() (int64, error) {
 		total += a.PlaytimeSeconds
 	}
 	return total, nil
+}
+
+func (i *InstanceManager) UpdateQuiltVersion(folderId, quiltVersion string) error {
+	instInfo, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	instInfo.QuiltVersion = quiltVersion
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	data, err := json.MarshalIndent(instInfo, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(base, data, 0o600)
 }

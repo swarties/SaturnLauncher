@@ -10,6 +10,7 @@ import (
 	"SaturnLauncher/backend/migration"
 	"SaturnLauncher/backend/modpacks"
 	"SaturnLauncher/backend/modrinth"
+	"SaturnLauncher/backend/quilt"
 	"SaturnLauncher/backend/skins"
 	"archive/zip"
 	"bufio"
@@ -54,6 +55,7 @@ type App struct {
 	Updater            *autoupdater.Updater
 	IsDiscordConnected bool
 	Migration          *migration.Migration
+	Quilt              *quilt.Quilt
 }
 
 // NewApp creates a new App application struct
@@ -70,6 +72,7 @@ func NewApp() *App {
 		skins:            skins.NewSkinsManager(),
 		Updater:          autoupdater.NewUpdater(),
 		Migration:        migration.NewMigration(),
+		Quilt:            quilt.NewQuilt(),
 	}
 }
 
@@ -317,8 +320,12 @@ func (a *App) StartGame(folderId, worldName string) error {
 		return err
 	}
 	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Downloading Client Jar")
-	if instInfo.FabricVersion != "" {
-		fInfo, err := a.Download.ParseVersionInfo(instInfo.FabricVersion)
+	if instInfo.FabricVersion != "" || instInfo.QuiltVersion != "" {
+		loaderVersion := instInfo.FabricVersion
+		if instInfo.QuiltVersion != "" {
+			loaderVersion = instInfo.QuiltVersion
+		}
+		fInfo, err := a.Download.ParseVersionInfo(loaderVersion)
 		if err != nil {
 			return err
 		}
@@ -1325,4 +1332,32 @@ func (a *App) ListWorlds(folderId string) ([]string, error) {
 		return nil, err
 	}
 	return worlds, nil
+}
+
+func (a *App) InstallQuilt(folderId, loaderVersion string) error {
+	if loaderVersion == "" {
+		return fmt.Errorf("loader version field is empty, cannot proceed")
+	}
+	info, err := a.InstanceManager.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	profileId, err := a.Quilt.InstallQuilt(info.Version, loaderVersion)
+	if err != nil {
+		return err
+	}
+	err = a.InstanceManager.UpdateQuiltVersion(folderId, profileId)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+
+func (a *App) GetQuiltLoaders(gameVersion string) ([]quilt.LoaderVersion, error) {
+	versions, err := a.Quilt.GetLoaderVersions(gameVersion)
+	if err != nil {
+		return nil, err
+	}
+	return versions, nil
 }

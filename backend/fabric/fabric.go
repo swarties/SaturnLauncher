@@ -2,6 +2,7 @@ package fabric
 
 import (
 	"SaturnLauncher/backend/download"
+	"SaturnLauncher/backend/projectInfo"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 )
+
+const userAgent = projectInfo.UserAgent
 
 type Fabric struct {
 	ctx context.Context
@@ -30,7 +33,12 @@ func (f *Fabric) GetLoaderVersions(gameVersion string) ([]LoaderVersion, error) 
 	var raw []Loader
 	var loaderVer []LoaderVersion
 	fabricUrl := "https://meta.fabricmc.net/v2/versions/loader/" + gameVersion
-	get, err := http.Get(fabricUrl)
+	request, err := http.NewRequest("GET", fabricUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Add("User-Agent", userAgent)
+	get, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +62,12 @@ func (f *Fabric) GetLoaderVersions(gameVersion string) ([]LoaderVersion, error) 
 func (f *Fabric) GetProfile(gameVersion, loaderVersion string) (*download.VersionInfo, error) {
 	var profile download.VersionInfo
 	profileUrl := "https://meta.fabricmc.net/v2/versions/loader/" + gameVersion + "/" + loaderVersion + "/" + "profile/json"
-	get, err := http.Get(profileUrl)
+	request, err := http.NewRequest("GET", profileUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Add("User-Agent", userAgent)
+	get, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
