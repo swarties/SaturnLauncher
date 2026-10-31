@@ -9,7 +9,7 @@ func (c *SaturnCrypto) EncryptKey(uuid, plaintext string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return "", nil
+	return "keyring", nil
 }
 
 func (c *SaturnCrypto) DecryptKey(uuid, cipherText string) (string, error) {
