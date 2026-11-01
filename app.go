@@ -904,7 +904,10 @@ func (a *App) RemoveContent(folderId, contentType, filename string) error {
 	dest := filepath.Join(contentDir, filename)
 	err = os.Remove(dest)
 	if err != nil {
-		return err
+		err = os.Remove(filepath.Join(contentDir, filename+".disabled"))
+		if err != nil {
+			return err
+		}
 	}
 	err = a.Modrinth.RemoveFromManifest(folderId, filename)
 	if err != nil {
