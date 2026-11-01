@@ -963,14 +963,47 @@ func (a *App) GetInstanceLogs(folderId string) (string, error) {
 		return "", err
 	}
 	logsLocation := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "logs", "jvm.log")
-	file, err := os.ReadFile(logsLocation)
+	file, err := os.Open(logsLocation)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", fmt.Errorf("no log file exists - launch the game first")
+			return "", nil
 		}
 		return "", err
 	}
-	return string(file), nil
+	defer file.Close()
+	stat, err := file.Stat()
+	if err != nil {
+		return "", err
+	}
+	fileSize := stat.Size()
+	const maxBytes int64 = 1024 * 1024
+	var buf []byte
+	if fileSize > maxBytes {
+		_, err = file.Seek(-maxBytes, io.SeekEnd)
+		if err != nil {
+			return "", err
+		}
+
+		buf = make([]byte, maxBytes)
+		_, err = io.ReadFull(file, buf)
+		if err != nil {
+			return "", err
+		}
+
+		for i := 0; i < len(buf); i++ {
+			if buf[i] == '\n' {
+				buf = buf[i+1:]
+				break
+			}
+		}
+	} else {
+		buf = make([]byte, fileSize)
+		_, err = io.ReadFull(file, buf)
+		if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+			return "", err
+		}
+	}
+	return string(buf), nil
 }
 
 func (a *App) OpenContentFolder(folderId, contentType string) error {
