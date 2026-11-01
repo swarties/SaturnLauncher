@@ -149,12 +149,7 @@ Using wailsIo V2.15.0
 
 - Add Forge and NeoForge
 - Friends List with built-in dms ( maybe )
-- Modrinth Updater ( backend done )
-- Skin Changer (lookup skin and use them or drag n drop your own skins)
-- Modpack Export
 - Check for mod conflicts pre-launch
-- Allow Instance Duplication
-- Token Encryption ( lots of launchers don't do it, but it's important )
 - World backups
 
 ## Motivation
