@@ -392,7 +392,6 @@ function VersionsTab({ projectId, uuid, instanceVersion, activeTab }) {
     );
   }
 
-  const isInstalling = installing[projectId];
   const sortedVersions = [...entry.data].sort(
     (a, b) => new Date(b.date_published) - new Date(a.date_published)
   );
@@ -408,6 +407,7 @@ function VersionsTab({ projectId, uuid, instanceVersion, activeTab }) {
       <div className="flex flex-col gap-2">
         {sortedVersions.map((ver) => {
           const isLatest = ver.id === latestReleaseId;
+          const isInstalling = installing[ver.id];
           return (
             <div
               key={ver.id}

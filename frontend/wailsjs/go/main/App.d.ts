@@ -6,6 +6,8 @@ export function ApplyContentUpdate(arg1:string,arg2:string,arg3:string,arg4:stri
 
 export function BackupInstance(arg1:string):Promise<string>;
 
+export function ClearInstanceCache(arg1:string):Promise<void>;
+
 export function ClearOldLogs(arg1:string,arg2:number):Promise<void>;
 
 export function CreateInstance(arg1:string,arg2:string):Promise<instances.Instance>;
@@ -110,6 +112,8 @@ export function RemoveContent(arg1:string,arg2:string,arg3:string):Promise<void>
 
 export function RenameInstance(arg1:string,arg2:string):Promise<void>;
 
+export function RestoreBackup(arg1:string):Promise<void>;
+
 export function SaveLauncherConfig(arg1:Record<string, string>):Promise<void>;
 
 export function SetActiveAccount(arg1:string):Promise<void>;
@@ -131,6 +135,8 @@ export function TransferFromPrism(arg1:Array<migration.ParsedInstance>):Promise<
 export function UninstallFabric(arg1:string):Promise<void>;
 
 export function UninstallQuilt(arg1:string):Promise<void>;
+
+export function UpdateAllProjects(arg1:string,arg2:string):Promise<void>;
 
 export function UpdateDiscordActivity(arg1:string,arg2:string):Promise<void>;
 

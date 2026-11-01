@@ -10,6 +10,10 @@ export function BackupInstance(arg1) {
   return window['go']['main']['App']['BackupInstance'](arg1);
 }
 
+export function ClearInstanceCache(arg1) {
+  return window['go']['main']['App']['ClearInstanceCache'](arg1);
+}
+
 export function ClearOldLogs(arg1, arg2) {
   return window['go']['main']['App']['ClearOldLogs'](arg1, arg2);
 }
@@ -218,6 +222,10 @@ export function RenameInstance(arg1, arg2) {
   return window['go']['main']['App']['RenameInstance'](arg1, arg2);
 }
 
+export function RestoreBackup(arg1) {
+  return window['go']['main']['App']['RestoreBackup'](arg1);
+}
+
 export function SaveLauncherConfig(arg1) {
   return window['go']['main']['App']['SaveLauncherConfig'](arg1);
 }
@@ -260,6 +268,10 @@ export function UninstallFabric(arg1) {
 
 export function UninstallQuilt(arg1) {
   return window['go']['main']['App']['UninstallQuilt'](arg1);
+}
+
+export function UpdateAllProjects(arg1, arg2) {
+  return window['go']['main']['App']['UpdateAllProjects'](arg1, arg2);
 }
 
 export function UpdateDiscordActivity(arg1, arg2) {

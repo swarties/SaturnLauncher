@@ -487,13 +487,12 @@ function ModrinthBrowser() {
 }
 
 function ProjectRow({ project, onOpenDetails }) {
-  const { installing, installed } = useModrinth();
+  const { installed } = useModrinth();
 
   const isInstalled = installed[project.project_id] || project.isInstalled;
-  const isInstalling = installing[project.project_id];
 
   const handleDownloadClick = () => {
-    if (isInstalled || isInstalling) return;
+    if (isInstalled) return;
     onOpenDetails('versions');
   };
 
@@ -551,7 +550,7 @@ function ProjectRow({ project, onOpenDetails }) {
       <div className="relative" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={handleDownloadClick}
-          disabled={isInstalled || isInstalling}
+          disabled={isInstalled}
           data-tooltip="Choose version"
           className={[
             'flex h-10 shrink-0 items-center justify-center gap-1 rounded-md border px-3 transition-colors disabled:opacity-50',
@@ -562,8 +561,6 @@ function ProjectRow({ project, onOpenDetails }) {
         >
           {isInstalled ? (
             <Check className="size-4" />
-          ) : isInstalling ? (
-            <Loader2 className="size-4 animate-spin" />
           ) : (
             <Download className="size-4" />
           )}

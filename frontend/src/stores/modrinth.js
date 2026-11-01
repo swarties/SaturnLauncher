@@ -183,9 +183,9 @@ export async function installMod(
   versionName,
   projectType
 ) {
-  if (state.installing[projectId]) return;
+  if (state.installing[versionId]) return;
 
-  setState({ installing: { ...state.installing, [projectId]: true } });
+  setState({ installing: { ...state.installing, [versionId]: true } });
 
   try {
     const contentType =
@@ -198,7 +198,15 @@ export async function installMod(
     await InstallProjectContent(uuid, contentType, versionId, projectType);
 
     toast.success(`Installed ${versionName}`);
-    setState({ installed: { ...state.installed, [projectId]: true } });
+    Object.keys(discoveryCache).forEach((key) => {
+      delete discoveryCache[key];
+    });
+    setState({
+      installed: { ...state.installed, [projectId]: true },
+      results: state.results.map((r) =>
+        r.project_id === projectId ? { ...r, isInstalled: true } : r
+      ),
+    });
     setTimeout(() => {
       setState({ installed: { ...state.installed, [projectId]: false } });
     }, 3000);
@@ -206,6 +214,6 @@ export async function installMod(
     console.error('Failed to install mod:', e);
     toast.error(e?.message ?? 'Failed to install');
   } finally {
-    setState({ installing: { ...state.installing, [projectId]: false } });
+    setState({ installing: { ...state.installing, [versionId]: false } });
   }
 }
