@@ -60,7 +60,6 @@ func (u *Updater) UpdateApp() error {
 	}
 
 	if release.TagName != tag {
-		// download updater
 		tempDir := os.TempDir()
 		dl := download.NewDownload()
 		isNsis, err := isNsisInstall()
@@ -81,7 +80,6 @@ func (u *Updater) UpdateApp() error {
 				if err != nil {
 					return fmt.Errorf("updater error: %s", err)
 				}
-				// update using silent install ( /s ) + custom /RELAUNCH arg
 				cmd := exec.Command(tempDir, "/S", "/RELAUNCH")
 				err := cmd.Start()
 				if err == nil {

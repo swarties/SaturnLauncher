@@ -14,8 +14,6 @@ import (
 	"sync"
 )
 
-// import "SaturnLauncher/backend/download"
-
 type Modrinth struct {
 	ctx context.Context
 }

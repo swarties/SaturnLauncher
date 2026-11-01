@@ -1634,3 +1634,27 @@ func (a *App) ClearInstanceCache(folderId string) error {
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
 }
+
+func (a *App) RestoreBackup(folderId string) error {
+	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title: "Select An Instance Backup",
+		Filters: []wailsRuntime.FileFilter{
+			{
+				DisplayName: "Saturn Instance Backups",
+				Pattern:     "*.zip",
+			},
+		},
+		ShowHiddenFiles:      false,
+		CanCreateDirectories: false,
+	})
+	if err != nil {
+		return err
+	}
+	filename := filepath.Base(path)
+	err = a.InstanceManager.RestoreBackup(folderId, filename)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}

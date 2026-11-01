@@ -311,7 +311,6 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 	xuiKey := GetNewXSTSToken.DisplayClaims.Xui[0].Xid
 	AuthInfo.Xuid = xuiKey
 	AuthInfo.Uhs = uhskey
-	// var NewMinecraftPayload MinecraftPayload
 	GetNewMinecraftAuth, err := a.GetMinecraftAuth(*GetNewXSTSToken, *GetNewXBLToken)
 	if err != nil {
 		return MinecraftPayload{}, AuthInfo, err

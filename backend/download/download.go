@@ -886,8 +886,6 @@ func (d *Download) DownloadJava(majorVersion int) (string, error) {
 }
 
 func (d *Download) EnsureJava(vInfo VersionInfo) (*string, error) {
-	// handle javaPathOverride later
-
 	java, err := d.DownloadJava(vInfo.JavaVersion.MajorVersion)
 	if err != nil {
 		return nil, err

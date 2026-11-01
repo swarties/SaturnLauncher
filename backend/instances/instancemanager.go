@@ -80,13 +80,11 @@ func (i *InstanceManager) CreateInstance(name string, version string) (*Instance
 	id := uuid.New()
 	idString := id.String()
 	var NewInstance Instance
-	// setup appdata vars
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
 	}
 	base := filepath.Join(appdatadir, "SaturnLauncher")
-	// if foldername is safe and exists return err
 	instanceDir := filepath.Join(base, "instances", idString)
 	dirs := []string{
 		instanceDir,
@@ -967,6 +965,67 @@ func (i *InstanceManager) ClearInstanceCache(folderId string) error {
 	err = os.RemoveAll(filepath.Join(instDir, ".mixin.out"))
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (i *InstanceManager) RestoreBackup(folderId, backupFilename string) error {
+	if strings.Contains(backupFilename, "/") {
+		return fmt.Errorf("backupFilename is invalid")
+	}
+	if strings.Contains(backupFilename, "\\") {
+		return fmt.Errorf("backupFilename is invalid")
+	}
+	if strings.Contains(backupFilename, "..") {
+		return fmt.Errorf("backupFilename is invalid")
+	}
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	zipPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "backups", backupFilename)
+	instPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId)
+	reader, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	for _, f := range reader.File {
+		isConfig := strings.HasPrefix(f.Name, "config/")
+		isSaves := strings.HasPrefix(f.Name, "saves/")
+		isOptions := f.Name == "options.txt"
+		if !isConfig && !isSaves && !isOptions {
+			continue
+		}
+		destPath := filepath.Join(instPath, f.Name)
+		if !strings.HasPrefix(destPath, instPath+string(os.PathSeparator)) {
+			continue
+		}
+		err = os.MkdirAll(filepath.Dir(destPath), 0o755)
+		if err != nil {
+			return err
+		}
+		srcFile, err := f.Open()
+		if err != nil {
+			return err
+		}
+		dstFile, err := os.Create(destPath)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(dstFile, srcFile)
+		if err != nil {
+			return err
+		}
+		err = dstFile.Close()
+		if err != nil {
+			return err
+		}
+		err = srcFile.Close()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

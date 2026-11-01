@@ -56,7 +56,6 @@ func (u *Updater) UpdateApp() {
 	}
 
 	if release.TagName != tag {
-		// download updater
 		execPath, err := os.Executable()
 		if err != nil {
 			return

@@ -59,8 +59,6 @@ func (m *Migration) DetectLaunchers() ([]DetectedInstances, error) {
 		return nil, err
 	}
 	prismPath := filepath.Join(appdata, "PrismLauncher", "instances")
-	// vanillaLauncherPath := filepath.Join(appdata, ".minecraft") i would do vanilla but... wails doesnt allow me to turn launcher_profiles.json into a struct
-	// modrinthPath := filepath.Join(appdata, "ModrinthApp", "profiles") A SQLITE DB ?????? yeah this can wait
 	_, err = os.Stat(prismPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -267,5 +265,3 @@ func (m *Migration) TransferFromPrism(p ParsedInstance) (*instances.Instance, er
 	}
 	return instance, nil
 }
-
-// soo im not doing vanilla migration its such a messy launcher

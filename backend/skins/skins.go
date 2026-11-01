@@ -34,7 +34,6 @@ type GetSkinProperties struct {
 	Value string `json:"value"`
 }
 
-// yes i know i can do it another way but wails doesnt like structs in structs apparently
 type GetSkinTextures struct {
 	Textures Textures `json:"textures"`
 }
