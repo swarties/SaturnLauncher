@@ -6,12 +6,14 @@ import { ChevronDown } from 'lucide-react';
 
 import minecraftLogo from '@/assets/logos/minecraft.png';
 import fabricLogo from '@/assets/logos/fabric.png';
+import quiltLogo from '@/assets/logos/quilt.png';
 
 const EASE = [0.22, 1, 0.38, 1];
 
 export const LOADER_OPTIONS = [
   { value: 'vanilla', label: 'Vanilla', icon: minecraftLogo },
   { value: 'fabric', label: 'Fabric', icon: fabricLogo },
+  { value: 'quilt', label: 'Quilt', icon: quiltLogo },
 ];
 
 export function LoaderPicker({ value, onChange }) {

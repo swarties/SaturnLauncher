@@ -19,6 +19,7 @@ import { startLaunch, stopLaunch, useLaunch } from '@/stores/launch';
 
 import minecraftLogo from '@/assets/logos/minecraft.png';
 import fabricLogo from '@/assets/logos/fabric.png';
+import quiltLogo from '@/assets/logos/quilt.png';
 
 export const Route = createFileRoute('/_instance/instances/$uuid')({
   component: InstanceDetailLayout,
@@ -74,9 +75,11 @@ function InstanceDetailLayout() {
 
   const iconSrc = iconDataUrl
     ? `data:image/png;base64,${iconDataUrl}`
-    : instance?.fabricVersion
-      ? fabricLogo
-      : minecraftLogo;
+    : instance?.quiltVersion
+      ? quiltLogo
+      : instance?.fabricVersion
+        ? fabricLogo
+        : minecraftLogo;
 
   const [canAnimate, setCanAnimate] = useState(false);
 

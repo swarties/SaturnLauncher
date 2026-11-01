@@ -6,6 +6,8 @@ export namespace auth {
 	    RefreshToken: string;
 	    Uhs: string;
 	    xuid: string;
+	    offline?: boolean;
+	    encRefreshToken: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AuthSession(source);
@@ -18,6 +20,8 @@ export namespace auth {
 	        this.RefreshToken = source["RefreshToken"];
 	        this.Uhs = source["Uhs"];
 	        this.xuid = source["xuid"];
+	        this.offline = source["offline"];
+	        this.encRefreshToken = source["encRefreshToken"];
 	    }
 	}
 
@@ -25,6 +29,64 @@ export namespace auth {
 
 export namespace download {
 	
+	export class pack {
+	    description: string;
+	    Name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new pack(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.description = source["description"];
+	        this.Name = source["Name"];
+	    }
+	}
+	export class ContentInfo {
+	    Version: string;
+	    Name: string;
+	    Description: string;
+	    Icon: string;
+	    Pack: pack;
+	    FileName: string;
+	    FileSize: number;
+	    IsShader: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ContentInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Version = source["Version"];
+	        this.Name = source["Name"];
+	        this.Description = source["Description"];
+	        this.Icon = source["Icon"];
+	        this.Pack = this.convertValues(source["Pack"], pack);
+	        this.FileName = source["FileName"];
+	        this.FileSize = source["FileSize"];
+	        this.IsShader = source["IsShader"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Version {
 	    id: string;
 	    type: string;
@@ -76,6 +138,10 @@ export namespace instances {
 	    minram: number;
 	    maxram: number;
 	    fabricVersion?: string;
+	    quiltVersion?: string;
+	    jvmArgs: string;
+	    javaPath?: string;
+	    playtimeSeconds?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Instance(source);
@@ -91,6 +157,10 @@ export namespace instances {
 	        this.minram = source["minram"];
 	        this.maxram = source["maxram"];
 	        this.fabricVersion = source["fabricVersion"];
+	        this.quiltVersion = source["quiltVersion"];
+	        this.jvmArgs = source["jvmArgs"];
+	        this.javaPath = source["javaPath"];
+	        this.playtimeSeconds = source["playtimeSeconds"];
 	    }
 	}
 	export class Ram {
@@ -103,6 +173,49 @@ export namespace instances {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.TotalRamMB = source["TotalRamMB"];
+	    }
+	}
+
+}
+
+export namespace migration {
+	
+	export class DetectedInstances {
+	    Name: string;
+	    Path: string;
+	    Type: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DetectedInstances(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.Path = source["Path"];
+	        this.Type = source["Type"];
+	    }
+	}
+	export class ParsedInstance {
+	    Name: string;
+	    McVersion: string;
+	    FabricVersion: string;
+	    MinRam: number;
+	    MaxRam: number;
+	    Path: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ParsedInstance(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.McVersion = source["McVersion"];
+	        this.FabricVersion = source["FabricVersion"];
+	        this.MinRam = source["MinRam"];
+	        this.MaxRam = source["MaxRam"];
+	        this.Path = source["Path"];
 	    }
 	}
 
@@ -138,6 +251,7 @@ export namespace modrinth {
 	    gallery: string[];
 	    featured_gallery: string;
 	    color: number;
+	    isInstalled: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new SearchHits(source);
@@ -172,6 +286,7 @@ export namespace modrinth {
 	        this.gallery = source["gallery"];
 	        this.featured_gallery = source["featured_gallery"];
 	        this.color = source["color"];
+	        this.isInstalled = source["isInstalled"];
 	    }
 	}
 	export class DiscoverProjects {
@@ -209,6 +324,44 @@ export namespace modrinth {
 		    }
 		    return a;
 		}
+	}
+	export class DonationURL {
+	    id: string;
+	    platform: string;
+	    url: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DonationURL(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.platform = source["platform"];
+	        this.url = source["url"];
+	    }
+	}
+	export class GalleryImage {
+	    url: string;
+	    featured: boolean;
+	    title: string;
+	    description: string;
+	    created: string;
+	    ordering: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new GalleryImage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.url = source["url"];
+	        this.featured = source["featured"];
+	        this.title = source["title"];
+	        this.description = source["description"];
+	        this.created = source["created"];
+	        this.ordering = source["ordering"];
+	    }
 	}
 	export class Hashes {
 	    sha512: string;
@@ -270,8 +423,8 @@ export namespace modrinth {
 	    source_url: string;
 	    wiki_url: string;
 	    discord_url: string;
-	    donation_urls: Record<string, string>;
-	    gallery: Record<string, any>;
+	    donation_urls: DonationURL[];
+	    gallery: GalleryImage[];
 	    color: number;
 	
 	    static createFrom(source: any = {}) {
@@ -309,8 +462,8 @@ export namespace modrinth {
 	        this.source_url = source["source_url"];
 	        this.wiki_url = source["wiki_url"];
 	        this.discord_url = source["discord_url"];
-	        this.donation_urls = source["donation_urls"];
-	        this.gallery = source["gallery"];
+	        this.donation_urls = this.convertValues(source["donation_urls"], DonationURL);
+	        this.gallery = this.convertValues(source["gallery"], GalleryImage);
 	        this.color = source["color"];
 	    }
 	
@@ -333,6 +486,28 @@ export namespace modrinth {
 		}
 	}
 	
+	export class UpdateInfo {
+	    oldFileName: string;
+	    newFileName: string;
+	    projectId: string;
+	    currentVersion: string;
+	    newVersion: string;
+	    newDownloadUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.oldFileName = source["oldFileName"];
+	        this.newFileName = source["newFileName"];
+	        this.projectId = source["projectId"];
+	        this.currentVersion = source["currentVersion"];
+	        this.newVersion = source["newVersion"];
+	        this.newDownloadUrl = source["newDownloadUrl"];
+	    }
+	}
 	export class VersionDependencies {
 	    version_id: string;
 	    project_id: string;
@@ -456,6 +631,25 @@ export namespace modrinth {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace quilt {
+	
+	export class LoaderVersion {
+	    version: string;
+	    Stable: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new LoaderVersion(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.version = source["version"];
+	        this.Stable = source["Stable"];
+	    }
 	}
 
 }

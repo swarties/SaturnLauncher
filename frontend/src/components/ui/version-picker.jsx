@@ -25,7 +25,17 @@ export function VersionPicker({ value, onChange }) {
     let cancelled = false;
     GetVersions()
       .then((vs) => {
-        if (!cancelled) setVersions(/** @type {McVersion[]} */ (vs ?? []));
+        if (cancelled) return;
+        const loadedVersions =
+          /**
+           * @type {McVersion[]}
+           */
+          (vs ?? []);
+        setVersions(loadedVersions);
+
+        if (!value && loadedVersions.length > 0) {
+          onChange(loadedVersions[0].id);
+        }
       })
       .catch((e) => {
         if (!cancelled) setError(e?.message ?? String(e));
@@ -37,7 +47,7 @@ export function VersionPicker({ value, onChange }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [value, onChange]);
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current) return;

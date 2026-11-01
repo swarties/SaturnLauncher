@@ -21,6 +21,7 @@ import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as InstanceInstancesUuidRouteImport } from './routes/_instance/instances.$uuid'
 import { Route as InstanceInstancesUuidIndexRouteImport } from './routes/_instance/instances.$uuid.index'
 import { Route as InstanceInstancesUuidLogsRouteImport } from './routes/_instance/instances.$uuid.logs'
+import { Route as InstanceInstancesUuidModrinthRouteImport } from './routes/_instance/instances.$uuid.modrinth'
 import { Route as InstanceInstancesUuidModsRouteImport } from './routes/_instance/instances.$uuid.mods'
 import { Route as InstanceInstancesUuidResourcepacksRouteImport } from './routes/_instance/instances.$uuid.resourcepacks'
 import { Route as InstanceInstancesUuidScreenshotsRouteImport } from './routes/_instance/instances.$uuid.screenshots'
@@ -87,6 +88,12 @@ const InstanceInstancesUuidLogsRoute =
     path: '/logs',
     getParentRoute: () => InstanceInstancesUuidRoute,
   } as any)
+const InstanceInstancesUuidModrinthRoute =
+  InstanceInstancesUuidModrinthRouteImport.update({
+    id: '/modrinth',
+    path: '/modrinth',
+    getParentRoute: () => InstanceInstancesUuidRoute,
+  } as any)
 const InstanceInstancesUuidModsRoute =
   InstanceInstancesUuidModsRouteImport.update({
     id: '/mods',
@@ -128,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/instances/$uuid': typeof InstanceInstancesUuidRouteWithChildren
   '/instances/$uuid/logs': typeof InstanceInstancesUuidLogsRoute
+  '/instances/$uuid/modrinth': typeof InstanceInstancesUuidModrinthRoute
   '/instances/$uuid/mods': typeof InstanceInstancesUuidModsRoute
   '/instances/$uuid/resourcepacks': typeof InstanceInstancesUuidResourcepacksRoute
   '/instances/$uuid/screenshots': typeof InstanceInstancesUuidScreenshotsRoute
@@ -144,6 +152,7 @@ export interface FileRoutesByTo {
   '/instances': typeof AppInstancesRoute
   '/settings': typeof AppSettingsRoute
   '/instances/$uuid/logs': typeof InstanceInstancesUuidLogsRoute
+  '/instances/$uuid/modrinth': typeof InstanceInstancesUuidModrinthRoute
   '/instances/$uuid/mods': typeof InstanceInstancesUuidModsRoute
   '/instances/$uuid/resourcepacks': typeof InstanceInstancesUuidResourcepacksRoute
   '/instances/$uuid/screenshots': typeof InstanceInstancesUuidScreenshotsRoute
@@ -164,6 +173,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_instance/instances/$uuid': typeof InstanceInstancesUuidRouteWithChildren
   '/_instance/instances/$uuid/logs': typeof InstanceInstancesUuidLogsRoute
+  '/_instance/instances/$uuid/modrinth': typeof InstanceInstancesUuidModrinthRoute
   '/_instance/instances/$uuid/mods': typeof InstanceInstancesUuidModsRoute
   '/_instance/instances/$uuid/resourcepacks': typeof InstanceInstancesUuidResourcepacksRoute
   '/_instance/instances/$uuid/screenshots': typeof InstanceInstancesUuidScreenshotsRoute
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/instances/$uuid'
     | '/instances/$uuid/logs'
+    | '/instances/$uuid/modrinth'
     | '/instances/$uuid/mods'
     | '/instances/$uuid/resourcepacks'
     | '/instances/$uuid/screenshots'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/instances'
     | '/settings'
     | '/instances/$uuid/logs'
+    | '/instances/$uuid/modrinth'
     | '/instances/$uuid/mods'
     | '/instances/$uuid/resourcepacks'
     | '/instances/$uuid/screenshots'
@@ -218,6 +230,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_instance/instances/$uuid'
     | '/_instance/instances/$uuid/logs'
+    | '/_instance/instances/$uuid/modrinth'
     | '/_instance/instances/$uuid/mods'
     | '/_instance/instances/$uuid/resourcepacks'
     | '/_instance/instances/$uuid/screenshots'
@@ -320,6 +333,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InstanceInstancesUuidLogsRouteImport
       parentRoute: typeof InstanceInstancesUuidRoute
     }
+    '/_instance/instances/$uuid/modrinth': {
+      id: '/_instance/instances/$uuid/modrinth'
+      path: '/modrinth'
+      fullPath: '/instances/$uuid/modrinth'
+      preLoaderRoute: typeof InstanceInstancesUuidModrinthRouteImport
+      parentRoute: typeof InstanceInstancesUuidRoute
+    }
     '/_instance/instances/$uuid/mods': {
       id: '/_instance/instances/$uuid/mods'
       path: '/mods'
@@ -376,6 +396,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface InstanceInstancesUuidRouteChildren {
   InstanceInstancesUuidLogsRoute: typeof InstanceInstancesUuidLogsRoute
+  InstanceInstancesUuidModrinthRoute: typeof InstanceInstancesUuidModrinthRoute
   InstanceInstancesUuidModsRoute: typeof InstanceInstancesUuidModsRoute
   InstanceInstancesUuidResourcepacksRoute: typeof InstanceInstancesUuidResourcepacksRoute
   InstanceInstancesUuidScreenshotsRoute: typeof InstanceInstancesUuidScreenshotsRoute
@@ -386,6 +407,7 @@ interface InstanceInstancesUuidRouteChildren {
 
 const InstanceInstancesUuidRouteChildren: InstanceInstancesUuidRouteChildren = {
   InstanceInstancesUuidLogsRoute: InstanceInstancesUuidLogsRoute,
+  InstanceInstancesUuidModrinthRoute: InstanceInstancesUuidModrinthRoute,
   InstanceInstancesUuidModsRoute: InstanceInstancesUuidModsRoute,
   InstanceInstancesUuidResourcepacksRoute:
     InstanceInstancesUuidResourcepacksRoute,

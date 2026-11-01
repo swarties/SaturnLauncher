@@ -14,6 +14,7 @@ import {
 import { VersionPicker } from '@/components/ui/version-picker.jsx';
 import { LoaderPicker } from '@/components/ui/loader-picker.jsx';
 import { FabricVersionPicker } from '@/components/ui/fabric-version-picker.jsx';
+import { QuiltVersionPicker } from '@/components/ui/quilt-version-picker.jsx';
 import { toast } from '@/stores/toasts';
 import {
   MorphingDialog,
@@ -30,6 +31,7 @@ import {
   DeleteInstance,
   InstallFabric,
   InstallMrpack,
+  InstallQuilt,
   ListInstances,
 } from '../../../wailsjs/go/main/App';
 import { onBackendEvent, onFileDrop } from '@/lib/backend.js';
@@ -380,11 +382,15 @@ function InstanceCard({ instance, onDelete, index }) {
             {instance.name}
           </p>
           <p className="text-muted-foreground mt-1 text-xs font-thin">
-            {instance.fabricVersion
-              ? `Fabric · ${instance.fabricVersion
-                  .replace('fabric-loader-', '')
+            {instance.quiltVersion
+              ? `Quilt · ${instance.quiltVersion
+                  .replace('quilt-loader-', '')
                   .replace(`-${instance.version}`, '')}`
-              : 'Vanilla'}
+              : instance.fabricVersion
+                ? `Fabric · ${instance.fabricVersion
+                    .replace('fabric-loader-', '')
+                    .replace(`-${instance.version}`, '')}`
+                : 'Vanilla'}
           </p>
           <div className="mt-auto flex items-center justify-between pt-6">
             <span className="text-muted-foreground text-xs font-thin">
@@ -483,9 +489,10 @@ function AnimatedDots() {
 
 function CreateInstanceForm({ onClose, setPreventClose }) {
   const [name, setName] = useState('');
-  const [version, setVersion] = useState('1.14');
+  const [version, setVersion] = useState('');
   const [loader, setLoader] = useState('vanilla');
   const [fabricVersion, setFabricVersion] = useState('');
+  const [quiltVersion, setQuiltVersion] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [phase, setPhase] = useState('idle');
   const [partialUuid, setPartialUuid] = useState(
@@ -493,12 +500,14 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
   );
   useEffect(() => {
     if (loader !== 'fabric') setFabricVersion('');
+    if (loader !== 'quilt') setQuiltVersion('');
   }, [loader]);
 
   const handleSubmit = async () => {
     if (submitting) return;
     if (!partialUuid && !name.trim()) return;
     if (!partialUuid && loader === 'fabric' && !fabricVersion) return;
+    if (!partialUuid && loader === 'quilt' && !quiltVersion) return;
 
     setSubmitting(true);
     setPreventClose(true);
@@ -515,6 +524,9 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
       if (loader === 'fabric') {
         setPhase(uuid === partialUuid ? 'retrying' : 'installing');
         await InstallFabric(uuid, fabricVersion);
+      } else if (loader === 'quilt') {
+        setPhase(uuid === partialUuid ? 'retrying' : 'installing-quilt');
+        await InstallQuilt(uuid, quiltVersion);
       }
 
       onClose();
@@ -531,17 +543,21 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
     if (submitting) {
       if (phase === 'creating') return 'Creating...';
       if (phase === 'installing') return 'Installing Fabric...';
+      if (phase === 'installing-quilt') return 'Installing Quilt...';
       if (phase === 'retrying') return 'Retrying...';
       return 'Working...';
     }
-    if (partialUuid) return 'Retry Fabric Install';
+    if (partialUuid) return 'Retry Loader Install';
     return 'Create';
   })();
 
   const canSubmit =
     !submitting &&
     (Boolean(partialUuid) ||
-      (name.trim() && (loader !== 'fabric' || Boolean(fabricVersion))));
+      (name.trim() &&
+        (loader === 'vanilla' ||
+          (loader === 'fabric' && Boolean(fabricVersion)) ||
+          (loader === 'quilt' && Boolean(quiltVersion)))));
 
   return (
     <div className="flex h-full flex-col">
@@ -593,6 +609,25 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
                 gameVersion={version}
                 value={fabricVersion}
                 onChange={setFabricVersion}
+              />
+            </motion.div>
+          )}
+          {loader === 'quilt' && (
+            <motion.div
+              className="flex flex-col gap-2"
+              key="quilt-version"
+              initial={{ opacity: 0, height: 0, marginTop: -16 }}
+              animate={{ opacity: 1, height: 'auto', marginTop: 0 }}
+              exit={{ opacity: 0, height: 0, marginTop: -16 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.38, 1] }}
+            >
+              <span className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
+                Quilt Version
+              </span>
+              <QuiltVersionPicker
+                gameVersion={version}
+                value={quiltVersion}
+                onChange={setQuiltVersion}
               />
             </motion.div>
           )}

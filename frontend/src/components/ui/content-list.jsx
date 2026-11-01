@@ -250,7 +250,17 @@ export function ContentList({ uuid, contentType }) {
           ) : (entry?.loading ?? true) && items.length === 0 ? (
             <EmptyState>Loading...</EmptyState>
           ) : items.length === 0 ? (
-            <NoContentState config={config} onInstall={handleInstall} />
+            <NoContentState
+              config={config}
+              onInstall={handleInstall}
+              onBrowse={() =>
+                navigate({
+                  to: '/instances/$uuid/modrinth',
+                  params: { uuid },
+                  search: { tab: config.projectType },
+                })
+              }
+            />
           ) : filtered.length === 0 ? (
             <EmptyState>No matches for &quot;{query}&quot;.</EmptyState>
           ) : (
@@ -402,7 +412,7 @@ function ContentSwitch({ enabled, onToggle }) {
   );
 }
 
-function NoContentState({ config, onInstall }) {
+function NoContentState({ config, onInstall, onBrowse }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 px-6 py-12">
       <Package
@@ -417,17 +427,30 @@ function NoContentState({ config, onInstall }) {
           {config.emptyHint}
         </p>
       </div>
-      <button
-        type="button"
-        onClick={onInstall}
-        className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-10 items-center gap-2 rounded-lg border px-5 text-sm font-thin transition-colors"
-      >
-        Install from file
-        <Plus
-          className="text-saturn-300 size-4 leading-none"
-          aria-hidden="true"
-        />
-      </button>
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onInstall}
+          className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-10 items-center gap-2 rounded-lg border px-5 text-sm font-thin transition-colors"
+        >
+          Install from file
+          <Plus
+            className="text-saturn-300 size-4 leading-none"
+            aria-hidden="true"
+          />
+        </button>
+        <button
+          type="button"
+          onClick={onBrowse}
+          className="group flex h-10 items-center gap-2 rounded-lg border border-(--chip-border) bg-(--chip-bg) px-5 text-sm font-thin text-(--chip-fg) transition-colors hover:border-(--chip-border-hover) hover:bg-(--chip-bg-hover) hover:text-(--chip-fg-hover)"
+        >
+          Browse Modrinth
+          <Compass
+            className="text-saturn-300 size-4 leading-none"
+            aria-hidden="true"
+          />
+        </button>
+      </div>
     </div>
   );
 }
