@@ -690,10 +690,11 @@ func (i *InstanceManager) AddToZip(src, zipPrefix string, zipWrite *zip.Writer) 
 	return nil
 }
 
-func (i *InstanceManager) ClearOldLogs(folderId string, refreshP time.Duration) error {
-	if refreshP == 0 {
+func (i *InstanceManager) ClearOldLogs(folderId string, val int) error {
+	if val == 0 {
 		return nil
 	}
+	refreshP := time.Duration(val)
 	appdata, err := os.UserConfigDir()
 	if err != nil {
 		return err

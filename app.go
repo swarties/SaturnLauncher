@@ -1407,14 +1407,6 @@ func (a *App) ExportInstanceAsModpack(folderId string, includeWorlds, includeOpt
 	return dst, nil
 }
 
-func (a *App) ClearInstanceLogs(folderId string, refreshP time.Duration) error {
-	err := a.InstanceManager.ClearOldLogs(folderId, refreshP)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (a *App) GetLauncherConfig() (map[string]string, error) {
 	coolMap := make(map[string]string)
 	appdata, err := os.UserConfigDir()
@@ -1448,5 +1440,13 @@ func (a *App) SaveLauncherConfig(mappp map[string]string) error {
 		return err
 	}
 	wailsRuntime.EventsEmit(a.ctx, "config:updated")
+	return nil
+}
+
+func (a *App) ClearOldLogs(folderId string, val int) error {
+	err := a.InstanceManager.ClearOldLogs(folderId, val)
+	if err != nil {
+		return err
+	}
 	return nil
 }
