@@ -1029,3 +1029,28 @@ func (i *InstanceManager) RestoreBackup(folderId, backupFilename string) error {
 	}
 	return nil
 }
+
+func (i *InstanceManager) ListBackups(folderId string) ([]string, error) {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	instDir := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "backups")
+	dir, err := os.ReadDir(instDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+	var backups []string
+	for _, d := range dir {
+		if d.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(d.Name(), ".zip") {
+			backups = append(backups, d.Name())
+		}
+	}
+	return backups, nil
+}

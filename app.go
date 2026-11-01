@@ -1658,3 +1658,47 @@ func (a *App) RestoreBackup(folderId string) error {
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
 }
+
+func (a *App) OpenLauncherFolder() error {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	launcherPath := filepath.Join(appdata, "SaturnLauncher")
+	var cmd *exec.Cmd
+	osName := runtime.GOOS
+	if osName == "windows" {
+		cmd = exec.Command("explorer", launcherPath)
+		err = cmd.Start()
+		if err != nil {
+			return err
+		}
+	} else if osName == "linux" {
+		cmd = exec.Command("xdg-open", launcherPath)
+		err = cmd.Start()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *App) KillAllInstances() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for _, r := range a.RunningInstances {
+		err := r.Process.Kill()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *App) ListBackups(folderId string) ([]string, error) {
+	backups, err := a.InstanceManager.ListBackups(folderId)
+	if err != nil {
+		return nil, err
+	}
+	return backups, nil
+}
