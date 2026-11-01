@@ -246,7 +246,8 @@ func (m *Migration) TransferFromPrism(p ParsedInstance) (*instances.Instance, er
 	if err != nil {
 		return nil, err
 	}
-	dir, err := os.ReadDir(p.Path)
+	srcDir := filepath.Join(p.Path, "minecraft")
+	dir, err := os.ReadDir(srcDir)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +263,7 @@ func (m *Migration) TransferFromPrism(p ParsedInstance) (*instances.Instance, er
 			continue
 		}
 		dstPath := filepath.Join(newInstDir, d.Name())
-		srcPath := filepath.Join(p.Path, d.Name())
+		srcPath := filepath.Join(srcDir, d.Name())
 		if d.IsDir() {
 			err := dataCopy(dstPath, srcPath)
 			if err != nil {
