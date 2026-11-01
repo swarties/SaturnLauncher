@@ -840,3 +840,112 @@ func (i *InstanceManager) GetPostExitCmd(folderId string) (string, error) {
 	}
 	return inst.PostExitCmd, nil
 }
+
+func (i *InstanceManager) DuplicateInstance(folderId, newName string) (*Instance, error) {
+	info, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return nil, err
+	}
+	instance, err := i.CreateInstance(newName, info.Version)
+	if err != nil {
+		return nil, err
+	}
+	err = i.UpdateMemory(instance.Uuid, info.MinRam, info.MaxRam)
+	if err != nil {
+		return nil, err
+	}
+	if info.FabricVersion != "" {
+		err = i.UpdateFabricVersion(instance.Uuid, info.FabricVersion)
+		if err != nil {
+			return nil, err
+		}
+	} else if info.QuiltVersion != "" {
+		err = i.UpdateQuiltVersion(instance.Uuid, info.QuiltVersion)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if info.JavaPath != "" {
+		err = i.UpdateJavaPath(instance.Uuid, info.JavaPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if info.JvmArgs != "" {
+		err = i.UpdateJavaArgs(instance.Uuid, info.JvmArgs)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if info.PrelaunchCmd != "" {
+		err = i.UpdatePrelaunchCmd(instance.Uuid, info.PrelaunchCmd)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if info.WrapperCmd != "" {
+		err = i.UpdateWrapperCmd(instance.Uuid, info.WrapperCmd)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if info.PostExitCmd != "" {
+		err = i.UpdatePostExitCmd(instance.Uuid, info.PostExitCmd)
+		if err != nil {
+			return nil, err
+		}
+	}
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	oldInst := filepath.Join(appdata, "SaturnLauncher", "instances", folderId)
+	newInst := filepath.Join(appdata, "SaturnLauncher", "instances", instance.Uuid)
+	skipList := map[string]bool{"logs": true, "backups": true, "crash-reports": true, "instance.json": true}
+	err = filepath.WalkDir(oldInst, func(path string, d fs.DirEntry, err error) error {
+		if skipList[d.Name()] {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		relPath, err := filepath.Rel(oldInst, path)
+		if err != nil {
+			return err
+		}
+		dstPath := filepath.Join(newInst, relPath)
+		err = os.MkdirAll(filepath.Dir(dstPath), 0o755)
+		if err != nil {
+			return err
+		}
+		srcFile, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		dstFile, err := os.Create(dstPath)
+		if err != nil {
+			srcFile.Close()
+			return err
+		}
+		_, err = io.Copy(dstFile, srcFile)
+		if err != nil {
+			return err
+		}
+		err = srcFile.Close()
+		if err != nil {
+			return err
+		}
+		err = dstFile.Close()
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return instance, nil
+}

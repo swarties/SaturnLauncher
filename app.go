@@ -1590,3 +1590,12 @@ func (a *App) GetPostExit(folderId string) (string, error) {
 	}
 	return args, nil
 }
+
+func (a *App) DuplicateInstance(folderId, newName string) (*instances.Instance, error) {
+	instance, err := a.InstanceManager.DuplicateInstance(folderId, newName)
+	if err != nil {
+		return nil, err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return instance, nil
+}
