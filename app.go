@@ -408,6 +408,13 @@ func (a *App) StartGame(folderId, worldName string) error {
 	fullargs = append(fullargs, jvm...)
 	fullargs = append(fullargs, vInfo.MainClass)
 	fullargs = append(fullargs, game...)
+	var finalArgs []string
+	if instInfo.WrapperCmd != "" {
+		wrapperArgs := strings.Fields(instInfo.WrapperCmd)
+		finalArgs = append(finalArgs, wrapperArgs...)
+		finalArgs = append(finalArgs, *ensureJava)
+		finalArgs = append(finalArgs, fullargs...)
+	}
 	instDir := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId)
 	logDir := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "logs")
 	err = os.MkdirAll(logDir, 0o755)
@@ -419,7 +426,13 @@ func (a *App) StartGame(folderId, worldName string) error {
 	if err != nil {
 		return err
 	}
-	mc := exec.Command(*ensureJava, fullargs...)
+	var mc *exec.Cmd
+	if instInfo.WrapperCmd == "" {
+		mc = exec.Command(*ensureJava, fullargs...)
+	} else {
+		mc = exec.Command(finalArgs[0], finalArgs[1:]...)
+	}
+
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(2)
 	a.Launch.HideConsole(mc)
@@ -441,6 +454,25 @@ func (a *App) StartGame(folderId, worldName string) error {
 		return err
 	}
 	a.UpdateDiscordActivity("Starting Game", "Playing Minecraft "+instInfo.Version)
+	if instInfo.PrelaunchCmd != "" {
+		osName := runtime.GOOS
+		var cmd *exec.Cmd
+		if osName == "windows" {
+			cmd = exec.Command("cmd", "/C", instInfo.PrelaunchCmd)
+			cmd.Dir = instDir
+			err = cmd.Run()
+			if err != nil {
+				return err
+			}
+		} else if osName == "linux" {
+			cmd = exec.Command("sh", "-c", instInfo.PrelaunchCmd)
+			cmd.Dir = instDir
+			err = cmd.Run()
+			if err != nil {
+				return err
+			}
+		}
+	}
 	startTime := time.Now()
 	err = mc.Start()
 	if err != nil {
@@ -518,7 +550,25 @@ func (a *App) StartGame(folderId, worldName string) error {
 			"sessionSecond": seconds,
 			"playtimeTotal": instInfo.PlaytimeSeconds + seconds,
 		})
-
+		if instInfo.PostExitCmd != "" {
+			osName := runtime.GOOS
+			var cmd *exec.Cmd
+			if osName == "windows" {
+				cmd = exec.Command("cmd", "/C", instInfo.PostExitCmd)
+				cmd.Dir = instDir
+				err = cmd.Run()
+				if err != nil {
+					fmt.Println("failed to run post exit command")
+				}
+			} else if osName == "linux" {
+				cmd = exec.Command("sh", "-c", instInfo.PostExitCmd)
+				cmd.Dir = instDir
+				err = cmd.Run()
+				if err != nil {
+					fmt.Println("failed to run post exit command")
+				}
+			}
+		}
 		a.UpdateDiscordActivity("Stopping Game", "Stopping Minecraft "+instInfo.Version)
 
 		a.mu.Lock()
@@ -1493,4 +1543,50 @@ func (a *App) GetCategories() (modrinth.Categories, error) {
 		return nil, err
 	}
 	return categories, nil
+}
+
+func (a *App) UpdatePreLaunch(folderId, prelaunch string) error {
+	err := a.InstanceManager.UpdatePrelaunchCmd(folderId, prelaunch)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+func (a *App) UpdateWrapperCmd(folderId, wrapper string) error {
+	err := a.InstanceManager.UpdateWrapperCmd(folderId, wrapper)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+func (a *App) UpdatePostExit(folderId, postExit string) error {
+	err := a.InstanceManager.UpdatePostExitCmd(folderId, postExit)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+func (a *App) GetPreLaunch(folderId string) (string, error) {
+	args, err := a.InstanceManager.GetPreLaunchCmd(folderId)
+	if err != nil {
+		return "", err
+	}
+	return args, nil
+}
+func (a *App) GetWrapper(folderId string) (string, error) {
+	args, err := a.InstanceManager.GetWrapperCmd(folderId)
+	if err != nil {
+		return "", err
+	}
+	return args, nil
+}
+func (a *App) GetPostExit(folderId string) (string, error) {
+	args, err := a.InstanceManager.GetPostExitCmd(folderId)
+	if err != nil {
+		return "", err
+	}
+	return args, nil
 }

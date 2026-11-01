@@ -40,6 +40,9 @@ type Instance struct {
 	JvmArgs         string `json:"jvmArgs"`
 	JavaPath        string `json:"javaPath,omitempty"`
 	PlaytimeSeconds int64  `json:"playtimeSeconds,omitempty"`
+	PrelaunchCmd    string `json:"prelaunchCmd"`
+	WrapperCmd      string `json:"wrapperCmd"`
+	PostExitCmd     string `json:"postExitCmd"`
 }
 type Ram struct {
 	TotalRamMB int
@@ -758,4 +761,82 @@ func (i *InstanceManager) ClearAllOldLogs() error {
 		}
 	}
 	return nil
+}
+
+func (i *InstanceManager) UpdatePrelaunchCmd(folderId, prelaunch string) error {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	inst.PrelaunchCmd = prelaunch
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	data, err := json.MarshalIndent(inst, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(base, data, 0o600)
+}
+
+func (i *InstanceManager) UpdateWrapperCmd(folderId, wrapper string) error {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	inst.WrapperCmd = wrapper
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	data, err := json.MarshalIndent(inst, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(base, data, 0o600)
+}
+
+func (i *InstanceManager) UpdatePostExitCmd(folderId, postExit string) error {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	inst.PostExitCmd = postExit
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	data, err := json.MarshalIndent(inst, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(base, data, 0o600)
+}
+
+func (i *InstanceManager) GetWrapperCmd(folderId string) (string, error) {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return "", err
+	}
+	return inst.WrapperCmd, nil
+}
+
+func (i *InstanceManager) GetPreLaunchCmd(folderId string) (string, error) {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return "", err
+	}
+	return inst.PrelaunchCmd, nil
+}
+
+func (i *InstanceManager) GetPostExitCmd(folderId string) (string, error) {
+	inst, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return "", err
+	}
+	return inst.PostExitCmd, nil
 }
