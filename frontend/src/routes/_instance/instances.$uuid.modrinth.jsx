@@ -243,9 +243,9 @@ function ModrinthBrowser() {
       <div className="flex h-full w-full gap-6">
         <aside className="hidden w-56 shrink-0 flex-col gap-4 overflow-y-auto overscroll-contain border-r border-(--hairline) pr-4 md:flex">
           <div className="flex items-center justify-between">
-            <h2 className="text-muted-foreground text-xs font-normal tracking-[0.2em] uppercase">
-              Filter
-            </h2>
+            <h6 className="text-muted-foreground text-xs font-normal tracking-[0.2em] uppercase">
+              Filter options
+            </h6>
             {selectedCategories.length > 0 && (
               <button
                 onClick={clearCategories}
