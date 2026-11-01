@@ -102,7 +102,7 @@ function installSubs() {
   onBackendEvent('game:stopped', (payload) => {
     const folderId = payload?.folderId;
     if (typeof folderId !== 'string') return;
-    if (liveUuid == folderId) liveUuid = null;
+    if (liveUuid === folderId) liveUuid = null;
   });
 
   const append = (raw, fallbackLevel) => {

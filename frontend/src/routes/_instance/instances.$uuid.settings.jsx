@@ -9,10 +9,12 @@ import { toast } from '@/stores/toasts';
 import {
   GetTotalRam,
   PickInstanceIcon,
+  PickJavaPath,
   RenameInstance,
   SetInstanceIcon,
   UpdateInstanceDescription,
   UpdateJavaArgs,
+  UpdateJavaPath,
   UpdateMem,
 } from '../../../wailsjs/go/main/App';
 
@@ -34,12 +36,14 @@ function SettingsTab() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [jvmArgs, setJvmArgs] = useState('');
+  const [javaPath, setJavaPath] = useState('');
   const [minRam, setMinRam] = useState(2048);
   const [maxRam, setMaxRam] = useState(4096);
   const [totalRamMB, setTotalRamMB] = useState(null);
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [iconUploading, setIconUploading] = useState(false);
+  const [pickingJava, setPickingJava] = useState(false);
 
   useEffect(() => {
     GetTotalRam()
@@ -52,6 +56,7 @@ function SettingsTab() {
     setName(instance.name ?? '');
     setDescription(instance.description ?? '');
     setJvmArgs(instance.jvmArgs ?? '');
+    setJavaPath(instance.javaPath ?? '');
     setMinRam(instance.minram ?? 2048);
     setMaxRam(instance.maxram ?? 4096);
   }, [instance]);
@@ -81,6 +86,7 @@ function SettingsTab() {
       await RenameInstance(uuid, name.trim());
       await UpdateInstanceDescription(uuid, description);
       await UpdateJavaArgs(uuid, jvmArgs);
+      await UpdateJavaPath(uuid, javaPath);
       await UpdateMem(uuid, minRam, maxRam);
 
       await new Promise((resolve) => setTimeout(resolve, 800));
@@ -96,6 +102,19 @@ function SettingsTab() {
 
   const handleCancel = () => {
     resetFromStore();
+  };
+
+  const handlePickJava = async () => {
+    if (pickingJava) return;
+    setPickingJava(true);
+    try {
+      const path = await PickJavaPath();
+      if (path) setJavaPath(path);
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to pick Java path');
+    } finally {
+      setPickingJava(false);
+    }
   };
 
   const iconSrc = iconDataUrl
@@ -200,6 +219,29 @@ function SettingsTab() {
               Additional JVM arguments passed to the game. Separate multiple
               arguments with a space. Less is more and don't touch this if you
               don't know what you're doing!
+            </p>
+          </Field>
+          <Field label="Java Path">
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={javaPath}
+                onChange={(e) => setJavaPath(e.target.value)}
+                placeholder="Auto-detect (Leave blank for default)"
+                className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 flex-1 rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+              />
+              <button
+                type="button"
+                onClick={handlePickJava}
+                disabled={pickingJava}
+                className="text-muted-foreground h-11 shrink-0 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
+              >
+                {pickingJava ? 'Waiting...' : 'Browse'}
+              </button>
+            </div>
+            <p className="text-muted-foreground mt-2 text-xs font-thin">
+              Custom path to the Java executable. Leave blank to let the
+              launcher automatically manage Java.
             </p>
           </Field>
         </div>
