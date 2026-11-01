@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import {
+  GetCategories,
   GetDiscoveryPage,
   GetProjectPage,
   GetProjectVersions,
@@ -18,6 +19,9 @@ let state = {
   installed: {}, // { [projectId]: boolean }
   versions: {}, // { [projectId]: { loading: boolean, data: Array } }
   projects: {}, // { [projectId]: { loading, data, error } }
+  availableCategories: [],
+  categoriesLoading: false,
+  selectedCategories: [],
 };
 
 const listeners = new Set();
@@ -45,14 +49,21 @@ export function resetBrowser() {
     results: [],
     loading: true,
     error: null,
+    selectedCategories: [],
   });
 }
 
 const discoveryCache = {};
 const CACHE_TTL = 10 * 60 * 1000;
 
-export async function fetchDiscovery(uuid, version, query, tab) {
-  if (query === '') {
+export async function fetchDiscovery(
+  uuid,
+  version,
+  query,
+  tab,
+  categories = ''
+) {
+  if (query === '' && categories === '') {
     const cacheKey = `${tab}_${version}`;
     const cached = discoveryCache[cacheKey];
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -67,12 +78,17 @@ export async function fetchDiscovery(uuid, version, query, tab) {
     }
   }
 
-  setState({ query, activeTab: tab, loading: true, error: null });
+  setState({
+    query,
+    activeTab: tab,
+    loading: true,
+    error: null,
+  });
   try {
-    const res = await GetDiscoveryPage(tab, version, '', query, uuid);
+    const res = await GetDiscoveryPage(tab, version, categories, query, uuid);
     const hits = res.hits ?? [];
 
-    if (query === '') {
+    if (query === '' && categories === '') {
       const cacheKey = `${tab}_${version}`;
       discoveryCache[cacheKey] = { data: hits, timestamp: Date.now() };
     }
@@ -133,6 +149,31 @@ export async function fetchProject(projectId) {
       },
     });
   }
+}
+
+export async function fetchCategories() {
+  if (state.availableCategories.length > 0) return;
+
+  setState({ categoriesLoading: true });
+  try {
+    const res = await GetCategories();
+    setState({ availableCategories: res ?? [], categoriesLoading: false });
+  } catch (e) {
+    console.error('Failed to load categories', e);
+    setState({ categoriesLoading: false });
+  }
+}
+
+export function toggleCategory(category) {
+  const isSelected = state.selectedCategories.includes(category);
+  const next = isSelected
+    ? state.selectedCategories.filter((c) => c !== category)
+    : [...state.selectedCategories, category];
+  setState({ selectedCategories: next });
+}
+
+export function clearCategories() {
+  setState({ selectedCategories: [] });
 }
 
 export async function installMod(
