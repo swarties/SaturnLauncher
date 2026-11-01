@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
@@ -29,10 +30,13 @@ import {
 import {
   CreateInstance,
   DeleteInstance,
+  DetectInstances,
   InstallFabric,
   InstallMrpack,
   InstallQuilt,
   ListInstances,
+  ParsePrism,
+  TransferFromPrism,
 } from '../../../wailsjs/go/main/App';
 import { onBackendEvent, onFileDrop } from '@/lib/backend.js';
 
@@ -50,6 +54,7 @@ function InstancesPage() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [preventClose, setPreventClose] = useState(false);
   const [thisIsTakingAWhile, setThisIsTakingAWhile] = useState(false);
+  const [prismOpen, setPrismOpen] = useState(false);
   const dragCounter = useRef(0);
   const navigate = Route.useNavigate();
 
@@ -145,13 +150,21 @@ function InstancesPage() {
             <p className="text-muted-foreground text-5xl font-extralight tracking-tight">
               No instances yet
             </p>
-            <button
-              onClick={() => setCreating(true)}
-              className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors"
-            >
-              New Instance
-              <Plus aria-hidden="true" className="text-saturn-300 size-5" />
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setPrismOpen(true)}
+                className="text-muted-foreground flex h-11 items-center gap-2 rounded-lg border-2 border-(--surface-border) px-6 font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
+              >
+                Import from Prism
+              </button>
+              <button
+                onClick={() => setCreating(true)}
+                className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors"
+              >
+                New Instance
+                <Plus aria-hidden="true" className="text-saturn-300 size-5" />
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -165,13 +178,21 @@ function InstancesPage() {
                   {instances.length === 1 ? 'instance' : 'instances'}
                 </p>
               </div>
-              <button
-                onClick={() => setCreating(true)}
-                className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors"
-              >
-                New Instance
-                <Plus aria-hidden="true" className="text-saturn-300 size-5" />
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setPrismOpen(true)}
+                  className="text-muted-foreground flex h-11 items-center gap-2 rounded-lg border-2 border-(--surface-border) px-6 font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
+                >
+                  Import from Prism
+                </button>
+                <button
+                  onClick={() => setCreating(true)}
+                  className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 group flex h-11 items-center gap-2 rounded-lg border px-6 font-thin transition-colors"
+                >
+                  New Instance
+                  <Plus aria-hidden="true" className="text-saturn-300 size-5" />
+                </button>
+              </div>
             </div>
 
             <motion.div
@@ -191,6 +212,11 @@ function InstancesPage() {
             </motion.div>
           </>
         )}
+
+        <PrismMigrationModal
+          open={prismOpen}
+          onClose={() => setPrismOpen(false)}
+        />
 
         <AnimatePresence>
           {creating && (
@@ -344,6 +370,204 @@ function InstancesPage() {
         </AnimatePresence>
       </>
     </div>
+  );
+}
+
+function PrismMigrationModal({ open, onClose }) {
+  const [step, setStep] = useState('loading');
+  const [instances, setInstances] = useState([]);
+  const [selected, setSelected] = useState([]);
+
+  useEffect(() => {
+    if (!open) {
+      setTimeout(() => {
+        setStep('loading');
+        setInstances([]);
+        setSelected([]);
+      }, 300);
+      return;
+    }
+
+    let cancelled = false;
+
+    DetectInstances()
+      .then((res) => {
+        if (cancelled) return;
+        setInstances(res || []);
+        setSelected((res || []).map((i) => i.Name));
+        setStep('select');
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        toast.error(e?.message ?? 'Failed to detect instances');
+        setStep('select');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const toggleInstance = (name) => {
+    setSelected((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+    );
+  };
+
+  const handleImport = async () => {
+    if (selected.length === 0) return;
+    setStep('importing');
+
+    try {
+      const toParse = instances.filter((i) => selected.includes(i.Name));
+      const parsed = await ParsePrism(toParse);
+      await TransferFromPrism(parsed);
+      setStep('success');
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to import instances');
+      setStep('select');
+    }
+  };
+
+  if (!open) return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && step !== 'importing') onClose();
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-(--backdrop) p-6 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.38, 1] }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="bg-background relative flex w-full max-w-lg flex-col overflow-hidden rounded-md border-2 border-(--surface-border)"
+          >
+            <div className="flex items-center justify-between border-b border-(--hairline) p-6">
+              <div>
+                <h2 className="text-foreground text-xl font-extralight tracking-tight">
+                  Import from Prism
+                </h2>
+                <p className="text-muted-foreground mt-1 text-sm font-thin">
+                  Select Prism instances to migrate into Saturn.
+                </p>
+              </div>
+              {step !== 'importing' && (
+                <button
+                  onClick={onClose}
+                  className="text-muted-foreground flex size-8 items-center justify-center rounded-md border border-(--hairline) transition-colors hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="p-6">
+              {step === 'loading' && (
+                <div className="flex h-40 items-center justify-center">
+                  <LoaderCircle className="text-saturn-500 size-8 animate-spin" />
+                </div>
+              )}
+
+              {step === 'select' && instances.length === 0 && (
+                <div className="flex h-40 flex-col items-center justify-center text-center">
+                  <p className="text-muted-foreground text-sm font-thin">
+                    No Prism instances detected on this system.
+                  </p>
+                </div>
+              )}
+
+              {step === 'select' && instances.length > 0 && (
+                <div className="flex max-h-60 flex-col gap-2 overflow-y-auto pr-2">
+                  {instances.map((inst) => {
+                    const isChecked = selected.includes(inst.Name);
+                    return (
+                      <label
+                        key={inst.Path}
+                        className="flex cursor-pointer items-center gap-3 rounded-md border border-(--hairline) p-3 transition-colors hover:bg-(--surface-hover)"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleInstance(inst.Name)}
+                          className="accent-saturn-500 size-4"
+                        />
+                        <div className="flex min-w-0 flex-col">
+                          <span className="text-foreground truncate text-sm font-normal">
+                            {inst.Name}
+                          </span>
+                          <span className="text-muted-foreground truncate text-xs font-thin">
+                            {inst.Path}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              {step === 'importing' && (
+                <div className="flex h-40 flex-col items-center justify-center gap-4">
+                  <LoaderCircle className="text-saturn-500 size-8 animate-spin" />
+                  <p className="text-muted-foreground text-sm font-thin">
+                    Transferring instances...
+                  </p>
+                </div>
+              )}
+
+              {step === 'success' && (
+                <div className="flex h-40 flex-col items-center justify-center gap-4">
+                  <div className="flex size-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-500">
+                    <Check className="size-6" />
+                  </div>
+                  <p className="text-foreground text-sm font-normal">
+                    Successfully imported {selected.length} instance
+                    {selected.length > 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-(--hairline) p-4">
+              {step === 'select' && (
+                <>
+                  <button
+                    onClick={onClose}
+                    className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleImport}
+                    disabled={selected.length === 0}
+                    className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 flex h-10 items-center justify-center rounded-md border px-6 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    Import Selected
+                  </button>
+                </>
+              )}
+              {step === 'success' && (
+                <button
+                  onClick={onClose}
+                  className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 flex h-10 items-center justify-center rounded-md border px-6 text-sm font-thin transition-colors"
+                >
+                  Done
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 }
 
