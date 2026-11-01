@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 // import "SaturnLauncher/backend/download"
@@ -191,14 +192,12 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, fol
 			"versions:" + version,
 		},
 	}
-	var catFacets []string
 	if strings.TrimSpace(categories) != "" {
 		split := strings.Split(categories, ",")
 		for _, s := range split {
 			fac := strings.TrimSpace(s)
-			catFacets = append(catFacets, "categories:"+fac)
+			facets = append(facets, []string{"categories:" + fac})
 		}
-		facets = append(facets, catFacets)
 	}
 	facetsJson, err := json.Marshal(facets)
 	if err != nil {
@@ -535,28 +534,37 @@ func (m *Modrinth) GetContentUpdates(folderId, gameVersion, projectType string) 
 	if err != nil {
 		return nil, err
 	}
+	mu := sync.Mutex{}
+	wait := sync.WaitGroup{}
 	for _, f := range modInfo {
-		versions, err := m.GetVersions(f.ProjectId, gameVersion, projectType)
-		if err != nil {
-			continue
-		}
-		latestVer := versions[0]
-		if f.VersionId != latestVer.ID {
-			var newInfo UpdateInfo
-			for _, v := range latestVer.Files {
-				if v.Primary == true {
-					newInfo.OldFileName = f.Filename
-					newInfo.NewFileName = v.Filename
-					newInfo.ProjectId = f.ProjectId
-					newInfo.CurrentVersion = f.VersionId
-					newInfo.NewVersion = latestVer.ID
-					newInfo.NewDownloadUrl = v.URL
-					updInfo = append(updInfo, newInfo)
-					break
+		wait.Add(1)
+		go func(f Manifest) {
+			defer wait.Done()
+			versions, err := m.GetVersions(f.ProjectId, gameVersion, projectType)
+			if err != nil {
+				return
+			}
+			latestVer := versions[0]
+			if f.VersionId != latestVer.ID {
+				var newInfo UpdateInfo
+				for _, v := range latestVer.Files {
+					if v.Primary == true {
+						newInfo.OldFileName = f.Filename
+						newInfo.NewFileName = v.Filename
+						newInfo.ProjectId = f.ProjectId
+						newInfo.CurrentVersion = f.VersionId
+						newInfo.NewVersion = latestVer.ID
+						newInfo.NewDownloadUrl = v.URL
+						mu.Lock()
+						updInfo = append(updInfo, newInfo)
+						mu.Unlock()
+						break
+					}
 				}
 			}
-		}
+		}(f)
 	}
+	wait.Wait()
 	return updInfo, nil
 }
 
