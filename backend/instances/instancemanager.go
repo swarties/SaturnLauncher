@@ -689,3 +689,69 @@ func (i *InstanceManager) AddToZip(src, zipPrefix string, zipWrite *zip.Writer) 
 	}
 	return nil
 }
+
+func (i *InstanceManager) ClearOldLogs(folderId string) error {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	logsPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "logs")
+	dir, err := os.ReadDir(logsPath)
+	if err == nil {
+		for _, d := range dir {
+			if d.IsDir() {
+				continue
+			}
+			info, err := d.Info()
+			if err != nil {
+				continue
+			}
+			if time.Since(info.ModTime()) > 7*24*time.Hour {
+				if d.Name() == "jvm.log" || d.Name() == "latest.log" {
+					continue
+				}
+				err = os.Remove(filepath.Join(logsPath, d.Name()))
+				if err != nil {
+					continue
+				}
+			}
+		}
+	}
+	crashPath := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, "crash-reports")
+	dir, err = os.ReadDir(crashPath)
+	if err == nil {
+		for _, d := range dir {
+			if d.IsDir() {
+				continue
+			}
+			info, err := d.Info()
+			if err != nil {
+				continue
+			}
+			if time.Since(info.ModTime()) > 7*24*time.Hour {
+				if d.Name() == "jvm.log" || d.Name() == "latest.log" {
+					continue
+				}
+				err = os.Remove(filepath.Join(crashPath, d.Name()))
+				if err != nil {
+					continue
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (i *InstanceManager) ClearAllOldLogs() error {
+	instances, err := i.ListInstances()
+	if err != nil {
+		return err
+	}
+	for _, in := range instances {
+		err := i.ClearOldLogs(in.Uuid)
+		if err != nil {
+			continue
+		}
+	}
+	return nil
+}

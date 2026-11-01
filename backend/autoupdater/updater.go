@@ -6,6 +6,7 @@ import (
 	"SaturnLauncher/backend/download"
 	"SaturnLauncher/backend/projectInfo"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -35,27 +36,27 @@ type Assets struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
-func (u *Updater) UpdateApp() {
+func (u *Updater) UpdateApp() error {
 	var release Release
 	osName := runtime.GOOS
 
 	request, err := http.NewRequest("GET", "https://api.github.com/repos/"+repoOwner+"/"+repoName+"/releases/latest", nil)
 	if err != nil {
-		return
+		return fmt.Errorf("updater error: %s", err)
 	}
 	request.Header.Set("User-Agent", userAgent)
 	do, err := http.DefaultClient.Do(request)
 	if err != nil {
-		return
+		return fmt.Errorf("updater error: %s", err)
 	}
 	defer do.Body.Close()
 	rls, err := io.ReadAll(do.Body)
 	if err != nil {
-		return
+		return fmt.Errorf("updater error: %s", err)
 	}
 	err = json.Unmarshal(rls, &release)
 	if err != nil {
-		return
+		return fmt.Errorf("updater error: %s", err)
 	}
 
 	if release.TagName != tag {
@@ -64,7 +65,7 @@ func (u *Updater) UpdateApp() {
 		dl := download.NewDownload()
 		isNsis, err := isNsisInstall()
 		if err != nil {
-			return
+			isNsis = false
 		}
 		switch osName {
 		case "windows":
@@ -78,7 +79,7 @@ func (u *Updater) UpdateApp() {
 				}
 				_, err = dl.Downloader(tempDir, dlLink)
 				if err != nil {
-					return
+					return fmt.Errorf("updater error: %s", err)
 				}
 				// update using silent install ( /s ) + custom /RELAUNCH arg
 				cmd := exec.Command(tempDir, "/S", "/RELAUNCH")
@@ -92,7 +93,7 @@ func (u *Updater) UpdateApp() {
 					if strings.HasSuffix(r.Name, ".exe") && !strings.Contains(r.Name, "installer") {
 						_, err := dl.Downloader(tempDir, r.BrowserDownloadURL)
 						if err != nil {
-							return
+							return fmt.Errorf("updater error: %s", err)
 						}
 						break
 					}
@@ -102,34 +103,35 @@ func (u *Updater) UpdateApp() {
 				batTemp = filepath.Join(batTemp, "replaceSaturn.bat")
 				execPath, err := os.Executable()
 				if err != nil {
-					return
+					return fmt.Errorf("updater error: %s", err)
 				}
-				batContent := "timeout /t 2 /nobreak > NUL\n" +
+				batContent := "timeout /t 5 /nobreak > NUL\n" +
 					"move /Y \"%TEMP%\\newSaturnBinary.exe\" \"" + execPath + "\"\n" +
 					"start \"\" \"" + execPath + "\"\n" +
 					"start /b \"\" cmd /c del \"%~f0\"&exit /b\n"
 
 				err = os.WriteFile(batTemp, []byte(batContent), 0644)
 				if err != nil {
-					return
+					return fmt.Errorf("updater error: %s", err)
 				}
 				cmd := exec.Command("cmd.exe", "/c", batTemp)
 				err = cmd.Start()
 				if err == nil {
 					os.Exit(0)
 				}
-				return
+				return fmt.Errorf("updater error: %s", err)
 			}
 		default:
 			panic("vas ???????")
 		}
 	}
+	return nil
 }
 
 func isNsisInstall() (bool, error) {
 	path := "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\SaturnLauncherSaturnLauncher"
 
-	key, err := registry.OpenKey(registry.LOCAL_MACHINE, path, registry.QUERY_VALUE|registry.WOW64_64KEY)
+	key, err := registry.OpenKey(registry.CURRENT_USER, path, registry.QUERY_VALUE|registry.WOW64_64KEY)
 	if err != nil {
 		return false, err
 	}

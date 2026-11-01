@@ -102,6 +102,12 @@ func (a *App) startup(ctx context.Context) {
 		time.Sleep(3 * time.Second)
 		a.Updater.Update()
 	}()
+	go func() {
+		err := a.InstanceManager.ClearAllOldLogs()
+		if err == nil {
+			fmt.Println("successfully cleared old logs")
+		}
+	}()
 }
 
 func (a *App) UpdateDiscordActivity(state, details string) {
