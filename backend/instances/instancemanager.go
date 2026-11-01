@@ -690,7 +690,10 @@ func (i *InstanceManager) AddToZip(src, zipPrefix string, zipWrite *zip.Writer) 
 	return nil
 }
 
-func (i *InstanceManager) ClearOldLogs(folderId string) error {
+func (i *InstanceManager) ClearOldLogs(folderId string, refreshP time.Duration) error {
+	if refreshP == 0 {
+		return nil
+	}
 	appdata, err := os.UserConfigDir()
 	if err != nil {
 		return err
@@ -706,7 +709,7 @@ func (i *InstanceManager) ClearOldLogs(folderId string) error {
 			if err != nil {
 				continue
 			}
-			if time.Since(info.ModTime()) > 7*24*time.Hour {
+			if time.Since(info.ModTime()) > refreshP*24*time.Hour {
 				if d.Name() == "jvm.log" || d.Name() == "latest.log" {
 					continue
 				}
@@ -728,7 +731,7 @@ func (i *InstanceManager) ClearOldLogs(folderId string) error {
 			if err != nil {
 				continue
 			}
-			if time.Since(info.ModTime()) > 7*24*time.Hour {
+			if time.Since(info.ModTime()) > refreshP*24*time.Hour {
 				if d.Name() == "jvm.log" || d.Name() == "latest.log" {
 					continue
 				}
@@ -748,7 +751,7 @@ func (i *InstanceManager) ClearAllOldLogs() error {
 		return err
 	}
 	for _, in := range instances {
-		err := i.ClearOldLogs(in.Uuid)
+		err := i.ClearOldLogs(in.Uuid, 7)
 		if err != nil {
 			continue
 		}

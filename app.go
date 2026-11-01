@@ -102,12 +102,6 @@ func (a *App) startup(ctx context.Context) {
 		time.Sleep(3 * time.Second)
 		a.Updater.Update()
 	}()
-	go func() {
-		err := a.InstanceManager.ClearAllOldLogs()
-		if err == nil {
-			fmt.Println("successfully cleared old logs")
-		}
-	}()
 }
 
 func (a *App) UpdateDiscordActivity(state, details string) {
@@ -1415,4 +1409,12 @@ func (a *App) ExportInstanceAsModpack(folderId string, includeWorlds, includeOpt
 		return "", err
 	}
 	return dst, nil
+}
+
+func (a *App) ClearInstanceLogs(folderId string, refreshP time.Duration) error {
+	err := a.InstanceManager.ClearOldLogs(folderId, refreshP)
+	if err != nil {
+		return err
+	}
+	return nil
 }
