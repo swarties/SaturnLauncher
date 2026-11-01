@@ -394,7 +394,7 @@ function PrismMigrationModal({ open, onClose }) {
       .then((res) => {
         if (cancelled) return;
         setInstances(res || []);
-        setSelected((res || []).map((i) => i.Name));
+        setSelected([]);
         setStep('select');
       })
       .catch((e) => {
@@ -449,9 +449,9 @@ function PrismMigrationModal({ open, onClose }) {
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.38, 1] }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="bg-background relative flex w-full max-w-lg flex-col overflow-hidden rounded-md border-2 border-(--surface-border)"
+            className="bg-background relative flex w-full max-w-2xl flex-col overflow-hidden rounded-md border-2 border-(--surface-border)"
           >
-            <div className="flex items-center justify-between border-b border-(--hairline) p-6">
+            <div className="flex items-center justify-between border-b border-(--hairline) p-8">
               <div>
                 <h2 className="text-foreground text-xl font-extralight tracking-tight">
                   Import from Prism
@@ -470,7 +470,7 @@ function PrismMigrationModal({ open, onClose }) {
               )}
             </div>
 
-            <div className="p-6">
+            <div className="p-8">
               {step === 'loading' && (
                 <div className="flex h-40 items-center justify-center">
                   <LoaderCircle className="text-saturn-500 size-8 animate-spin" />
@@ -486,29 +486,47 @@ function PrismMigrationModal({ open, onClose }) {
               )}
 
               {step === 'select' && instances.length > 0 && (
-                <div className="flex max-h-60 flex-col gap-2 overflow-y-auto pr-2">
+                <div className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto px-1 py-2">
                   {instances.map((inst) => {
                     const isChecked = selected.includes(inst.Name);
                     return (
-                      <label
+                      <button
                         key={inst.Path}
-                        className="flex cursor-pointer items-center gap-3 rounded-md border border-(--hairline) p-3 transition-colors hover:bg-(--surface-hover)"
+                        type="button"
+                        onClick={() => toggleInstance(inst.Name)}
+                        className={[
+                          'flex w-full cursor-pointer items-center gap-3 rounded-md border p-3 text-left transition-colors',
+                          isChecked
+                            ? 'border-(--chip-border-hover) bg-(--chip-bg-hover)'
+                            : 'border-(--hairline) hover:bg-(--surface-hover)',
+                        ].join(' ')}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleInstance(inst.Name)}
-                          className="accent-saturn-500 size-4"
-                        />
+                        <div
+                          className={[
+                            'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+                            isChecked
+                              ? 'border-saturn-500 bg-saturn-500 text-white'
+                              : 'border-(--hairline) bg-(--surface-active)',
+                          ].join(' ')}
+                        >
+                          {isChecked && <Check className="size-3" />}
+                        </div>
                         <div className="flex min-w-0 flex-col">
-                          <span className="text-foreground truncate text-sm font-normal">
+                          <span
+                            className={[
+                              'truncate text-sm font-normal',
+                              isChecked
+                                ? 'text-(--saturn-fg-strong)'
+                                : 'text-foreground',
+                            ].join(' ')}
+                          >
                             {inst.Name}
                           </span>
                           <span className="text-muted-foreground truncate text-xs font-thin">
                             {inst.Path}
                           </span>
                         </div>
-                      </label>
+                      </button>
                     );
                   })}
                 </div>
@@ -536,7 +554,7 @@ function PrismMigrationModal({ open, onClose }) {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-(--hairline) p-4">
+            <div className="flex justify-end gap-3 border-t border-(--hairline) p-6">
               {step === 'select' && (
                 <>
                   <button
