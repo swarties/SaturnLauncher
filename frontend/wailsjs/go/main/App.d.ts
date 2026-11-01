@@ -18,6 +18,8 @@ export function DeleteScreenshot(arg1:string,arg2:string):Promise<boolean>;
 
 export function DetectInstances():Promise<Array<migration.DetectedInstances>>;
 
+export function DuplicateInstance(arg1:string,arg2:string):Promise<instances.Instance>;
+
 export function ExportInstanceAsModpack(arg1:string,arg2:boolean,arg3:boolean):Promise<string>;
 
 export function GetActiveAccount():Promise<auth.AuthSession>;
@@ -48,6 +50,10 @@ export function GetLatestCrash(arg1:string):Promise<string>;
 
 export function GetLauncherConfig():Promise<Record<string, string>>;
 
+export function GetPostExit(arg1:string):Promise<string>;
+
+export function GetPreLaunch(arg1:string):Promise<string>;
+
 export function GetProjectPage(arg1:string):Promise<modrinth.ProjectPage>;
 
 export function GetProjectVersions(arg1:string,arg2:string,arg3:string):Promise<Array<modrinth.VersionInfo>>;
@@ -63,6 +69,8 @@ export function GetTotalPlaytime():Promise<number>;
 export function GetTotalRam():Promise<instances.Ram>;
 
 export function GetVersions():Promise<Array<download.Version>>;
+
+export function GetWrapper(arg1:string):Promise<string>;
 
 export function InstallContent(arg1:string,arg2:string,arg3:string):Promise<string>;
 
@@ -133,5 +141,11 @@ export function UpdateJavaArgs(arg1:string,arg2:string):Promise<void>;
 export function UpdateJavaPath(arg1:string,arg2:string):Promise<void>;
 
 export function UpdateMem(arg1:string,arg2:number,arg3:number):Promise<void>;
+
+export function UpdatePostExit(arg1:string,arg2:string):Promise<void>;
+
+export function UpdatePreLaunch(arg1:string,arg2:string):Promise<void>;
+
+export function UpdateWrapperCmd(arg1:string,arg2:string):Promise<void>;
 
 export function UploadSkin(arg1:string,arg2:string):Promise<void>;

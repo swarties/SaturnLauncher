@@ -142,6 +142,9 @@ export namespace instances {
 	    jvmArgs: string;
 	    javaPath?: string;
 	    playtimeSeconds?: number;
+	    prelaunchCmd: string;
+	    wrapperCmd: string;
+	    postExitCmd: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Instance(source);
@@ -161,6 +164,9 @@ export namespace instances {
 	        this.jvmArgs = source["jvmArgs"];
 	        this.javaPath = source["javaPath"];
 	        this.playtimeSeconds = source["playtimeSeconds"];
+	        this.prelaunchCmd = source["prelaunchCmd"];
+	        this.wrapperCmd = source["wrapperCmd"];
+	        this.postExitCmd = source["postExitCmd"];
 	    }
 	}
 	export class Ram {

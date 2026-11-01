@@ -34,6 +34,10 @@ export function DetectInstances() {
   return window['go']['main']['App']['DetectInstances']();
 }
 
+export function DuplicateInstance(arg1, arg2) {
+  return window['go']['main']['App']['DuplicateInstance'](arg1, arg2);
+}
+
 export function ExportInstanceAsModpack(arg1, arg2, arg3) {
   return window['go']['main']['App']['ExportInstanceAsModpack'](arg1, arg2, arg3);
 }
@@ -94,6 +98,14 @@ export function GetLauncherConfig() {
   return window['go']['main']['App']['GetLauncherConfig']();
 }
 
+export function GetPostExit(arg1) {
+  return window['go']['main']['App']['GetPostExit'](arg1);
+}
+
+export function GetPreLaunch(arg1) {
+  return window['go']['main']['App']['GetPreLaunch'](arg1);
+}
+
 export function GetProjectPage(arg1) {
   return window['go']['main']['App']['GetProjectPage'](arg1);
 }
@@ -124,6 +136,10 @@ export function GetTotalRam() {
 
 export function GetVersions() {
   return window['go']['main']['App']['GetVersions']();
+}
+
+export function GetWrapper(arg1) {
+  return window['go']['main']['App']['GetWrapper'](arg1);
 }
 
 export function InstallContent(arg1, arg2, arg3) {
@@ -264,6 +280,18 @@ export function UpdateJavaPath(arg1, arg2) {
 
 export function UpdateMem(arg1, arg2, arg3) {
   return window['go']['main']['App']['UpdateMem'](arg1, arg2, arg3);
+}
+
+export function UpdatePostExit(arg1, arg2) {
+  return window['go']['main']['App']['UpdatePostExit'](arg1, arg2);
+}
+
+export function UpdatePreLaunch(arg1, arg2) {
+  return window['go']['main']['App']['UpdatePreLaunch'](arg1, arg2);
+}
+
+export function UpdateWrapperCmd(arg1, arg2) {
+  return window['go']['main']['App']['UpdateWrapperCmd'](arg1, arg2);
 }
 
 export function UploadSkin(arg1, arg2) {

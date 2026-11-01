@@ -16,6 +16,9 @@ import {
   UpdateJavaArgs,
   UpdateJavaPath,
   UpdateMem,
+  UpdatePostExit,
+  UpdatePreLaunch,
+  UpdateWrapperCmd,
 } from '../../../wailsjs/go/main/App';
 
 import minecraftLogo from '@/assets/logos/minecraft.png';
@@ -37,6 +40,9 @@ function SettingsTab() {
   const [description, setDescription] = useState('');
   const [jvmArgs, setJvmArgs] = useState('');
   const [javaPath, setJavaPath] = useState('');
+  const [preLaunch, setPreLaunch] = useState('');
+  const [wrapper, setWrapper] = useState('');
+  const [postExit, setPostExit] = useState('');
   const [minRam, setMinRam] = useState(2048);
   const [maxRam, setMaxRam] = useState(4096);
   const [totalRamMB, setTotalRamMB] = useState(null);
@@ -57,6 +63,9 @@ function SettingsTab() {
     setDescription(instance.description ?? '');
     setJvmArgs(instance.jvmArgs ?? '');
     setJavaPath(instance.javaPath ?? '');
+    setPreLaunch(instance.prelaunchCmd ?? '');
+    setWrapper(instance.wrapperCmd ?? '');
+    setPostExit(instance.postExitCmd ?? '');
     setMinRam(instance.minram ?? 2048);
     setMaxRam(instance.maxram ?? 4096);
   }, [instance]);
@@ -87,6 +96,9 @@ function SettingsTab() {
       await UpdateInstanceDescription(uuid, description);
       await UpdateJavaArgs(uuid, jvmArgs);
       await UpdateJavaPath(uuid, javaPath);
+      await UpdatePreLaunch(uuid, preLaunch);
+      await UpdateWrapperCmd(uuid, wrapper);
+      await UpdatePostExit(uuid, postExit);
       await UpdateMem(uuid, minRam, maxRam);
 
       await new Promise((resolve) => setTimeout(resolve, 800));
@@ -242,6 +254,45 @@ function SettingsTab() {
             <p className="text-muted-foreground mt-2 text-xs font-thin">
               Custom path to the Java executable. Leave blank to let the
               launcher automatically manage Java.
+            </p>
+          </Field>
+
+          <Field label="Pre-launch Command">
+            <input
+              type="text"
+              value={preLaunch}
+              onChange={(e) => setPreLaunch(e.target.value)}
+              placeholder="e.g. echo 'Starting...'"
+              className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+            />
+            <p className="text-muted-foreground mt-2 text-xs font-thin">
+              Command to run before the games launchers.
+            </p>
+          </Field>
+
+          <Field label="Wrapper Command">
+            <input
+              type="text"
+              value={wrapper}
+              onChange={(e) => setWrapper(e.target.value)}
+              placeholder="e.g. gamemoderun or prime-run"
+              className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+            />
+            <p className="text-muted-foreground mt-2 text-xs font-thin">
+              Wraps the Java execution.
+            </p>
+          </Field>
+
+          <Field label="Post-exit Command">
+            <input
+              type="text"
+              value={postExit}
+              onChange={(e) => setPostExit(e.target.value)}
+              placeholder="e.g. echo 'Game closed!'"
+              className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+            />
+            <p className="text-muted-foreground mt-2 text-xs font-thin">
+              Command to run after the game closes.
             </p>
           </Field>
         </div>
