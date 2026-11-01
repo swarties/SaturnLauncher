@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -58,7 +59,18 @@ func (m *Migration) DetectLaunchers() ([]DetectedInstances, error) {
 	if err != nil {
 		return nil, err
 	}
-	prismPath := filepath.Join(appdata, "PrismLauncher", "instances")
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	osName := runtime.GOOS
+	var prismPath string
+	if osName == "windows" {
+		prismPath = filepath.Join(appdata, "PrismLauncher", "instances")
+	} else if osName == "linux" {
+		prismPath = filepath.Join(homeDir, ".local", "share", "PrismLauncher", "instances")
+	}
+
 	_, err = os.Stat(prismPath)
 	if err != nil {
 		if os.IsNotExist(err) {
