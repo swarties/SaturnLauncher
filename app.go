@@ -1599,3 +1599,38 @@ func (a *App) DuplicateInstance(folderId, newName string) (*instances.Instance, 
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return instance, nil
 }
+
+func (a *App) UpdateAllProjects(folderId, projectType string) error {
+	contentType := "mods"
+	if strings.Contains(projectType, "shader") {
+		contentType = "shaderpacks"
+	} else if projectType == "resourcepack" {
+		contentType = "resourcepacks"
+	}
+	info, err := a.InstanceManager.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	updates, err := a.Modrinth.GetContentUpdates(folderId, info.Version, projectType)
+	if err != nil {
+		return err
+	}
+	for i, u := range updates {
+		err = a.ApplyContentUpdate(folderId, contentType, u.OldFileName, u.NewVersion, projectType)
+		if err != nil {
+			return err
+		}
+		wailsRuntime.EventsEmit(a.ctx, "update:progress", i+1, len(updates))
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
+
+func (a *App) ClearInstanceCache(folderId string) error {
+	err := a.InstanceManager.ClearInstanceCache(folderId)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
+}
