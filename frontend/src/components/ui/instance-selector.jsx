@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { motion, LayoutGroup } from 'motion/react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { LayoutGroup, motion } from 'motion/react';
 
 import { ListInstances } from '../../../wailsjs/go/main/App';
 import { onBackendEvent } from '@/lib/backend';
 import { useAuth } from '@/stores/auth';
+import { updateConfig, useConfig } from '@/stores/config';
 
 /** @typedef {{ name: string, version: string, uuid: string, timecreated: string, minram: number, maxram: number}} McInstance */
 
@@ -18,6 +19,7 @@ const LIST_PADDING = 16;
  */
 export function InstanceSelector({ onSelectionChange }) {
   const { profile } = useAuth();
+  const { config } = useConfig();
   const scopeKey = profile?.id ?? null;
 
   const [instances, setInstances] = useState(/** @type {McInstance[]} */ ([]));
@@ -66,16 +68,21 @@ export function InstanceSelector({ onSelectionChange }) {
     };
   }, []);
 
+  const hasInitializedRef = useRef(false);
+
   useEffect(() => {
-    if (!scopeKey || typeof window === 'undefined') return;
-    setSelectedUuid(
-      window.localStorage.getItem(`saturn.activeInstance.${scopeKey}`)
-    );
-    const storedView = window.localStorage.getItem(
-      `saturn.instanceView.${scopeKey}`
-    );
-    if (VIEW_MODES.includes(storedView)) setViewMode(storedView);
-  }, [scopeKey]);
+    if (!scopeKey) return;
+
+    if (!hasInitializedRef.current && Object.keys(config).length > 0) {
+      const storedUuid = config[`activeInstance_${scopeKey}`];
+      if (storedUuid) setSelectedUuid(storedUuid);
+
+      const storedView = config[`instanceView_${scopeKey}`];
+      if (VIEW_MODES.includes(storedView)) setViewMode(storedView);
+
+      hasInitializedRef.current = true;
+    }
+  }, [scopeKey, config]);
 
   useEffect(() => {
     if (loading) return;
@@ -95,16 +102,13 @@ export function InstanceSelector({ onSelectionChange }) {
       onSelectionChangeRef.current(selected);
     }
 
-    if (!scopeKey || !selectedId || typeof window === 'undefined') return;
-    window.localStorage.setItem(
-      `saturn.activeInstance.${scopeKey}`,
-      selectedId
-    );
+    if (!scopeKey || !selectedId) return;
+    void updateConfig(`activeInstance_${scopeKey}`, selectedId);
   }, [selectedUuid, instances, scopeKey]);
 
   useEffect(() => {
-    if (!scopeKey || typeof window === 'undefined') return;
-    window.localStorage.setItem(`saturn.instanceView.${scopeKey}`, viewMode);
+    if (!scopeKey) return;
+    void updateConfig(`instanceView_${scopeKey}`, viewMode);
   }, [viewMode, scopeKey]);
 
   useLayoutEffect(() => {

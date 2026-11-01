@@ -11,8 +11,8 @@ import { GlassNavbar } from '@glinui/ui';
 import { Button } from '@/components/ui/button.jsx';
 import { LineWobble } from 'ldrs/react';
 import 'ldrs/react/LineWobble.css';
-import { hasOnboarded, setOnboarded } from '@/lib/onboarding';
 import { useAuth } from '@/stores/auth';
+import { updateConfig } from '@/stores/config';
 import { TextShimmerWave } from '@/components/ui/text-shimmer-wave.jsx';
 import { TextEffect } from '@/components/ui/text-effect.jsx';
 import { NAV_ITEMS } from '@/lib/nav-items';
@@ -330,14 +330,14 @@ function OnboardingPage() {
       const timer = setTimeout(() => setStage(1), 3000);
       return () => clearTimeout(timer);
     }
-    if (stage === 1 && !hasOnboarded()) {
+    if (stage === 1) {
       const timer = setTimeout(() => setStage(2), 5000);
       return () => clearTimeout(timer);
     }
   }, [stage]);
 
-  const handleComplete = () => {
-    setOnboarded();
+  const handleComplete = async () => {
+    await updateConfig('onboarded', 'true');
     void navigate({ to: '/home', replace: true });
   };
 

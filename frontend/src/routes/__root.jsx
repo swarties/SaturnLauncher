@@ -1,49 +1,24 @@
 import {
   createRootRoute,
   Outlet,
-  redirect,
   useLocation,
   useNavigate,
 } from '@tanstack/react-router';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { LineWobble } from 'ldrs/react';
 import 'ldrs/react/LineWobble.css';
 import { AlertTriangle } from 'lucide-react';
 
 import * as Runtime from '../../wailsjs/runtime/runtime';
-import { authActions, useAuth, getAuthState } from '@/stores/auth';
+import { authActions, useAuth } from '@/stores/auth';
 import { onBackendEvent, startApp } from '@/lib/backend';
-import { hasOnboarded } from '@/lib/onboarding';
+import { loadConfig, useConfig } from '@/stores/config';
 
 import { TooltipLayer } from '@/components/ui/tooltip-layer.jsx';
 
-function getRedirectTarget(status, pathname) {
-  if (status === 'unknown') return null;
-  if (status === 'unauthenticated')
-    return pathname === '/login' ? null : '/login';
-  if (!hasOnboarded()) return pathname === '/onboarding' ? null : '/onboarding';
-
-  if (pathname === '/login' || pathname === '/onboarding' || pathname === '/')
-    return '/home';
-
-  return null;
-}
-
 export const Route = createRootRoute({
   errorComponent: RootErrorComponent,
-  beforeLoad: ({ location }) => {
-    const { status } = getAuthState();
-    const redirectTarget = getRedirectTarget(status, location.pathname);
-
-    if (redirectTarget) {
-      throw redirect({
-        to: redirectTarget,
-        replace: true,
-      });
-    }
-  },
-
   component: RootLayout,
 });
 
@@ -52,8 +27,13 @@ function RootLayout() {
   const location = useLocation();
 
   const { status } = useAuth();
+  const { config, loading: configLoading } = useConfig();
   const [showStartupScreen, setShowStartupScreen] = useState(true);
   const startupStarted = useRef(false);
+
+  useEffect(() => {
+    void loadConfig();
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -97,21 +77,28 @@ function RootLayout() {
   }, []);
 
   useEffect(() => {
-    const redirectTarget = getRedirectTarget(status, location.pathname);
+    if (status === 'unknown' || configLoading) return;
 
-    if (!redirectTarget) return;
+    if (status === 'unauthenticated') {
+      if (location.pathname !== '/login') {
+        void navigate({ to: '/login', replace: true });
+      }
+      return;
+    }
 
-    void navigate({
-      to: redirectTarget,
-      replace: true,
-    });
-  }, [location.pathname, navigate, status]);
+    if (status === 'authenticated') {
+      if (config.onboarded !== 'true') {
+        if (location.pathname !== '/onboarding') {
+          void navigate({ to: '/onboarding', replace: true });
+        }
+        return;
+      }
 
-  if (status === 'unknown' || showStartupScreen) return <StartupScreen />;
-
-  // INFINITE ONBOARD LOOP !!!! VVVVVVVV
-
-  // localStorage.removeItem('saturn.onboarded');
+      if (['/login', '/onboarding', '/'].includes(location.pathname)) {
+        void navigate({ to: '/home', replace: true });
+      }
+    }
+  }, [status, config.onboarded, configLoading, location.pathname, navigate]);
 
   return (
     <main className="min-h-screen w-full">

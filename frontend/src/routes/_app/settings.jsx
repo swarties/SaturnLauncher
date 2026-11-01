@@ -5,6 +5,7 @@ import { Check } from 'lucide-react';
 import { setTheme, THEMES, useTheme } from '@/stores/theme';
 import { useLaunch } from '@/stores/launch';
 import { toast } from '@/stores/toasts';
+import { updateConfig } from '@/stores/config';
 
 export const Route = createFileRoute('/_app/settings')({
   component: SettingsPage,
@@ -22,9 +23,9 @@ function SettingsPage() {
     (inst) => inst.phase === 'launching' || inst.phase === 'running'
   );
 
-  const handleRedoOnboarding = () => {
+  const handleRedoOnboarding = async () => {
     if (isAnyInstanceActive) return;
-    localStorage.removeItem('saturn.onboarded');
+    await updateConfig('onboarded', 'false');
     void navigate({ to: '/onboarding', replace: true });
   };
 
@@ -49,7 +50,10 @@ function SettingsPage() {
               key={theme.id}
               theme={theme}
               selected={theme.id === activeId}
-              onSelect={() => setTheme(theme.id)}
+              onSelect={() => {
+                setTheme(theme.id);
+                void updateConfig('theme', theme.id);
+              }}
             />
           ))}
         </div>
