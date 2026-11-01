@@ -1450,3 +1450,11 @@ func (a *App) ClearOldLogs(folderId string, val int) error {
 	}
 	return nil
 }
+
+func (a *App) GetCategories() (modrinth.Categories, error) {
+	categories, err := a.Modrinth.GetCategories()
+	if err != nil {
+		return nil, err
+	}
+	return categories, nil
+}

@@ -174,6 +174,13 @@ type UpdateInfo struct {
 	NewDownloadUrl string `json:"newDownloadUrl"`
 }
 
+type Categories []struct {
+	Icon        string `json:"icon"`
+	Name        string `json:"name"`
+	ProjectType string `json:"project_type"`
+	Header      string `json:"header"`
+}
+
 func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, folderId string) (*DiscoverProjects, error) {
 	var discover DiscoverProjects
 	facets := [][]string{
@@ -579,4 +586,27 @@ func (m *Modrinth) RemoveFromManifest(folderId, filename string) error {
 		return err
 	}
 	return nil
+}
+
+func (m *Modrinth) GetCategories() (Categories, error) {
+	var categories Categories
+	catUrl := "https://api.modrinth.com/v2/tag/category"
+	requests, err := http.NewRequest("GET", catUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	requests.Header.Set("User-Agent", userAgent)
+	do, err := http.DefaultClient.Do(requests)
+	if err != nil {
+		return nil, err
+	}
+	defer do.Body.Close()
+	if do.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("modrinth's api did not return status 200 OK")
+	}
+	err = json.NewDecoder(do.Body).Decode(&categories)
+	if err != nil {
+		return nil, err
+	}
+	return categories, nil
 }
