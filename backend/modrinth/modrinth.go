@@ -209,12 +209,10 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, fol
 	} else {
 		url = "https://api.modrinth.com/v2/search" + "?facets=" + url2.QueryEscape(string(facetsJson)) + "&limit=25"
 	}
-
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(url)
 	request.Header.Set("User-Agent", userAgent)
 	do, err := http.DefaultClient.Do(request)
 	if err != nil {
