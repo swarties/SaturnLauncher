@@ -949,3 +949,24 @@ func (i *InstanceManager) DuplicateInstance(folderId, newName string) (*Instance
 	}
 	return instance, nil
 }
+
+func (i *InstanceManager) ClearInstanceCache(folderId string) error {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	instDir := filepath.Join(appdata, "SaturnLauncher", "instances", folderId)
+	err = os.RemoveAll(filepath.Join(instDir, "logs"))
+	if err != nil {
+		return err
+	}
+	err = os.RemoveAll(filepath.Join(instDir, "crash-reports"))
+	if err != nil {
+		return err
+	}
+	err = os.RemoveAll(filepath.Join(instDir, ".mixin.out"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
