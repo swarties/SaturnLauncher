@@ -317,7 +317,7 @@ function InstancesPage() {
                             </div>
                             <div className="flex h-14 items-center justify-center">
                               <p className="text-foreground text-center text-lg font-thin tracking-wide">
-                                Click or <s className="opacity-50">drag in</s>
+                                Click or drag in
                                 <br />a .mrpack file
                               </p>
                             </div>
