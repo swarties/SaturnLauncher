@@ -55,6 +55,8 @@ Using wailsIo V2.15.0
 - Full Microsoft login flow using OAuth code
 - Automatic token refresh on launch
 - Multi Account Support ( 1 JSON file per account + an active.json file to determine which account is active)
+- Refresh Token Encryption ( Windows DPAPI and Linux Keyring )
+- Added Offline Mode
 
 
 #### Game Launch
@@ -70,8 +72,8 @@ Using wailsIo V2.15.0
 
 #### Java
 
-- Added a java silent installer + extraction support for linux and windows
-- Added java overrides ( select your own java )
+- Java silent installer + extraction support for linux and windows
+- Java overrides ( select your own java )
 
 #### Instance Manager
 
@@ -79,6 +81,8 @@ Using wailsIo V2.15.0
 - Self Healing folders
 - Easy to read instance.json file containing java args ,memory ,name ,fabric , game version, description etc...
 - Ability to select the custom java args ram icon etc for each instance
+- Instance Duplication
+- Instance Backup And Restore
 
 #### Content Manager
 
@@ -87,9 +91,19 @@ Using wailsIo V2.15.0
 - List Mods ,Resource Packs ,and ShaderPacks ( Rich Metadata available for mods and resource packs )
 - Enable Disable Mods ,Resource Packs ,and ShaderPacks ( add .disabled to the end of the file name )
 
+#### Modpacks
+
+- installing Modpacks from local and modrinth
+- Exporting instances as valid .mrpack files
+
 #### Fabric Loader Support
 
 - Install Fabric Loader when creating an instance ( uses fabric api + libs injection instead of using the limited installer.jar fabric provides )
+
+#### Quilt Loader Support
+
+- Install Quilt Loader using the quilt meta api
+- Quilt Mod Parsing
 
 #### Modrinth Support
 
@@ -101,6 +115,12 @@ Using wailsIo V2.15.0
 - Modrinth Manifest
 - Modrinth Update system ( backend )
 - Installed checkmarks thanks to manifest
+- Bulk Mod Updates
+
+#### Advanced Features
+
+- Pre-launch, wrapper and Post-exit commands
+- QuickPlay Support ( Launch a world from the launcher )
 
 #### Various 
 
@@ -114,10 +134,16 @@ Using wailsIo V2.15.0
 - Skin lookup and select + upload to minecraft servers ( backend )
 - Screenshot manager
 - Discord Rich Presence
+- Frontend config in a config.cfg file instead of Local Storage
+- Simple Crash report parser
+- Log Optimization
+- Playtime tracker ( global and per instance )
+- Kill All Instances at once
+- Open Launcher Folder Button
 
 #### Migration
 
-- Migrate from prism ( backend only )
+- Migration from prism
 
 ## Planned Features
 
