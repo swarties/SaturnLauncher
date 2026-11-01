@@ -368,10 +368,10 @@ func (m *Modrinth) InstallModFile(v VersionInfo, folderId, contentType string) e
 			if manifest[i].Filename != fileName {
 				oldFilePath := filepath.Join(contentT, manifest[i].Filename)
 				err = os.Remove(oldFilePath)
-				if err != nil {
+				if err != nil && !os.IsNotExist(err) {
 					oldFilePath = filepath.Join(contentT, manifest[i].Filename+".disabled")
 					err = os.Remove(oldFilePath)
-					if err != nil {
+					if err != nil && !os.IsNotExist(err) {
 						return err
 					}
 				}
