@@ -44,7 +44,6 @@ type XBLPayload struct {
 			Uhs string `json:"uhs"`
 		} `json:"xui"`
 	} `json:"DisplayClaims"`
-	// userhash = resp.DisplayClaims.Xui[0].Uhs
 }
 
 type XSTSPayload struct {
@@ -82,7 +81,6 @@ type Active struct {
 }
 
 func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
-	// if nothing happens in 15 mins refresh code
 	var payload MicrosoftOAuthPayload
 	form := url.Values{
 		"client_id":     {"000000004C12AE6F"},
@@ -93,7 +91,6 @@ func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 	if err != nil {
 		return nil, err
 	} else if resp.StatusCode == http.StatusOK {
-		//fmt.Println("Successfully retrieved the OAuth Code!")
 
 		err := json.NewDecoder(resp.Body).Decode(&payload)
 		if err != nil {
@@ -106,7 +103,6 @@ func (a *Auth) GetOAuthCode() (*MicrosoftOAuthPayload, error) {
 	}
 	defer resp.Body.Close()
 	return &payload, err
-	// payload returns UserCode(The Code The User Types), VerificationUri(the url where u put the code) and ExpiresIn(Time until code expires in minutes)
 }
 
 func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessToken, error) {
@@ -129,7 +125,6 @@ func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessTok
 			return nil, err
 		}
 		if resp.StatusCode == http.StatusOK {
-			// fmt.Println("User Logged In!")
 			err := json.NewDecoder(resp.Body).Decode(&accesstoken)
 			resp.Body.Close()
 			if err != nil {
@@ -162,7 +157,6 @@ func (a *Auth) PollOAuthCode(payload MicrosoftOAuthPayload) (*MicrosoftAccessTok
 	return nil, fmt.Errorf("polling timed out after %d seconds", payload.ExpiresIn)
 }
 func (a *Auth) GetXBL(at MicrosoftAccessToken) (*XBLPayload, error) {
-	// user.auth.xboxlive.com
 	var XBLToken XBLPayload
 	body := map[string]any{
 		"Properties": map[string]any{
@@ -226,7 +220,6 @@ func (a *Auth) GetXSTS(xblToken XBLPayload) (*XSTSPayload, error) {
 	} else if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
 		fmt.Println("Status Code", resp.StatusCode)
-		// check https://minecraft.wiki/w/Microsoft_authentication for xbox error codes meaning
 		fmt.Println(string(b))
 	}
 	defer resp.Body.Close()
@@ -268,9 +261,6 @@ func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (*Mine
 	return &MinecraftToken, err
 }
 
-// Refresh Token Function use RefreshToken string `json:"refresh_token"` save and/or update to a JSON file in appdata encrypt it
-// Note: Minecraft Access Token Is One Use And regenerated before launch
-
 func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (MinecraftPayload, AuthSession, error) {
 	var AuthInfo AuthSession
 	AuthInfo = microsoftaccesskeys
@@ -286,7 +276,6 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 	if err != nil {
 		return MinecraftPayload{}, AuthInfo, err
 	} else if resp.StatusCode == http.StatusOK {
-		//fmt.Println("Successfully retrieved the OAuth Code!")
 		err := json.NewDecoder(resp.Body).Decode(&newaccesskeys)
 		defer resp.Body.Close()
 		if err != nil {
@@ -302,12 +291,10 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 		return MinecraftPayload{}, AuthInfo, fmt.Errorf("token refresh failed HTTP %d: %s", resp.StatusCode, string(b))
 	}
 
-	// -------------------------------------------------
 	GetNewXBLToken, err := a.GetXBL(newaccesskeys)
 	if err != nil {
 		return MinecraftPayload{}, AuthInfo, err
 	}
-	// NewXBLToken := GetNewXBLToken.Token
 
 	if len(GetNewXBLToken.DisplayClaims.Xui) == 0 {
 		return MinecraftPayload{}, AuthInfo, fmt.Errorf("missing userhash in Xbox Live response")
@@ -521,19 +508,6 @@ func (a *Auth) SetActiveAccount(uuid string) error {
 	}
 	return nil
 }
-
-//func (a *Auth) GenerateOfflineUUID(username string) (string, error) {
-//	unhashedUUID := "OfflinePlayer:" + username
-//	hashBytes := md5.Sum([]byte(unhashedUUID))
-//	hashBytes[6] = (hashBytes[6] & 0x0f) | 0x30
-//	hashBytes[8] = (hashBytes[8] & 0x3f) | 0x80
-//	strUUID, err := uuid.FromBytes(hashBytes[:])
-//	if err != nil {
-//		return "", err
-//	}
-//	return strUUID.String(), nil
-//}
-// don't need it cuzzz realized offline without a valid uuid is kinda piracy
 
 func (a *Auth) SetOfflineMode(uuid string, offline bool) error {
 	var authses AuthSession

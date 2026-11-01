@@ -35,6 +35,7 @@ import (
 	"github.com/disintegration/imaging"
 	"github.com/hugolgst/rich-go/client"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
+	"gopkg.in/ini.v1"
 )
 
 // App struct
@@ -998,16 +999,11 @@ func (a *App) OpenContentFolder(folderId, contentType string) error {
 }
 
 func (a *App) ToggleContent(folderId, contentType, filename string) (bool, error) {
-	//appdata, err := os.UserConfigDir()
-	//if err != nil {
-	//	return false, nil
-	//}
 	path, _, err := a.Download.ContentDir(folderId, contentType)
 	if err != nil {
 		return false, err
 	}
 	path = filepath.Join(path, filename)
-	// path := filepath.Join(appdata, "SaturnLauncher", "instances", folderId, contentType, filename)
 	cleanedPath := filepath.Clean(path)
 	if strings.HasSuffix(cleanedPath, ".disabled") {
 		newPath := strings.TrimSuffix(cleanedPath, ".disabled")
@@ -1416,5 +1412,41 @@ func (a *App) ClearInstanceLogs(folderId string, refreshP time.Duration) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (a *App) GetLauncherConfig() (map[string]string, error) {
+	coolMap := make(map[string]string)
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	cfgFile := filepath.Join(appdata, "SaturnLauncher", "saturn.cfg")
+	load, err := ini.Load(cfgFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return map[string]string{}, nil
+		}
+		return nil, err
+	}
+	coolMap = load.Section("General").KeysHash()
+	return coolMap, nil
+}
+
+func (a *App) SaveLauncherConfig(mappp map[string]string) error {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	cfgFile := filepath.Join(appdata, "SaturnLauncher", "saturn.cfg")
+	cfg := ini.Empty()
+	for k, v := range mappp {
+		cfg.Section("General").Key(k).SetValue(v)
+	}
+	err = cfg.SaveTo(cfgFile)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "config:updated")
 	return nil
 }
