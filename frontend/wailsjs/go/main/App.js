@@ -42,6 +42,10 @@ export function GetActiveAccount() {
   return window['go']['main']['App']['GetActiveAccount']();
 }
 
+export function GetCategories() {
+  return window['go']['main']['App']['GetCategories']();
+}
+
 export function GetContentUpdates(arg1, arg2, arg3) {
   return window['go']['main']['App']['GetContentUpdates'](arg1, arg2, arg3);
 }

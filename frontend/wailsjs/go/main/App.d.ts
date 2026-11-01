@@ -22,6 +22,8 @@ export function ExportInstanceAsModpack(arg1:string,arg2:boolean,arg3:boolean):P
 
 export function GetActiveAccount():Promise<auth.AuthSession>;
 
+export function GetCategories():Promise<modrinth.Categories>;
+
 export function GetContentUpdates(arg1:string,arg2:string,arg3:string):Promise<Array<modrinth.UpdateInfo>>;
 
 export function GetDiscoveryPage(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string):Promise<modrinth.DiscoverProjects>;

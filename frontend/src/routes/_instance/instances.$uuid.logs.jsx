@@ -183,7 +183,10 @@ function LogViewer({ lines, loading, error, isLive, hasAny }) {
 
 function LogRow({ line }) {
   return (
-    <div className="flex items-start gap-3 px-4 py-0 font-mono text-xs leading-relaxed transition-colors hover:bg-(--surface-hover)">
+    <div
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 20px' }}
+      className="flex items-start gap-3 px-4 py-0 font-mono text-xs leading-relaxed transition-colors hover:bg-(--surface-hover)"
+    >
       <span className="w-16 shrink-0 text-(--saturn-fg-muted) tabular-nums">
         {line.timestamp ?? ''}
       </span>

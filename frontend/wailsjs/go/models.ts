@@ -654,3 +654,26 @@ export namespace quilt {
 
 }
 
+export namespace struct { Icon string "json:\"icon\""; Name string "json:\"name\""; ProjectType string "json:\"project_type\""; Header string "json:\"header\"" } {
+	
+	export class  {
+	    icon: string;
+	    name: string;
+	    project_type: string;
+	    header: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new (source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.icon = source["icon"];
+	        this.name = source["name"];
+	        this.project_type = source["project_type"];
+	        this.header = source["header"];
+	    }
+	}
+
+}
+

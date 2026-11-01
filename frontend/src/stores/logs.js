@@ -131,14 +131,30 @@ export function loadLogs(uuid) {
   GetInstanceLogs(uuid)
     .then((text) => {
       const raw = typeof text === 'string' ? text : '';
-      const rawLines = raw.length
-        ? raw.split(/\r?\n/).filter((l) => l.length > 0)
-        : [];
+      let rawLines = [];
+
+      if (raw.length > 0) {
+        let endIndex = raw.length;
+        let newlineCount = 0;
+
+        for (let i = raw.length - 1; i >= 0; i--) {
+          if (raw[i] === '\n') {
+            newlineCount++;
+            if (newlineCount > MAX_LINES) {
+              endIndex = i + 1;
+              break;
+            }
+          }
+        }
+
+        const chunk = raw.substring(endIndex);
+        rawLines = chunk.split(/\r?\n/).filter((l) => l.length > 0);
+      }
+
       const parsed = rawLines.map((l) => parseLine(l, nextId++));
       const capped =
-        parsed.length > MAX_LINES
-          ? parsed.slice(parsed.length - MAX_LINES)
-          : parsed;
+        parsed.length > MAX_LINES ? parsed.slice(-MAX_LINES) : parsed;
+
       setLog(uuid, {
         lines: capped,
         loading: false,
