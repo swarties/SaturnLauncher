@@ -11,19 +11,19 @@ This project was made for the ThirdSpace YSWS.
 ## System Requirements:
 - OS: Windows 10/11 (Requires WebView2; Comes with a regular Windows 11 install) or Linux
 - CPU: 2+ cores
-- RAM: 1GB of free RAM ( 4+ gb to run minecraft )
-- Storage: 50 MB of free storage ( additional 1.5GB for java + minecraft files )
-- Network: Required for login and installing the game and mods from modrinth
-- Java: No Installation Required 
+- RAM: 1GB of free RAM ( 4+ GB to run Minecraft)
+- Storage: 50 MB of free storage (additional 1.5 GB for Java & Minecraft files)
+- Network: Required for login and installing game files and mods from Modrinth
+- Java: No installation required 
 
 ## Install Steps
 
 #### **[Download The Latest Version Of Saturn Launcher](https://github.com/swarties/SaturnLauncher/releases/latest)**
 
 > [!WARNING]
->  Windows Smartscreen warning
+>  Windows SmartScreen warning
 >
->  Because the launcher is currently unsigned, windows displays a "Windows protected your pc alert"
+>  Because the launcher is currently unsigned, Windows displays a "Windows protected your PC alert"
 >
 >  How To Install:
 >
@@ -54,106 +54,106 @@ Using wailsIo V2.15.0
 
 - Full Microsoft login flow using OAuth code
 - Automatic token refresh on launch
-- Multi Account Support ( 1 JSON file per account + an active.json file to determine which account is active)
-- Refresh Token Encryption ( Windows DPAPI and Linux Keyring )
+- Multi-account support (1 JSON file per account & an active.json file to determine which account is active)
+- Refresh Token Encryption (Windows DPAPI and Linux Keyring)
 - Added Offline Mode
 
 
 #### Game Launch
 
-- Install client jar + JSON using grab downloader
+- Install client Java binary & JSON using grab downloader
 - Install libraries using grab per version
 - Extract natives
-- Assets Install ( Grab Batch Downloader (6 workers at once ))
+- Assets Install (Grab Batch Downloader (6 workers at once))
 - Game Lifecycle to prevent launching the same instance twice
 - Self-healing game files on launch
-- Live Java + Game logs to be able to see java errors
-- World Listing ( preparing for quickplay )
+- Live Java & Game logs to be able to see Java errors
+- World Listing (preparing for quickplay)
 
 #### Java
 
-- Java silent installer + extraction support for linux and windows
-- Java overrides ( select your own java )
+- Java silent installer + extraction support for Linux and Windows
+- Java overrides (select your own Java)
 
 #### Instance Manager
 
-- UUID based instance system 
-- Self Healing folders
-- Easy to read instance.json file containing java args ,memory ,name ,fabric , game version, description etc...
-- Ability to select the custom java args ram icon etc for each instance
+- UUID-based instance system 
+- Self-healing folders
+- Easy-to-read instance.json file containing Java args, memory, name, fabric, game version, description, etc...
+- Ability to select the custom Java args, RAM icon, etc. for each instance
 - Instance Duplication
 - Instance Backup And Restore
 
 #### Content Manager
 
-- Install mods, resource packs and shaders using local files
-- Fully Install modrinth modpacks and their overrides ( not implement in frontend )
-- List Mods ,Resource Packs ,and ShaderPacks ( Rich Metadata available for mods and resource packs )
-- Enable Disable Mods ,Resource Packs ,and ShaderPacks ( add .disabled to the end of the file name )
+- Install mods, resource packs, and shaders using local files
+- Fully install Modrinth modpacks and their overrides (not implemented in frontend)
+- List mods, resource packs, and shader packs (rich metadata available for mods and resource packs)
+- Enable/disable mods, resource packs, and shader packs (add .disabled to the end of the file name)
 
 #### Modpacks
 
-- installing Modpacks from local and modrinth
+- Installing modpacks from local and Modrinth
 - Exporting instances as valid .mrpack files
 
 #### Fabric Loader Support
 
-- Install Fabric Loader when creating an instance ( uses fabric api + libs injection instead of using the limited installer.jar fabric provides )
+- Install Fabric Loader when creating an instance (uses fabric api & libs injection instead of using the limited installer.jar Fabric provides)
 
 #### Quilt Loader Support
 
-- Install Quilt Loader using the quilt meta api
+- Install Quilt Loader using the Quilt meta api
 - Quilt Mod Parsing
 
 #### Modrinth Support
 
 - Discovery Page
-- Ability to look up mods, shaders and resource packs ( installing modpacks from modrinth support is a planned feature )
+- Ability to look up mods, shaders, and resource packs (installing modpacks from Modrinth support is a planned feature)
 - Individual Project Page
 - Version Page for each project
-- Recursive mod + deps installation ( Installs mods and their deps (and the deps of deps ))
+- Recursive mod + deps installation (Installs mods and their deps (and the deps of deps))
 - Modrinth Manifest
-- Modrinth Update system ( backend )
+- Modrinth Update system (backend only for now)
 - Installed checkmarks thanks to manifest
 - Bulk Mod Updates
 
 #### Advanced Features
 
-- Pre-launch, wrapper and Post-exit commands
-- QuickPlay Support ( Launch a world from the launcher )
+- Pre-launch, wrapper, and Post-exit commands
+- QuickPlay Support (Launch a world from the launcher)
 
 #### Various 
 
-- Check file authenticity using size ( wayy faster than checking their SHA1 every time( it is checked after install ))
+- Check file authenticity using size (way faster than checking their SHA1 every time; it is checked after install)
 - Light and Dark Mode
 - Alt + Num Navigation
 - Clean GUI
 - Bloat free
 - No ads
-- Auto-update from github on launch ( supports nsis, portable version and linux )
-- Skin lookup and select + upload to minecraft servers ( backend )
+- Auto-update from GitHub on launch (supports NSIS, portable version, and Linux)
+- Skin lookup and select + upload to Minecraft servers (backend)
 - Screenshot manager
 - Discord Rich Presence
-- Frontend config in a config.cfg file instead of Local Storage
+- Frontend config in a `config.cfg` file instead of JavaScript's localStorage
 - Simple Crash report parser
 - Log Optimization
-- Playtime tracker ( global and per instance )
+- Playtime tracker (global and per instance)
 - Kill All Instances at once
 - Open Launcher Folder Button
 
 #### Migration
 
-- Migration from prism
+- Migration from Prism Launcher
 
 ## Planned Features
 
 - Add Forge and NeoForge
-- Friends List with built-in dms ( maybe )
+- Friends List with built-in DMs (maybe)
 - Check for mod conflicts pre-launch
 - World backups
 
 ## Motivation
-Most launchers today are aesthetically unpleasing, are filled with ads, and are too bloated. That's why we're working on a great alternative to those options.
+Most launchers today are aesthetically unpleasing, filled with ads, and too bloated. That's why we're working on a great alternative to those options.
 
 ## Gallery
 
