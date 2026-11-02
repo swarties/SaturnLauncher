@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { createFileRoute } from '@tanstack/react-router';
@@ -9,7 +9,9 @@ import {
   ArrowRight,
   Check,
   Copy,
+  Home,
   Loader2,
+  Map,
   ScrollText,
   Square,
 } from 'lucide-react';
@@ -26,7 +28,7 @@ import {
   useLaunch,
 } from '@/stores/launch';
 import { copyText } from '@/lib/backend';
-import { GetLatestCrash } from '../../../wailsjs/go/main/App';
+import { GetLatestCrash, ListWorlds } from '../../../wailsjs/go/main/App';
 
 export const Route = createFileRoute('/_app/home')({
   component: HomePage,
@@ -43,6 +45,7 @@ function HomePage() {
       null
     )
   );
+  const [selectedWorld, setSelectedWorld] = useState('');
 
   const uuid = selectedInstance?.uuid ?? null;
   const launchState = uuid ? instances[uuid] : null;
@@ -66,11 +69,15 @@ function HomePage() {
     smoothProgress.set(progress);
   }, [progress, smoothProgress]);
 
+  useEffect(() => {
+    setSelectedWorld('');
+  }, [uuid]);
+
   const navigate = Route.useNavigate();
 
   const handleLaunch = () => {
     if (!uuid || isLaunching || isRunning) return;
-    void startLaunch(uuid);
+    void startLaunch(uuid, selectedWorld);
   };
 
   const handleViewLogs = () => {
@@ -246,8 +253,14 @@ function HomePage() {
           <LaunchErrorDialog uuid={uuid} />
         </div>
 
-        <div className="flex h-full w-full flex-col items-center justify-center gap-10 rounded-md border-2 border-(--surface-border) px-6">
-          <p>placeholder but cooler</p>
+        <div className="flex min-h-0 flex-col rounded-md border-2 border-(--surface-border) p-6">
+          <WorldSelector
+            uuid={uuid}
+            instanceVersion={selectedInstance?.version}
+            selectedWorld={selectedWorld}
+            onSelectWorld={setSelectedWorld}
+            disabled={isLaunching || isRunning}
+          />
         </div>
       </div>
 
@@ -488,5 +501,143 @@ function LaunchErrorDialog({ uuid }) {
       )}
     </AnimatePresence>,
     document.body
+  );
+}
+
+function WorldSelector({
+  uuid,
+  instanceVersion,
+  selectedWorld,
+  onSelectWorld,
+  disabled,
+}) {
+  const [worlds, setWorlds] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const isLegacy = useMemo(() => {
+    if (!instanceVersion) return false;
+    const parts = instanceVersion.split('.');
+    if (parts.length >= 2 && parts[0] === '1') {
+      const minor = parseInt(parts[1], 10);
+      if (!isNaN(minor) && minor < 20) return true;
+    }
+    return false;
+  }, [instanceVersion]);
+
+  useEffect(() => {
+    if (!uuid) {
+      setWorlds([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    ListWorlds(uuid)
+      .then((res) => {
+        if (!cancelled) setWorlds(res || []);
+      })
+      .catch((e) => {
+        if (!cancelled) console.error(e);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [uuid]);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="mb-4 flex shrink-0 items-center justify-between">
+        <p className="text-muted-foreground text-sm font-thin tracking-[0.2em]">
+          Select World
+        </p>
+        {uuid && !isLegacy && (
+          <span className="text-muted-foreground text-xs font-thin">
+            {worlds.length} {worlds.length === 1 ? 'world' : 'worlds'}
+          </span>
+        )}
+        {uuid && isLegacy && (
+          <span className="text-xs font-thin text-amber-500">
+            Require MC 1.20+
+          </span>
+        )}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {!uuid ? (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-muted-foreground text-center text-xs font-thin">
+              Select an instance to view worlds.
+            </p>
+          </div>
+        ) : loading ? (
+          <div className="flex flex-col gap-2">
+            <div className="h-12 w-full animate-pulse rounded-md bg-(--surface-active)" />
+            <div className="h-12 w-full animate-pulse rounded-md bg-(--surface-active)" />
+            <div className="h-12 w-full animate-pulse rounded-md bg-(--surface-active)" />
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            <motion.div layout className="flex flex-col gap-2 pb-2">
+              <WorldRow
+                key="main-menu"
+                name="Main Menu"
+                isSelected={selectedWorld === ''}
+                onClick={() => !disabled && onSelectWorld('')}
+                disabled={disabled}
+                icon={Home}
+              />
+              {worlds.map((world) => (
+                <WorldRow
+                  key={world}
+                  name={world}
+                  isSelected={selectedWorld === world}
+                  onClick={() => !disabled && !isLegacy && onSelectWorld(world)}
+                  disabled={disabled || isLegacy}
+                  icon={Map}
+                />
+              ))}
+              {worlds.length === 0 && (
+                <p className="text-muted-foreground mt-4 text-center text-xs font-thin">
+                  No worlds found in this instance.
+                </p>
+              )}
+              {isLegacy && worlds.length > 0 && (
+                <p className="text-muted-foreground mt-2 text-center text-xs font-thin">
+                  Direct world launching is only supported on 1.20+
+                </p>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WorldRow({ name, isSelected, onClick, disabled, icon: Icon }) {
+  return (
+    <motion.button
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        'flex w-full shrink-0 items-center gap-3 rounded-md border p-3 text-left transition-colors',
+        isSelected
+          ? 'border-(--chip-border-hover) bg-(--chip-bg-hover) text-(--chip-fg-hover)'
+          : 'text-muted-foreground border-(--hairline) hover:bg-(--surface-hover) hover:text-(--saturn-fg)',
+        disabled && 'cursor-not-allowed opacity-50',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <Icon className="size-4 shrink-0" />
+      <span className="truncate text-sm font-normal">{name}</span>
+    </motion.button>
   );
 }

@@ -173,7 +173,7 @@ export function clearError(uuid) {
   clearInstance(uuid);
 }
 
-export async function startLaunch(uuid) {
+export async function startLaunch(uuid, worldName = '') {
   if (activeLaunchUuid) return;
   const existing = state.instances[uuid];
   if (existing?.phase === 'launching' || existing?.phase === 'running') return;
@@ -203,7 +203,7 @@ export async function startLaunch(uuid) {
   startCreep();
 
   try {
-    await StartGame(uuid);
+    await StartGame(uuid, worldName);
     const elapsed = performance.now() - startedAt;
     const remaining = Math.max(0, MIN_LAUNCH_MS - elapsed);
     if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));

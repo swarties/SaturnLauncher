@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 
+import prismLogo from '@/assets/logos/Prism_Launcher.svg';
 import { VersionPicker } from '@/components/ui/version-picker.jsx';
 import { LoaderPicker } from '@/components/ui/loader-picker.jsx';
 import { FabricVersionPicker } from '@/components/ui/fabric-version-picker.jsx';
@@ -157,6 +158,7 @@ function InstancesPage() {
                 className="text-muted-foreground flex h-11 items-center gap-2 rounded-lg border-2 border-(--surface-border) px-6 font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
               >
                 Import from Prism
+                <img src={prismLogo} alt="" className="size-4 shrink-0" />
               </button>
               <button
                 onClick={() => setCreating(true)}
@@ -185,6 +187,7 @@ function InstancesPage() {
                   className="text-muted-foreground flex h-11 items-center gap-2 rounded-lg border-2 border-(--surface-border) px-6 font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
                 >
                   Import from Prism
+                  <img src={prismLogo} alt="" className="size-4 shrink-0" />
                 </button>
                 <button
                   onClick={() => setCreating(true)}
@@ -453,13 +456,16 @@ function PrismMigrationModal({ open, onClose }) {
             className="bg-background relative flex w-full max-w-2xl flex-col overflow-hidden rounded-md border-2 border-(--surface-border)"
           >
             <div className="flex items-center justify-between border-b border-(--hairline) p-8">
-              <div>
-                <h2 className="text-foreground text-xl font-extralight tracking-tight">
-                  Import from Prism
-                </h2>
-                <p className="text-muted-foreground mt-1 text-sm font-thin">
-                  Select Prism instances to migrate into Saturn.
-                </p>
+              <div className="flex items-center gap-3">
+                <img src={prismLogo} alt="" className="size-6 shrink-0" />
+                <div>
+                  <h2 className="text-foreground text-xl font-extralight tracking-tight">
+                    Import from Prism
+                  </h2>
+                  <p className="text-muted-foreground mt-1 text-sm font-thin">
+                    Select Prism instances to migrate into Saturn.
+                  </p>
+                </div>
               </div>
               {step !== 'importing' && (
                 <button

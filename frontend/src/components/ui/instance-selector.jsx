@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LayoutGroup, motion } from 'motion/react';
 import { useNavigate } from '@tanstack/react-router';
 import { Settings } from 'lucide-react';
@@ -14,9 +14,6 @@ import { formatPlaytime } from '@/lib/utils';
 
 const VIEW_MODES = ['spaced', 'cramped'];
 const DEFAULT_VIEW_MODE = 'spaced';
-const ROW_HEIGHT_FALLBACK = { spaced: 62, cramped: 30 };
-const LIST_GAP = 6;
-const LIST_PADDING = 16;
 
 /**
  * @param {{ onSelectionChange: (instance: McInstance | null) => void }} props
@@ -36,9 +33,6 @@ export function InstanceSelector({ onSelectionChange }) {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(/** @type {string | null} */ (null));
-
-  const scrollRef = useRef(null);
-  const [ghostCount, setGhostCount] = useState(0);
 
   const onSelectionChangeRef = useRef(onSelectionChange);
   useEffect(() => {
@@ -116,37 +110,6 @@ export function InstanceSelector({ onSelectionChange }) {
     void updateConfig(`instanceView_${scopeKey}`, viewMode);
   }, [viewMode, scopeKey]);
 
-  useLayoutEffect(() => {
-    const scroll = scrollRef.current;
-    if (!scroll) return;
-
-    const recalculateGhosts = () => {
-      const rowH = ROW_HEIGHT_FALLBACK[viewMode];
-      const available = scroll.clientHeight - LIST_PADDING;
-      const usedRows =
-        instances.length === 0
-          ? 0
-          : instances.length * rowH + (instances.length - 1) * LIST_GAP;
-      const remaining = Math.max(0, available - usedRows);
-
-      const nextCount =
-        instances.length === 0
-          ? 0
-          : Math.max(0, Math.floor((remaining + LIST_GAP) / (rowH + LIST_GAP)));
-
-      setGhostCount((prev) => (prev === nextCount ? prev : nextCount) - 1);
-    };
-
-    recalculateGhosts();
-
-    const observer = new ResizeObserver(() => {
-      recalculateGhosts();
-    });
-    observer.observe(scroll);
-
-    return () => observer.disconnect();
-  }, [instances, viewMode]);
-
   const countLabel = loading
     ? 'Loading...'
     : `${instances.length} ${instances.length === 1 ? 'instance' : 'instances'}`;
@@ -168,10 +131,7 @@ export function InstanceSelector({ onSelectionChange }) {
 
       {/* List */}
       <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-(--hairline)">
-        <div
-          ref={scrollRef}
-          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
-        >
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
           {error && (
             <div className="flex h-full items-center justify-center p-4">
               <p className="text-center text-xs font-thin text-red-400">
@@ -181,10 +141,10 @@ export function InstanceSelector({ onSelectionChange }) {
           )}
 
           {!error && loading && (
-            <div className="flex flex-col gap-1.5 p-2">
-              <SkeletonRow viewMode={viewMode} />
-              <SkeletonRow viewMode={viewMode} />
-              <SkeletonRow viewMode={viewMode} />
+            <div className="flex h-full items-center justify-center p-4">
+              <p className="text-muted-foreground text-center text-xs font-thin">
+                Loading...
+              </p>
             </div>
           )}
 
@@ -211,14 +171,6 @@ export function InstanceSelector({ onSelectionChange }) {
                 </div>
               </LayoutGroup>
 
-              {ghostCount > 0 && (
-                <div aria-hidden="true" className="flex flex-col gap-1.5">
-                  {Array.from({ length: ghostCount }).map((_, i) => (
-                    <GhostRow key={i} viewMode={viewMode} />
-                  ))}
-                </div>
-              )}
-
               {instances.length === 0 && (
                 <div className="flex flex-1 items-center justify-center p-4">
                   <p className="text-muted-foreground text-center text-xs font-thin">
@@ -230,55 +182,6 @@ export function InstanceSelector({ onSelectionChange }) {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-/**
- * @param {{ viewMode: 'spaced' | 'cramped' }} props
- */
-function SkeletonRow({ viewMode }) {
-  const block = 'animate-pulse rounded-sm bg-(--surface-active)';
-
-  if (viewMode === 'spaced') {
-    return (
-      <div className="rounded-md p-3">
-        <div className={`h-2.5 w-12 ${block}`} />
-        <div className={`mt-2 h-3.5 w-28 ${block}`} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-baseline gap-3 rounded-md p-2">
-      <div className={`h-2.5 w-12 shrink-0 ${block}`} />
-      <div className={`h-3.5 w-28 ${block}`} />
-    </div>
-  );
-}
-
-/**
- * @param {{ viewMode: 'spaced' | 'cramped' }} props
- */
-function GhostRow({ viewMode }) {
-  const block = 'rounded-sm bg-(--surface-hover)';
-
-  if (viewMode === 'spaced') {
-    return (
-      <div className="rounded-md p-3" aria-hidden="true">
-        <div className={`h-2.5 w-12 ${block}`} />
-        <div className={`mt-2 h-3.5 w-28 ${block}`} />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="flex items-baseline gap-3 rounded-md p-2"
-      aria-hidden="true"
-    >
-      <div className={`h-2.5 w-12 shrink-0 ${block}`} />
-      <div className={`h-3.5 w-28 ${block}`} />
     </div>
   );
 }
