@@ -39,12 +39,13 @@ import {
   TransferFromPrism,
 } from '../../../wailsjs/go/main/App';
 import { onBackendEvent, onFileDrop } from '@/lib/backend.js';
+import { formatPlaytime } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app/instances')({
   component: InstancesPage,
 });
 
-/** @typedef {{ name: string, version: string, uuid: string, timecreated: string, minram: number, maxram: number, description?: string, fabricVersion?: string }} McInstance */
+/** @typedef {{ name: string, version: string, uuid: string, timecreated: string, minram: number, maxram: number, description?: string, fabricVersion?: string, playtimeSeconds?: number }} McInstance */
 
 function InstancesPage() {
   const [instances, setInstances] = useState(/** @type {McInstance[]} */ ([]));
@@ -636,6 +637,7 @@ function InstanceCard({ instance, onDelete, index }) {
           </p>
           <div className="mt-auto flex items-center justify-between pt-6">
             <span className="text-muted-foreground text-xs font-thin">
+              {formatPlaytime(instance.playtimeSeconds ?? 0)} played -{' '}
               {formatCreated(instance.timecreated)}
             </span>
             <ArrowRight

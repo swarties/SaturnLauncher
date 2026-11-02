@@ -86,9 +86,13 @@ export function InstallProjectContent(arg1:string,arg2:string,arg3:string,arg4:s
 
 export function InstallQuilt(arg1:string,arg2:string):Promise<void>;
 
+export function KillAllInstances():Promise<void>;
+
 export function KillGame(arg1:string):Promise<void>;
 
 export function ListAccounts():Promise<Array<auth.AuthSession>>;
+
+export function ListBackups(arg1:string):Promise<Array<string>>;
 
 export function ListInstances():Promise<Array<instances.Instance>>;
 
@@ -101,6 +105,8 @@ export function Logout():Promise<void>;
 export function OpenContentFolder(arg1:string,arg2:string):Promise<void>;
 
 export function OpenInstanceFolder(arg1:string):Promise<void>;
+
+export function OpenLauncherFolder():Promise<void>;
 
 export function ParsePrism(arg1:Array<migration.DetectedInstances>):Promise<Array<migration.ParsedInstance>>;
 

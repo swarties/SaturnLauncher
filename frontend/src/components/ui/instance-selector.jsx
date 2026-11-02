@@ -1,12 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { LayoutGroup, motion } from 'motion/react';
+import { useNavigate } from '@tanstack/react-router';
+import { Settings } from 'lucide-react';
 
 import { ListInstances } from '../../../wailsjs/go/main/App';
 import { onBackendEvent } from '@/lib/backend';
 import { useAuth } from '@/stores/auth';
 import { updateConfig, useConfig } from '@/stores/config';
 
-/** @typedef {{ name: string, version: string, uuid: string, timecreated: string, minram: number, maxram: number}} McInstance */
+import { formatPlaytime } from '@/lib/utils';
+
+/** @typedef {{ name: string, version: string, uuid: string, timecreated: string, minram: number, maxram: number, playtimeSeconds?: number}} McInstance */
 
 const VIEW_MODES = ['spaced', 'cramped'];
 const DEFAULT_VIEW_MODE = 'spaced';
@@ -18,6 +22,7 @@ const LIST_PADDING = 16;
  * @param {{ onSelectionChange: (instance: McInstance | null) => void }} props
  */
 export function InstanceSelector({ onSelectionChange }) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { config } = useConfig();
   const scopeKey = profile?.id ?? null;
@@ -194,6 +199,13 @@ export function InstanceSelector({ onSelectionChange }) {
                       selected={inst.uuid === selectedUuid}
                       viewMode={viewMode}
                       onSelect={() => setSelectedUuid(inst.uuid)}
+                      onOpenMenu={() =>
+                        navigate({
+                          to: '/instances/$uuid',
+                          params: { uuid: inst.uuid },
+                          search: { from: 'home' },
+                        })
+                      }
                     />
                   ))}
                 </div>
@@ -274,11 +286,11 @@ function GhostRow({ viewMode }) {
 const LAYOUT_TRANSITION = { type: 'spring', stiffness: 500, damping: 40 };
 
 /**
- * @param {{ instance: McInstance, selected: boolean, viewMode: 'spaced' | 'cramped', onSelect: () => void }} props
+ * @param {{ instance: McInstance, selected: boolean, viewMode: 'spaced' | 'cramped', onSelect: () => void, onOpenMenu: () => void }} props
  */
-function InstanceRow({ instance, selected, viewMode, onSelect }) {
+function InstanceRow({ instance, selected, viewMode, onSelect, onOpenMenu }) {
   const base = [
-    'w-full min-w-0 max-w-full overflow-hidden rounded-md text-left transition-colors',
+    'w-full min-w-0 max-w-full overflow-hidden rounded-md text-left transition-colors cursor-pointer group',
     selected ? 'bg-(--surface-active)' : 'hover:bg-(--surface-hover)',
   ].join(' ');
 
@@ -293,12 +305,19 @@ function InstanceRow({ instance, selected, viewMode, onSelect }) {
   ].join(' ');
 
   return (
-    <motion.button
-      type="button"
+    <motion.div
+      role="button"
+      tabIndex={0}
       layout
       transition={LAYOUT_TRANSITION}
       data-instance-row
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       className={`${base} ${modeClass}`}
     >
       <motion.span
@@ -308,14 +327,40 @@ function InstanceRow({ instance, selected, viewMode, onSelect }) {
       >
         {instance.version}
       </motion.span>
-      <motion.span
-        className={nameClass}
+      <motion.div
         layout="position"
         transition={LAYOUT_TRANSITION}
+        className="flex w-full min-w-0 items-baseline justify-between gap-3"
       >
-        {instance.name}
-      </motion.span>
-    </motion.button>
+        <motion.span
+          className={nameClass}
+          layout="position"
+          transition={LAYOUT_TRANSITION}
+        >
+          {instance.name}
+        </motion.span>
+        <div className="flex shrink-0 items-center gap-2">
+          <motion.span
+            layout="position"
+            transition={LAYOUT_TRANSITION}
+            className="text-muted-foreground text-xs font-thin"
+          >
+            {formatPlaytime(instance.playtimeSeconds ?? 0)}
+          </motion.span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenMenu();
+            }}
+            className="text-muted-foreground/60 flex size-8 shrink-0 items-center justify-center rounded-md border border-(--hairline) transition-colors hover:bg-(--surface-active) hover:text-(--saturn-fg-strong)"
+            data-tooltip="Go to instance menu"
+          >
+            <Settings className="size-4" />
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

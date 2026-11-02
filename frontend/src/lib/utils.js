@@ -11,6 +11,14 @@ export function formatNumber(num) {
   return num.toString();
 }
 
+export function formatPlaytime(seconds) {
+  if (!seconds) return '0m';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 export function timeAgo(dateString) {
   const date = new Date(dateString);
   const now = new Date();

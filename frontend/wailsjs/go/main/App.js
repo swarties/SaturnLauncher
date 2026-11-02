@@ -170,12 +170,20 @@ export function InstallQuilt(arg1, arg2) {
   return window['go']['main']['App']['InstallQuilt'](arg1, arg2);
 }
 
+export function KillAllInstances() {
+  return window['go']['main']['App']['KillAllInstances']();
+}
+
 export function KillGame(arg1) {
   return window['go']['main']['App']['KillGame'](arg1);
 }
 
 export function ListAccounts() {
   return window['go']['main']['App']['ListAccounts']();
+}
+
+export function ListBackups(arg1) {
+  return window['go']['main']['App']['ListBackups'](arg1);
 }
 
 export function ListInstances() {
@@ -200,6 +208,10 @@ export function OpenContentFolder(arg1, arg2) {
 
 export function OpenInstanceFolder(arg1) {
   return window['go']['main']['App']['OpenInstanceFolder'](arg1);
+}
+
+export function OpenLauncherFolder() {
+  return window['go']['main']['App']['OpenLauncherFolder']();
 }
 
 export function ParsePrism(arg1) {

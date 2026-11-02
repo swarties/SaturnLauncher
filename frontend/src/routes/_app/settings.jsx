@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Check } from 'lucide-react';
+import { Check, FolderOpen, OctagonX } from 'lucide-react';
 
 import { setTheme, THEMES, useTheme } from '@/stores/theme';
 import { useLaunch } from '@/stores/launch';
 import { toast } from '@/stores/toasts';
 import { updateConfig } from '@/stores/config';
+import {
+  KillAllInstances,
+  OpenLauncherFolder,
+} from '../../../wailsjs/go/main/App';
 
 export const Route = createFileRoute('/_app/settings')({
   component: SettingsPage,
@@ -22,6 +26,23 @@ function SettingsPage() {
   const isAnyInstanceActive = Object.values(instances).some(
     (inst) => inst.phase === 'launching' || inst.phase === 'running'
   );
+
+  const handleOpenFolder = async () => {
+    try {
+      await OpenLauncherFolder();
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to open folder, call your doctor');
+    }
+  };
+
+  const handleKillAll = async () => {
+    try {
+      await KillAllInstances();
+      toast.success('All running instances killed');
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to kill instances, I have no ammo');
+    }
+  };
 
   const handleRedoOnboarding = async () => {
     if (isAnyInstanceActive) return;
@@ -97,6 +118,48 @@ function SettingsPage() {
           </div>
         </section>
       )}
+      <section className="mt-10 max-w-3xl">
+        <p className="text-muted-foreground tracking- text-sm font-thin uppercase">
+          Global Actions
+        </p>
+        <div className="mt-4 flex flex-col gap-4 rounded-md border border-(--hairline) p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-foreground text-sm font-normal">
+                Launcher Folder
+              </p>
+              <p className="text-muted-foreground text-xs font-thin">
+                Open the root directory of SaturnLauncher.
+              </p>
+            </div>
+            <button
+              onClick={handleOpenFolder}
+              className="text-muted-foreground flex h-10 shrink-0 items-center gap-2 rounded-md border border-(--hairline) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
+            >
+              <FolderOpen className="size-4" />
+              Open Folder
+            </button>
+          </div>
+          <div className="flex items-center justify-between border-t border-(--hairline) pt-4">
+            <div>
+              <p className="text-foreground text-sm font-normal">
+                Force Close Games
+              </p>
+              <p className="text-muted-foreground text-xs font-thin">
+                Terminate all currently running Minecraft instances.
+              </p>
+            </div>
+            <button
+              onClick={handleKillAll}
+              disabled={!isAnyInstanceActive}
+              className="flex h-10 shrink-0 items-center gap-2 rounded-md border border-(--danger-border) bg-(--danger-bg) px-4 text-sm font-thin text-(--danger-fg) transition-colors hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover) disabled:pointer-events-none disabled:opacity-40"
+            >
+              <OctagonX className="size-4" />
+              Kill All
+            </button>
+          </div>
+        </div>
+      </section>
       <section className="mt-10 max-w-3xl">
         <p className="text-muted-foreground tracking- text-sm font-thin uppercase">
           Advanced - <span className="text-red-300">Danger Zone</span>

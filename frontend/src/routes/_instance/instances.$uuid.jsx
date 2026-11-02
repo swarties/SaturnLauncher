@@ -22,6 +22,9 @@ import fabricLogo from '@/assets/logos/fabric.png';
 import quiltLogo from '@/assets/logos/quilt.png';
 
 export const Route = createFileRoute('/_instance/instances/$uuid')({
+  validateSearch: (search) => ({
+    from: search.from || 'instances',
+  }),
   component: InstanceDetailLayout,
 });
 
@@ -38,6 +41,7 @@ const PILL_TRANSITION = { type: 'spring', stiffness: 400, damping: 35 };
 
 function InstanceDetailLayout() {
   const { uuid } = Route.useParams();
+  const { from } = Route.useSearch();
   const { pathname } = useLocation();
   const activeTab = pathname.split('/').pop() || 'settings';
 
@@ -193,6 +197,7 @@ function InstanceDetailLayout() {
               key={tab.to}
               to={`/instances/$uuid/${tab.to}`}
               params={{ uuid }}
+              search={{ from }}
               data-tab-index={index}
               data-tooltip={tab.label}
               onMouseEnter={() => setHoveredIndex(index)}
@@ -208,12 +213,12 @@ function InstanceDetailLayout() {
 
         {/* Back button — pinned to bottom of the sidebar */}
         <Link
-          to="/instances"
-          data-tooltip="Back to instances"
+          to={from === 'home' ? '/home' : '/instances'}
+          data-tooltip={from === 'home' ? 'Back to Home' : 'Back to instances'}
           className="mt-auto flex items-center justify-center gap-2 rounded-md border border-(--hairline) px-4 py-2.5 text-sm font-thin tracking-wide text-(--nav-link-fg) transition-colors hover:border-(--surface-border-hover) hover:text-(--nav-link-fg-hover)"
         >
           <ChevronLeft className="size-4" aria-hidden="true" />
-          Instances
+          {from === 'home' ? 'Home' : 'Instances'}
         </Link>
       </aside>
 
