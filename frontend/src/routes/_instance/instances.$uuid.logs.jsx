@@ -136,12 +136,9 @@ function LogViewer({ lines, loading, error, isLive, hasAny }) {
 
     if (!pinnedRef.current) return;
 
-    // Suppress onScroll handling while we drive the scroll ourselves.
     isAutoScrollingRef.current = true;
     el.scrollTop = el.scrollHeight;
 
-    // Clear the suppression on the next frame, after the browser fires
-    // the resulting scroll event.
     const raf = requestAnimationFrame(() => {
       isAutoScrollingRef.current = false;
     });

@@ -83,7 +83,6 @@ function installSubs() {
     }
     if (msg === 'Done!') return;
 
-    // Warm-cache throttling: collapse rapid-fire labels.
     const now = performance.now();
     if (now - lastStatusCommit >= MIN_STATUS_MS) {
       lastStatusCommit = now;
