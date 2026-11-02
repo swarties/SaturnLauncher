@@ -4,7 +4,15 @@ import { createPortal } from 'react-dom';
 import { createFileRoute } from '@tanstack/react-router';
 import { AnimatePresence, motion, useSpring, useTransform } from 'motion/react';
 
-import { AlertTriangle, ArrowRight, ScrollText, Square } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  Copy,
+  Loader2,
+  ScrollText,
+  Square,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button.jsx';
 import { InstanceSelector } from '@/components/ui/instance-selector.jsx';
@@ -18,6 +26,7 @@ import {
   useLaunch,
 } from '@/stores/launch';
 import { copyText } from '@/lib/backend';
+import { GetLatestCrash } from '../../../wailsjs/go/main/App';
 
 export const Route = createFileRoute('/_app/home')({
   component: HomePage,
@@ -44,7 +53,7 @@ function HomePage() {
 
   const isLaunching = phase === 'launching';
   const isRunning = phase === 'running';
-  const isError = phase === 'error';
+  const isError = phase === 'error' || phase === 'crashed';
 
   const smoothProgress = useSpring(progress, {
     stiffness: 90,
@@ -300,11 +309,50 @@ const EASE = [0.22, 1, 0.38, 1];
 function LaunchErrorDialog({ uuid }) {
   const { instances } = useLaunch();
   const launchState = uuid ? instances[uuid] : null;
-  const isOpen = launchState?.phase === 'error';
+  const phase = launchState?.phase;
+  const isOpen = phase === 'error' || phase === 'crashed';
   const status = launchState?.status ?? '';
+
+  const [viewMode, setViewMode] = useState('error');
+  const [crashLog, setCrashLog] = useState(null);
+  const [loadingLog, setLoadingLog] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setTimeout(() => {
+        setViewMode('error');
+        setCrashLog(null);
+        setCopied(false);
+      }, 300);
+    }
+  }, [isOpen]);
 
   const handleClose = () => {
     if (uuid) clearError(uuid);
+  };
+
+  const handleViewLog = async () => {
+    if (!uuid || loadingLog) return;
+    setLoadingLog(true);
+    setViewMode('log');
+    try {
+      const log = await GetLatestCrash(uuid);
+      setCrashLog(log || 'No crash report found.');
+    } catch (e) {
+      setCrashLog(`Failed to load crash report:\n${e?.message ?? String(e)}`);
+    } finally {
+      setLoadingLog(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!crashLog) return;
+    const success = await copyText(crashLog);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   useEffect(() => {
@@ -326,7 +374,7 @@ function LaunchErrorDialog({ uuid }) {
           animate={{ opacity: 1, transition: { duration: 0.2 } }}
           exit={{ opacity: 0, transition: { duration: 0.35, delay: 0.05 } }}
           onClick={handleClose}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-(--backdrop) p-6 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-6"
         >
           <motion.div
             key="launch-error-panel"
@@ -344,41 +392,96 @@ function LaunchErrorDialog({ uuid }) {
               transition: { duration: 0.2, ease: EASE },
             }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-background relative w-full max-w-md overflow-hidden rounded-md border-2 border-(--danger-border)"
+            className={`bg-background relative w-full overflow-hidden rounded-md border-2 border-(--danger-border) transition-all duration-300 ${
+              viewMode === 'log' ? 'max-w-2xl' : 'max-w-md'
+            }`}
             role="dialog"
             aria-modal="true"
           >
             <div
-              aria-hidden="true"
               className="pointer-events-none absolute inset-0"
+              aria-hidden="true"
             >
               <div className="absolute -top-24 left-1/2 h-56 w-96 -translate-x-1/2 rounded-full bg-(--orb-1) blur-[80px]" />
               <div className="absolute -right-16 -bottom-16 h-48 w-64 rounded-full bg-(--orb-2) blur-[70px]" />
               <div className="absolute top-1/2 -left-24 h-40 w-56 rounded-full bg-(--orb-3) blur-[70px]" />
             </div>
-            <div className="relative z-10 p-6">
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg)">
-                  <AlertTriangle className="size-5" aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-normal tracking-[0.2em] text-(--danger-fg) uppercase">
-                    Launch Failed
-                  </p>
-                  <p className="text-muted-foreground mt-2 text-sm font-normal break-words whitespace-pre-wrap">
-                    {status}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="h-10 rounded-md border border-(--danger-border) bg-(--danger-bg) px-6 text-sm font-thin text-(--danger-fg) transition-colors hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover)"
-                >
-                  Close
-                </button>
-              </div>
+            <div className="relative z-10 flex flex-col p-6">
+              {viewMode === 'error' ? (
+                <>
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-(--danger-border) bg-(--danger-bg) text-(--danger-fg)">
+                      <AlertTriangle className="size-5" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-normal tracking-[0.2em] text-(--danger-fg) uppercase">
+                        {phase === 'crashed' ? 'Game Crashed' : 'Launch Failed'}
+                      </p>
+                      <p className="text-muted-foreground mt-2 text-sm font-normal break-words whitespace-pre-wrap">
+                        {status}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={handleViewLog}
+                      className="flex h-10 items-center gap-2 rounded-md border border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover)"
+                    >
+                      <ScrollText className="size-4" />
+                      View Crash Log
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      className="h-10 rounded-md border border-(--danger-border) bg-(--danger-bg) px-6 text-sm font-thin text-(--danger-fg) transition-colors hover:border-(--danger-border-hover) hover:bg-(--danger-bg-hover) hover:text-(--danger-fg-hover)"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-normal tracking-[0.2em] text-(--danger-fg) uppercase">
+                      Crash Report
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCopy}
+                        disabled={loadingLog || !crashLog}
+                        data-tooltip="Copy to clipboard"
+                        className="text-muted-foreground flex size-8 items-center justify-center rounded-md border border-(--surface-border) transition-colors hover:bg-(--surface-hover) hover:text-(--saturn-fg) disabled:pointer-events-none disabled:opacity-40"
+                      >
+                        {copied ? (
+                          <Check className="size-4 text-emerald-500" />
+                        ) : (
+                          <Copy className="size-4" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('error')}
+                        className="flex h-8 items-center justify-center rounded-md border border-(--surface-border) px-3 text-xs font-thin transition-colors hover:bg-(--surface-hover)"
+                      >
+                        Back
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-4 min-h-32">
+                    {loadingLog ? (
+                      <div className="flex h-32 items-center justify-center">
+                        <Loader2 className="text-saturn-500 size-6 animate-spin" />
+                      </div>
+                    ) : (
+                      <pre className="max-h-[60vh] overflow-y-auto rounded-md border border-(--hairline) bg-(--log-bg) p-4 font-mono text-xs whitespace-pre-wrap text-(--saturn-fg) select-text">
+                        {crashLog}
+                      </pre>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         </motion.div>

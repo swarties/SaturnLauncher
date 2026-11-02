@@ -128,16 +128,18 @@ function installSubs() {
       exitCode,
     });
 
-    const prev = exitTimers.get(folderId);
-    if (prev) clearTimeout(prev);
-    const timer = setTimeout(() => {
-      exitTimers.delete(folderId);
-      const current = state.instances[folderId];
-      if (current?.phase === phase && current?.exitCode === exitCode) {
-        clearInstance(folderId);
-      }
-    }, EXIT_MESSAGE_MS);
-    exitTimers.set(folderId, timer);
+    if (isClean) {
+      const prev = exitTimers.get(folderId);
+      if (prev) clearTimeout(prev);
+      const timer = setTimeout(() => {
+        exitTimers.delete(folderId);
+        const current = state.instances[folderId];
+        if (current?.phase === phase && current?.exitCode === exitCode) {
+          clearInstance(folderId);
+        }
+      }, EXIT_MESSAGE_MS);
+      exitTimers.set(folderId, timer);
+    }
   });
 }
 
@@ -167,7 +169,7 @@ function stopCreep() {
 
 export function clearError(uuid) {
   const entry = state.instances[uuid];
-  if (!entry || entry.phase !== 'error') return;
+  if (!entry || (entry.phase !== 'error' && entry.phase !== 'crashed')) return;
   clearInstance(uuid);
 }
 
