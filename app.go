@@ -1721,11 +1721,7 @@ func (a *App) InstallNeoforge(folderId, loaderVersion string) error {
 	if loaderVersion == "" {
 		return fmt.Errorf("loader version field is empty, cannot proceed")
 	}
-	instInfo, err := a.InstanceManager.GetInstanceInfo(folderId)
-	if err != nil {
-		return err
-	}
-	profileId, err := a.NeoForge.InstallNeoforge(instInfo.Version, loaderVersion)
+	profileId, err := a.NeoForge.InstallNeoforge(loaderVersion)
 	if err != nil {
 		return err
 	}

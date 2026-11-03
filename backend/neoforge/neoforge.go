@@ -3,12 +3,12 @@ package neoforge
 import (
 	"SaturnLauncher/backend/download"
 	"SaturnLauncher/backend/projectInfo"
-	"archive/zip"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -82,76 +82,48 @@ func (nf *NeoForge) GetLoaderVersions(gameVersion string) (*VersionManifest, err
 	return &newManifest, nil
 }
 
-func (nf *NeoForge) GetProfile(loaderVersion string) (*download.VersionInfo, error) {
-	var versionInfo download.VersionInfo
+func (nf *NeoForge) InstallNeoforge(loaderVersion string) (string, error) {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	mcDir := filepath.Join(appdata, "SaturnLauncher", "minecraft")
+	var vInfo download.VersionInfo
 	dl := download.NewDownload()
 	tempDir := os.TempDir()
 	url := "https://maven.neoforged.net/releases/net/neoforged/neoforge/" + loaderVersion + "/neoforge-" + loaderVersion + "-installer.jar"
 	filename := "neoforge-" + loaderVersion + ".jar"
 	installerJar := filepath.Join(tempDir, filename)
-	_, err := dl.Downloader(installerJar, url)
+	_, err = dl.Downloader(installerJar, url)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	reader, err := zip.OpenReader(installerJar)
+	launcherProfile := filepath.Join(mcDir, "launcher_profiles.json")
+	_, err = os.Stat(launcherProfile)
 	if err != nil {
-		return nil, err
+		if os.IsNotExist(err) {
+			err = os.WriteFile(launcherProfile, []byte(`{"profiles":{}}`), 0600)
+			if err != nil {
+				return "", err
+			}
+		}
+		return "", err
 	}
-	for _, r := range reader.File {
-		if r.Name != "version.json" {
-			continue
-		}
-		file, fErr := r.Open()
-		if fErr != nil {
-			return nil, fErr
-		}
-		fErr = json.NewDecoder(file).Decode(&versionInfo)
-		if fErr != nil {
-			return nil, fErr
-		}
-		err = file.Close()
-		if err != nil {
-			return nil, err
-		}
-		break
-	}
-	err = reader.Close()
+	vInfo.JavaVersion.MajorVersion = 21
+	java, err := dl.EnsureJava(vInfo)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+	cmd := exec.Command(*java, "-Djava.awt.headless=true", "-jar", installerJar, "--install-client", mcDir)
+	out, err := cmd.CombinedOutput()
+	fmt.Println(string(out))
+	if err != nil {
+		return "", err
+	}
+
 	err = os.Remove(installerJar)
 	if err != nil {
-		return nil, err
-	}
-	// dont forget to os.remove the jar file
-	if versionInfo.ID == "" {
-		return nil, fmt.Errorf("couldn't find version.json")
-	}
-	return &versionInfo, nil
-}
-
-func (nf *NeoForge) InstallNeoforge(gameVer, loaderVer string) (string, error) {
-	appdata, err := os.UserConfigDir()
-	if err != nil {
 		return "", err
 	}
-	profile, err := nf.GetProfile(loaderVer)
-	if err != nil {
-		return "", err
-	}
-	versionsDir := filepath.Join(appdata, "SaturnLauncher", "minecraft", "versions", profile.ID)
-	err = os.MkdirAll(versionsDir, 0o755)
-	if err != nil {
-		return "", err
-	}
-	jsonData, err := json.MarshalIndent(profile, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	err = os.WriteFile(filepath.Join(versionsDir, profile.ID+".json"), jsonData, 0600)
-	if err != nil {
-		return "", err
-	}
-
-	return profile.ID, nil
+	return "neoforge-" + loaderVersion, nil
 }
