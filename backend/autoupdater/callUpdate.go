@@ -12,5 +12,8 @@ func NewUpdater() *Updater {
 
 func (u *Updater) Update() {
 	updater := NewUpdater()
-	updater.UpdateApp()
+	err := updater.UpdateApp()
+	if err != nil {
+		return
+	}
 }

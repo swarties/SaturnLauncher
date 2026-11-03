@@ -47,6 +47,7 @@ type Argument struct {
 	Rules []Rule   `json:"rules,omitempty"`
 	Value []string `json:"value"`
 }
+
 type VersionInfo struct {
 	Arguments struct {
 		Jvm  []Argument `json:"jvm"`

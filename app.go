@@ -10,6 +10,7 @@ import (
 	"SaturnLauncher/backend/migration"
 	"SaturnLauncher/backend/modpacks"
 	"SaturnLauncher/backend/modrinth"
+	"SaturnLauncher/backend/neoforge"
 	"SaturnLauncher/backend/quilt"
 	"SaturnLauncher/backend/skins"
 	"archive/zip"
@@ -57,6 +58,7 @@ type App struct {
 	IsDiscordConnected bool
 	Migration          *migration.Migration
 	Quilt              *quilt.Quilt
+	NeoForge           *neoforge.NeoForge
 }
 
 // NewApp creates a new App application struct
@@ -74,6 +76,7 @@ func NewApp() *App {
 		Updater:          autoupdater.NewUpdater(),
 		Migration:        migration.NewMigration(),
 		Quilt:            quilt.NewQuilt(),
+		NeoForge:         neoforge.NewNeoForge(),
 	}
 }
 
@@ -321,10 +324,13 @@ func (a *App) StartGame(folderId, worldName string) error {
 		return err
 	}
 	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Downloading Client Jar")
-	if instInfo.FabricVersion != "" || instInfo.QuiltVersion != "" {
+	if instInfo.FabricVersion != "" || instInfo.QuiltVersion != "" || instInfo.NeoForgeVersion != "" {
 		loaderVersion := instInfo.FabricVersion
 		if instInfo.QuiltVersion != "" {
 			loaderVersion = instInfo.QuiltVersion
+		}
+		if instInfo.NeoForgeVersion != "" {
+			loaderVersion = instInfo.NeoForgeVersion
 		}
 		fInfo, err := a.Download.ParseVersionInfo(loaderVersion)
 		if err != nil {
@@ -1701,4 +1707,32 @@ func (a *App) ListBackups(folderId string) ([]string, error) {
 		return nil, err
 	}
 	return backups, nil
+}
+
+func (a *App) GetNeoforgeVersions(gameVersion string) (*neoforge.VersionManifest, error) {
+	versions, err := a.NeoForge.GetLoaderVersions(gameVersion)
+	if err != nil {
+		return nil, err
+	}
+	return versions, nil
+}
+
+func (a *App) InstallNeoforge(folderId, loaderVersion string) error {
+	if loaderVersion == "" {
+		return fmt.Errorf("loader version field is empty, cannot proceed")
+	}
+	instInfo, err := a.InstanceManager.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	profileId, err := a.NeoForge.InstallNeoforge(instInfo.Version, loaderVersion)
+	if err != nil {
+		return err
+	}
+	err = a.InstanceManager.UpdateNeoForgeVersion(folderId, profileId)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
 }
