@@ -38,6 +38,7 @@ type Instance struct {
 	FabricVersion   string `json:"fabricVersion,omitempty"`
 	QuiltVersion    string `json:"quiltVersion,omitempty"`
 	NeoForgeVersion string `json:"neoForgeVersion,omitempty"`
+	ForgeVersion    string `json:"forgeVersion,omitempty"`
 	JvmArgs         string `json:"jvmArgs"`
 	JavaPath        string `json:"javaPath,omitempty"`
 	PlaytimeSeconds int64  `json:"playtimeSeconds,omitempty"`
@@ -868,6 +869,11 @@ func (i *InstanceManager) DuplicateInstance(folderId, newName string) (*Instance
 		if err != nil {
 			return nil, err
 		}
+	} else if info.ForgeVersion != "" {
+		err = i.UpdateForgeVersion(instance.Uuid, info.ForgeVersion)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if info.JavaPath != "" {
 		err = i.UpdateJavaPath(instance.Uuid, info.JavaPath)
@@ -1067,6 +1073,24 @@ func (i *InstanceManager) UpdateNeoForgeVersion(folderId, neoforgeVersion string
 		return err
 	}
 	instInfo.NeoForgeVersion = neoforgeVersion
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "instances", folderId, "instance.json")
+	data, err := json.MarshalIndent(instInfo, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(base, data, 0o600)
+}
+
+func (i *InstanceManager) UpdateForgeVersion(folderId, forgeVersion string) error {
+	instInfo, err := i.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	instInfo.ForgeVersion = forgeVersion
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
 		return err

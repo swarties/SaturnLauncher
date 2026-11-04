@@ -327,13 +327,16 @@ func (a *App) StartGame(folderId, worldName string) error {
 		return err
 	}
 	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Downloading Client Jar")
-	if instInfo.FabricVersion != "" || instInfo.QuiltVersion != "" || instInfo.NeoForgeVersion != "" {
+	if instInfo.FabricVersion != "" || instInfo.QuiltVersion != "" || instInfo.NeoForgeVersion != "" || instInfo.ForgeVersion != "" {
 		loaderVersion := instInfo.FabricVersion
 		if instInfo.QuiltVersion != "" {
 			loaderVersion = instInfo.QuiltVersion
 		}
 		if instInfo.NeoForgeVersion != "" {
 			loaderVersion = instInfo.NeoForgeVersion
+		}
+		if instInfo.ForgeVersion != "" {
+			loaderVersion = instInfo.ForgeVersion
 		}
 		fInfo, err := a.Download.ParseVersionInfo(loaderVersion)
 		if err != nil {
@@ -1742,4 +1745,20 @@ func (a *App) GetForgeVersions(gameVersion string) ([]string, error) {
 		return nil, err
 	}
 	return versions, nil
+}
+
+func (a *App) InstallForge(folderId, loaderVersion string) error {
+	if loaderVersion == "" {
+		return fmt.Errorf("loader version parameter is empty")
+	}
+	forgeVersion, err := a.Forge.InstallForge(loaderVersion)
+	if err != nil {
+		return err
+	}
+	err = a.InstanceManager.UpdateForgeVersion(folderId, forgeVersion)
+	if err != nil {
+		return err
+	}
+	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+	return nil
 }

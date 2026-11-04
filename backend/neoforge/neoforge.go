@@ -115,6 +115,7 @@ func (nf *NeoForge) InstallNeoforge(loaderVersion string) (string, error) {
 		return "", err
 	}
 	cmd := exec.Command(*java, "-Djava.awt.headless=true", "-jar", installerJar, "--install-client", mcDir)
+	cmd.Dir = tempDir
 	out, err := cmd.CombinedOutput()
 	fmt.Println(string(out))
 	if err != nil {
