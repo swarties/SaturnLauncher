@@ -85,6 +85,7 @@ function InstancesPage() {
   }, []);
 
   const handleInstallModpack = async (path = '') => {
+    if (!creating) return;
     if (installingPack) return;
     setInstallingPack(true);
     setThisIsTakingAWhile(false);
@@ -228,7 +229,7 @@ function InstancesPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-6"
+              className={`fixed inset-0 z-50 flex items-center justify-center p-6 ${!creating ? 'pointer-events-none' : ''}`}
               onMouseDown={(e) => {
                 if (e.target === e.currentTarget && !preventClose) {
                   setCreating(false);
@@ -242,7 +243,7 @@ function InstancesPage() {
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 onMouseDown={(e) => e.stopPropagation()}
                 style={{ '--wails-drop-target': 'drop' }}
-                className="bg-background relative w-full max-w-4xl rounded-md border-2 border-(--surface-border) p-8 shadow-2xl"
+                className={`bg-background relative w-full max-w-4xl rounded-md border-2 border-(--surface-border) p-8 shadow-2xl ${!creating ? 'pointer-events-none' : ''}`}
               >
                 <div className="text-muted-foreground text-sm font-normal tracking-[0.2em] uppercase">
                   New Instance
@@ -255,7 +256,10 @@ function InstancesPage() {
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.2fr] md:gap-0">
                   <div className="flex flex-col md:pr-8">
                     <div
-                      onClick={() => handleInstallModpack('')}
+                      onClick={() => {
+                        if (!creating) return;
+                        void handleInstallModpack('');
+                      }}
                       onDragEnter={(e) => {
                         e.preventDefault();
                         dragCounter.current += 1;
