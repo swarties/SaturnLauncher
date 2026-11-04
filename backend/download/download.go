@@ -66,6 +66,11 @@ type VersionInfo struct {
 			Size int    `json:"size"`
 			URL  string `json:"url"`
 		} `json:"client"`
+		Server struct {
+			Sha1 string `json:"sha1"`
+			Size int    `json:"size"`
+			URL  string `json:"url"`
+		} `json:"server"`
 	} `json:"downloads"`
 	ID          string `json:"id"`
 	MainClass   string `json:"mainClass"`
@@ -248,7 +253,7 @@ func (d *Download) GetFileSha512(filePath string) (string, error) {
 	return hex.EncodeToString(hashInBytes), nil
 }
 
-func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId string) error {
+func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId string, isServer bool) error {
 	var versionUrl string
 	var versionSha1 string
 	appdata, err := os.UserConfigDir()
@@ -266,6 +271,9 @@ func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId st
 		return fmt.Errorf("couldn't find version url in the manifest. What did you even do... restart the launcher and it should fix the manifest")
 	}
 	destPath := filepath.Join(appdata, "SaturnLauncher", "minecraft", "versions", versionId)
+	if isServer {
+		destPath = filepath.Join(appdata, "SaturnLauncher", "server", "versions", versionId)
+	}
 	err = os.MkdirAll(destPath, 0o755)
 	if err != nil {
 		return err
@@ -293,13 +301,16 @@ func (d *Download) GetVersionInfo(filteredManifest VersionManifest, versionId st
 	return nil
 }
 
-func (d *Download) ParseVersionInfo(versionId string) (*VersionInfo, error) {
+func (d *Download) ParseVersionInfo(versionId string, isServer bool) (*VersionInfo, error) {
 	var data VersionInfo
 	appdata, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
 	}
 	destPath := filepath.Join(appdata, "SaturnLauncher", "minecraft", "versions", versionId)
+	if isServer {
+		destPath = filepath.Join(appdata, "SaturnLauncher", "server", "versions", versionId)
+	}
 	filePath := filepath.Join(destPath, versionId+".json")
 	file, err := os.ReadFile(filePath)
 	if err != nil {

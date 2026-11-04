@@ -107,12 +107,12 @@ func (f *Forge) InstallForge(loaderVersion string) (string, error) {
 		}
 		filteredManifest.Versions = append(filteredManifest.Versions, ver)
 	}
-	err = dl.GetVersionInfo(filteredManifest, splits[0])
+	err = dl.GetVersionInfo(filteredManifest, splits[0], false)
 	if err != nil {
 		return "", err
 	}
 	gameVersion := splits[0]
-	vInfo, err := dl.ParseVersionInfo(gameVersion)
+	vInfo, err := dl.ParseVersionInfo(gameVersion, false)
 	if err != nil {
 		fmt.Println(err)
 		return "", err

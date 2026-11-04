@@ -1,6 +1,7 @@
 package instances
 
 import (
+	"SaturnLauncher/backend/download"
 	"archive/zip"
 	"context"
 	"encoding/base64"
@@ -12,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,6 +48,16 @@ type Instance struct {
 	WrapperCmd      string `json:"wrapperCmd"`
 	PostExitCmd     string `json:"postExitCmd"`
 }
+
+type ServerInstance struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Version     string `json:"version"`
+	Uuid        string `json:"uuid"`
+	TimeCreated string `json:"timecreated"`
+	MinRam      int    `json:"minram"`
+	MaxRam      int    `json:"maxram"`
+}
 type Ram struct {
 	TotalRamMB int
 }
@@ -67,6 +79,8 @@ func (i *InstanceManager) InitStorage() (*string, error) {
 		filepath.Join(base, "instances"),
 		filepath.Join(base, "accounts"),
 		filepath.Join(base, "java"),
+		filepath.Join(base, "server"),
+		filepath.Join(base, "server", "versions"),
 	}
 
 	for _, dir := range dirs {
@@ -1101,4 +1115,58 @@ func (i *InstanceManager) UpdateForgeVersion(folderId, forgeVersion string) erro
 		return err
 	}
 	return os.WriteFile(base, data, 0o600)
+}
+
+func (i *InstanceManager) CreateServerInstance(name string, version string) (*Instance, error) {
+	id := uuid.New()
+	idString := id.String()
+	var serverInstance Instance
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	base := filepath.Join(appdata, "SaturnLauncher")
+	instanceDir := filepath.Join(base, "serverInstances", idString)
+	err = os.MkdirAll(instanceDir, 0o755)
+	if err != nil {
+		return nil, err
+	}
+	serverInstance = Instance{
+		Name:        name,
+		Version:     version,
+		TimeCreated: time.Now().Format(time.RFC3339),
+		Uuid:        idString,
+		MinRam:      2048,
+		MaxRam:      4096,
+	}
+
+	jsonFile, err := json.MarshalIndent(serverInstance, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	jsonLocation := filepath.Join(instanceDir, "instance.json")
+	err = os.WriteFile(jsonLocation, jsonFile, 0o600)
+	if err != nil {
+		return nil, err
+	}
+
+	// Install Server Files now
+	dl := download.NewDownload()
+	vInfo, err := dl.DownloadServer(version, idString)
+	if err != nil {
+		return nil, err
+	}
+	java, err := dl.EnsureJava(*vInfo)
+	if err != nil {
+		return nil, err
+	}
+	// First run to generate files + eula
+	server := exec.Command(*java, "-Xms"+strconv.Itoa(serverInstance.MinRam)+"M", "-Xms"+strconv.Itoa(serverInstance.MaxRam)+"M", "server.jar", "nogui")
+	server.Dir = instanceDir
+	output, err := server.CombinedOutput()
+	fmt.Println(string(output))
+	if err != nil {
+		return nil, err
+	}
+	return &serverInstance, nil
 }

@@ -318,11 +318,11 @@ func (a *App) StartGame(folderId, worldName string) error {
 		filteredManifest.Versions = append(filteredManifest.Versions, ver)
 	}
 
-	err = a.Download.GetVersionInfo(filteredManifest, version)
+	err = a.Download.GetVersionInfo(filteredManifest, version, false)
 	if err != nil {
 		return err
 	}
-	vInfo, err := a.Download.ParseVersionInfo(version)
+	vInfo, err := a.Download.ParseVersionInfo(version, false)
 	if err != nil {
 		return err
 	}
@@ -338,7 +338,7 @@ func (a *App) StartGame(folderId, worldName string) error {
 		if instInfo.ForgeVersion != "" {
 			loaderVersion = instInfo.ForgeVersion
 		}
-		fInfo, err := a.Download.ParseVersionInfo(loaderVersion)
+		fInfo, err := a.Download.ParseVersionInfo(loaderVersion, false)
 		if err != nil {
 			return err
 		}
@@ -1761,4 +1761,12 @@ func (a *App) InstallForge(folderId, loaderVersion string) error {
 	}
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
+}
+
+func (a *App) CreateServerInstance(name string, version string) (*instances.Instance, error) {
+	instance, err := a.InstanceManager.CreateServerInstance(name, version)
+	if err != nil {
+		return nil, err
+	}
+	return instance, nil
 }
