@@ -5,6 +5,7 @@ import (
 	"SaturnLauncher/backend/autoupdater"
 	"SaturnLauncher/backend/download"
 	"SaturnLauncher/backend/fabric"
+	"SaturnLauncher/backend/forge"
 	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/launch"
 	"SaturnLauncher/backend/migration"
@@ -59,6 +60,7 @@ type App struct {
 	Migration          *migration.Migration
 	Quilt              *quilt.Quilt
 	NeoForge           *neoforge.NeoForge
+	Forge              *forge.Forge
 }
 
 // NewApp creates a new App application struct
@@ -77,6 +79,7 @@ func NewApp() *App {
 		Migration:        migration.NewMigration(),
 		Quilt:            quilt.NewQuilt(),
 		NeoForge:         neoforge.NewNeoForge(),
+		Forge:            forge.NewForge(),
 	}
 }
 
@@ -1731,4 +1734,12 @@ func (a *App) InstallNeoforge(folderId, loaderVersion string) error {
 	}
 	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
 	return nil
+}
+
+func (a *App) GetForgeVersions(gameVersion string) ([]string, error) {
+	versions, err := a.Forge.GetLoaderVersions(gameVersion)
+	if err != nil {
+		return nil, err
+	}
+	return versions, nil
 }
