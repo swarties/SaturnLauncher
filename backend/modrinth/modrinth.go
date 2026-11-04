@@ -2,6 +2,7 @@ package modrinth
 
 import (
 	"SaturnLauncher/backend/download"
+	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/projectInfo"
 	"context"
 	"encoding/json"
@@ -278,7 +279,7 @@ func (m *Modrinth) GetProject(projectId string) (*ProjectPage, error) {
 	return &modInfo, nil
 }
 
-func (m *Modrinth) GetVersions(projectId, gameVersion, projectType string) ([]VersionInfo, error) {
+func (m *Modrinth) GetVersions(projectId, gameVersion, projectType, loader string) ([]VersionInfo, error) {
 	var verInfo []VersionInfo
 	if strings.TrimSpace(gameVersion) == "" {
 		return nil, fmt.Errorf("version is invalid")
@@ -286,7 +287,7 @@ func (m *Modrinth) GetVersions(projectId, gameVersion, projectType string) ([]Ve
 	gameVer := "[\"" + gameVersion + "\"]"
 	url := "https://api.modrinth.com/v2/project/" + projectId + "/version" + "?game_versions=" + url2.QueryEscape(gameVer)
 	if projectType == "mod" {
-		url += "&loaders=" + url2.QueryEscape("[\"fabric\"]")
+		url += "&loaders=" + url2.QueryEscape("[\""+loader+"\"]")
 	}
 	requests, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -421,11 +422,27 @@ func (m *Modrinth) InstallModFile(v VersionInfo, folderId, contentType string) e
 }
 
 func (m *Modrinth) InstallDeps(v VersionInfo, seen map[string]bool, folderId, contentType, gameVer, projectType string) error {
+	inst := instances.NewInstanceManager()
+	info, err := inst.GetInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	var loader string
+	if info.NeoForgeVersion != "" {
+		loader = "neoforge"
+	} else if info.QuiltVersion != "" {
+		loader = "quilt"
+	} else if info.FabricVersion != "" {
+		loader = "fabric"
+	}
+	if loader == "" {
+		return fmt.Errorf("instance not a modded instance")
+	}
 	if seen[v.ProjectID] {
 		return nil
 	}
 	seen[v.ProjectID] = true
-	err := m.InstallModFile(v, folderId, contentType)
+	err = m.InstallModFile(v, folderId, contentType)
 	if err != nil {
 		return err
 	}
@@ -441,7 +458,7 @@ func (m *Modrinth) InstallDeps(v VersionInfo, seen map[string]bool, folderId, co
 			}
 			depVersion = version
 		} else if d.ProjectID != "" {
-			versions, err := m.GetVersions(d.ProjectID, gameVer, projectType)
+			versions, err := m.GetVersions(d.ProjectID, gameVer, projectType, loader)
 			if err != nil {
 				return err
 			}
@@ -525,6 +542,22 @@ func (m *Modrinth) SaveManifest(filename, sha1, versionId, projectId, folderId s
 }
 
 func (m *Modrinth) GetContentUpdates(folderId, gameVersion, projectType string) ([]UpdateInfo, error) {
+	inst := instances.NewInstanceManager()
+	info, err := inst.GetInstanceInfo(folderId)
+	if err != nil {
+		return nil, err
+	}
+	var loader string
+	if info.NeoForgeVersion != "" {
+		loader = "neoforge"
+	} else if info.QuiltVersion != "" {
+		loader = "quilt"
+	} else if info.FabricVersion != "" {
+		loader = "fabric"
+	}
+	if loader == "" {
+		return nil, fmt.Errorf("instance not a modded instance")
+	}
 	var updInfo []UpdateInfo
 	modInfo, err := m.ReadManifest(folderId)
 	if err != nil {
@@ -536,7 +569,7 @@ func (m *Modrinth) GetContentUpdates(folderId, gameVersion, projectType string) 
 		wait.Add(1)
 		go func(f Manifest) {
 			defer wait.Done()
-			versions, err := m.GetVersions(f.ProjectId, gameVersion, projectType)
+			versions, err := m.GetVersions(f.ProjectId, gameVersion, projectType, loader)
 			if err != nil {
 				return
 			}

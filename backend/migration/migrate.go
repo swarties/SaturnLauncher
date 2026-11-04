@@ -3,6 +3,8 @@ package migration
 import (
 	fabric2 "SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
+	"SaturnLauncher/backend/neoforge"
+	quilt2 "SaturnLauncher/backend/quilt"
 	"context"
 	"encoding/json"
 	"io"
@@ -31,6 +33,8 @@ type ParsedInstance struct {
 	Name          string
 	McVersion     string
 	FabricVersion string
+	QuiltVersion  string
+	NfVersion     string
 	MinRam        int
 	MaxRam        int
 	Path          string
@@ -137,8 +141,12 @@ func (m *Migration) ParsePrism(insts []DetectedInstances) ([]ParsedInstance, err
 			}
 			if c.UID == "net.fabricmc.fabric-loader" {
 				pI.FabricVersion = c.Version
+			} else if c.UID == "net.neoforged" {
+				pI.NfVersion = c.Version
+			} else if c.UID == "org.quiltmc.quilt-loader" {
+				pI.QuiltVersion = c.Version
 			}
-			if c.UID == "net.minecraftforge" || c.UID == "net.neoforged" || c.UID == "org.quiltmc.quilt-loader" || c.UID == "com.mumfrey.liteloader" {
+			if c.UID == "net.minecraftforge" || c.UID == "com.mumfrey.liteloader" {
 				isUnsupported = true
 			}
 		}
@@ -218,6 +226,8 @@ func dataCopy(dst, src string) error {
 func (m *Migration) TransferFromPrism(p ParsedInstance) (*instances.Instance, error) {
 	appdata, err := os.UserConfigDir()
 	fabric := fabric2.NewFabric()
+	quilt := quilt2.NewQuilt()
+	nf := neoforge.NewNeoForge()
 	if err != nil {
 		return nil, err
 	}
@@ -233,6 +243,24 @@ func (m *Migration) TransferFromPrism(p ParsedInstance) (*instances.Instance, er
 			return nil, err
 		}
 		err = i.UpdateFabricVersion(fId, f)
+		if err != nil {
+			return nil, err
+		}
+	} else if p.NfVersion != "" {
+		f, err := nf.InstallNeoforge(p.NfVersion)
+		if err != nil {
+			return nil, err
+		}
+		err = i.UpdateNeoForgeVersion(fId, f)
+		if err != nil {
+			return nil, err
+		}
+	} else if p.QuiltVersion != "" {
+		f, err := quilt.InstallQuilt(p.McVersion, p.QuiltVersion)
+		if err != nil {
+			return nil, err
+		}
+		err = i.UpdateQuiltVersion(fId, f)
 		if err != nil {
 			return nil, err
 		}

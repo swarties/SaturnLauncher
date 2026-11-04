@@ -989,8 +989,8 @@ func (a *App) GetProjectPage(projectId string) (*modrinth.ProjectPage, error) {
 	return project, nil
 }
 
-func (a *App) GetProjectVersions(projectId, gameVersion, projectType string) ([]modrinth.VersionInfo, error) {
-	versions, err := a.Modrinth.GetVersions(projectId, gameVersion, projectType)
+func (a *App) GetProjectVersions(projectId, gameVersion, projectType, loader string) ([]modrinth.VersionInfo, error) {
+	versions, err := a.Modrinth.GetVersions(projectId, gameVersion, projectType, loader)
 	if err != nil {
 		return nil, err
 	}
@@ -1606,7 +1606,7 @@ func (a *App) DuplicateInstance(folderId, newName string) (*instances.Instance, 
 	return instance, nil
 }
 
-func (a *App) UpdateAllProjects(folderId, projectType string) error {
+func (a *App) UpdateAllProjects(folderId, projectType, loader string) error {
 	contentType := "mods"
 	if strings.Contains(projectType, "shader") {
 		contentType = "shaderpacks"

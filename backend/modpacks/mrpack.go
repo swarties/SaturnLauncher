@@ -2,9 +2,9 @@ package modpacks
 
 import (
 	"SaturnLauncher/backend/download"
-	fabric2 "SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
 	modrinth2 "SaturnLauncher/backend/modrinth"
+	"SaturnLauncher/backend/neoforge"
 	"SaturnLauncher/backend/quilt"
 	"archive/zip"
 	"context"
@@ -53,6 +53,7 @@ type ModrinthPack struct {
 		Minecraft    string `json:"minecraft"`
 		FabricLoader string `json:"fabric-loader"`
 		QuiltLoader  string `json:"quilt-loader"`
+		NeoForge     string `json:"neoforge"`
 	} `json:"dependencies"`
 }
 
@@ -119,13 +120,23 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-	} else {
-		f := fabric2.NewFabric()
-		id, err := f.InstallFabric(inst.Version, modpack.Dependencies.FabricLoader)
+	} else if modpack.Dependencies.FabricLoader != "" {
+		q := quilt.NewQuilt()
+		id, err := q.InstallQuilt(inst.Version, modpack.Dependencies.FabricLoader)
 		if err != nil {
 			return "", err
 		}
-		err = instManager.UpdateFabricVersion(folderId, id)
+		err = instManager.UpdateQuiltVersion(folderId, id)
+		if err != nil {
+			return "", err
+		}
+	} else if modpack.Dependencies.NeoForge != "" {
+		nf := neoforge.NewNeoForge()
+		id, err := nf.InstallNeoforge(modpack.Dependencies.NeoForge)
+		if err != nil {
+			return "", err
+		}
+		err = instManager.UpdateNeoForgeVersion(folderId, id)
 		if err != nil {
 			return "", err
 		}
@@ -261,6 +272,12 @@ func (m *Mrpack) ExportModpack(folderId, dst string, includeWorlds, includeOptio
 		parts := strings.Split(info.QuiltVersion, "-")
 		if len(parts) >= 3 {
 			mpack.Dependencies.QuiltLoader = parts[2]
+		}
+	}
+	if info.NeoForgeVersion != "" {
+		parts := strings.Split(info.NeoForgeVersion, "-")
+		if len(parts) >= 2 {
+			mpack.Dependencies.NeoForge = parts[1]
 		}
 	}
 	create, err := os.Create(dst)
