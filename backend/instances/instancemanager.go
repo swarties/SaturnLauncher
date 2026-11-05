@@ -57,6 +57,7 @@ type ServerInstance struct {
 	TimeCreated string `json:"timecreated"`
 	MinRam      int    `json:"minram"`
 	MaxRam      int    `json:"maxram"`
+	EulaStatus  bool   `json:"eula"`
 }
 type Ram struct {
 	TotalRamMB int
@@ -1117,10 +1118,10 @@ func (i *InstanceManager) UpdateForgeVersion(folderId, forgeVersion string) erro
 	return os.WriteFile(base, data, 0o600)
 }
 
-func (i *InstanceManager) CreateServerInstance(name string, version string) (*Instance, error) {
+func (i *InstanceManager) CreateServerInstance(name string, version string) (*ServerInstance, error) {
 	id := uuid.New()
 	idString := id.String()
-	var serverInstance Instance
+	var serverInstance ServerInstance
 	appdata, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
@@ -1131,13 +1132,14 @@ func (i *InstanceManager) CreateServerInstance(name string, version string) (*In
 	if err != nil {
 		return nil, err
 	}
-	serverInstance = Instance{
+	serverInstance = ServerInstance{
 		Name:        name,
 		Version:     version,
 		TimeCreated: time.Now().Format(time.RFC3339),
 		Uuid:        idString,
 		MinRam:      2048,
 		MaxRam:      4096,
+		EulaStatus:  false,
 	}
 
 	jsonFile, err := json.MarshalIndent(serverInstance, "", "  ")
@@ -1161,7 +1163,7 @@ func (i *InstanceManager) CreateServerInstance(name string, version string) (*In
 		return nil, err
 	}
 	// First run to generate files + eula
-	server := exec.Command(*java, "-Xms"+strconv.Itoa(serverInstance.MinRam)+"M", "-Xms"+strconv.Itoa(serverInstance.MaxRam)+"M", "server.jar", "nogui")
+	server := exec.Command(*java, "-Xms"+strconv.Itoa(serverInstance.MinRam)+"M", "-Xmx"+strconv.Itoa(serverInstance.MaxRam)+"M", "-jar", "server.jar", "nogui")
 	server.Dir = instanceDir
 	output, err := server.CombinedOutput()
 	fmt.Println(string(output))
@@ -1169,4 +1171,26 @@ func (i *InstanceManager) CreateServerInstance(name string, version string) (*In
 		return nil, err
 	}
 	return &serverInstance, nil
+}
+
+func (i *InstanceManager) GetServerInstanceInfo(folderId string) (*ServerInstance, error) {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	base := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "instance.json")
+
+	var inst ServerInstance
+	jsonData, err := os.ReadFile(base)
+	if err != nil {
+		return nil, err
+	}
+	if len(jsonData) == 0 {
+		return nil, fmt.Errorf("JSON file is empty")
+	}
+	err = json.Unmarshal(jsonData, &inst)
+	if err != nil {
+		return nil, err
+	}
+	return &inst, nil
 }

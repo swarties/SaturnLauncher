@@ -1763,10 +1763,84 @@ func (a *App) InstallForge(folderId, loaderVersion string) error {
 	return nil
 }
 
-func (a *App) CreateServerInstance(name string, version string) (*instances.Instance, error) {
+func (a *App) CreateServerInstance(name string, version string) (*instances.ServerInstance, error) {
 	instance, err := a.InstanceManager.CreateServerInstance(name, version)
 	if err != nil {
 		return nil, err
 	}
 	return instance, nil
+}
+
+func (a *App) StartServer(folderId string) error {
+
+	// make user agree to eula https://aka.ms/MinecraftEULA
+	servInfo, err := a.InstanceManager.GetServerInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdata, "SaturnLauncher")
+	instanceDir := filepath.Join(base, "serverInstances", servInfo.Uuid)
+	if servInfo.EulaStatus == false {
+		wailsRuntime.EventsEmit(a.ctx, "eula:false")
+		return fmt.Errorf("cannot run server. Eula has not been accepted")
+	}
+	vInfo, err := a.Download.ParseVersionInfo(servInfo.Version, true)
+	if err != nil {
+		return err
+	}
+	java, err := a.Download.EnsureJava(*vInfo)
+	if err != nil {
+		return err
+	}
+	server := exec.Command(*java, "-Xms"+strconv.Itoa(servInfo.MinRam)+"M", "-Xmx"+strconv.Itoa(servInfo.MaxRam)+"M", "-jar", "server.jar", "nogui")
+	server.Dir = instanceDir
+	server.Stderr = os.Stderr
+	server.Stdout = os.Stdout
+	err = server.Start()
+	if err != nil {
+		return err
+	}
+	return nil
+	// add all the mutex and running + killing instances stuff
+}
+
+// window.go.main.App.StartServer("27194314-d7c4-4512-8bb5-0df5ea92588b")
+func (a *App) GetServerInstanceInfo(folderId string) (*instances.ServerInstance, error) {
+	info, err := a.InstanceManager.GetServerInstanceInfo(folderId)
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+func (a *App) AcceptEula(folderId string) error {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdata, "SaturnLauncher")
+	eulaFile := filepath.Join(base, "serverInstances", folderId, "eula.txt")
+	instanceJson := filepath.Join(base, "serverInstances", folderId, "instance.json")
+	err = os.WriteFile(eulaFile, []byte("eula=true"), 0o755)
+	if err != nil {
+		return err
+	}
+	info, err := a.InstanceManager.GetServerInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	info.EulaStatus = true
+	newInstanceInfo, err := json.MarshalIndent(info, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(instanceJson, newInstanceInfo, 0o755)
+	if err != nil {
+		return err
+	}
+	return nil
 }
