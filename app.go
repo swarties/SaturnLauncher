@@ -61,6 +61,7 @@ type App struct {
 	Quilt              *quilt.Quilt
 	NeoForge           *neoforge.NeoForge
 	Forge              *forge.Forge
+	servStdin          map[string]io.WriteCloser
 }
 
 // NewApp creates a new App application struct
@@ -74,6 +75,7 @@ func NewApp() *App {
 		Modrinth:         modrinth.NewModrinth(),
 		Mrpack:           modpacks.NewMrpack(),
 		RunningInstances: make(map[string]*exec.Cmd),
+		servStdin:        make(map[string]io.WriteCloser),
 		skins:            skins.NewSkinsManager(),
 		Updater:          autoupdater.NewUpdater(),
 		Migration:        migration.NewMigration(),
@@ -690,7 +692,6 @@ func (a *App) Logout() {
 		wailsRuntime.EventsEmit(a.ctx, "auth:required")
 		return
 	}
-
 	wailsRuntime.EventsEmit(a.ctx, "auth:required")
 }
 
@@ -1798,14 +1799,107 @@ func (a *App) StartServer(folderId string) error {
 	}
 	server := exec.Command(*java, "-Xms"+strconv.Itoa(servInfo.MinRam)+"M", "-Xmx"+strconv.Itoa(servInfo.MaxRam)+"M", "-jar", "server.jar", "nogui")
 	server.Dir = instanceDir
-	server.Stderr = os.Stderr
-	server.Stdout = os.Stdout
+	logDir := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "logs")
+	err = os.MkdirAll(logDir, 0o755)
+	if err != nil {
+		return err
+	}
+	logPath := filepath.Join(logDir, "jvm.log")
+	file, err := os.Create(logPath)
+	if err != nil {
+		return err
+	}
+	stderr, err := server.StderrPipe()
+	if err != nil {
+		aerr := file.Close()
+		if aerr != nil {
+			return aerr
+		}
+		return err
+	}
+	stdout, err := server.StdoutPipe()
+	if err != nil {
+		aerr := file.Close()
+		if aerr != nil {
+			return aerr
+		}
+		return err
+	}
+	stdin, err := server.StdinPipe()
+	if err != nil {
+		aerr := file.Close()
+		if aerr != nil {
+			return aerr
+		}
+		return err
+	}
 	err = server.Start()
 	if err != nil {
 		return err
 	}
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(2)
+	a.mu.Lock()
+	a.servStdin[folderId] = stdin
+	a.RunningInstances[folderId] = server
+	a.mu.Unlock()
+	wailsRuntime.EventsEmit(a.ctx, "server:started", folderId)
+	go func() {
+		defer waitGroup.Done()
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			wailsRuntime.EventsEmit(a.ctx, "server:info", line)
+			_, err := fmt.Fprintln(file, line)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+		if scanner.Err() != nil {
+			fmt.Println(scanner.Err())
+		}
+	}()
+	go func() {
+		defer waitGroup.Done()
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			wailsRuntime.EventsEmit(a.ctx, "server:error", line)
+			_, err := fmt.Fprintln(file, line)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+		if scanner.Err() != nil {
+			fmt.Println(scanner.Err())
+		}
+	}()
+	go func() {
+		err = server.Wait()
+		waitGroup.Wait()
+		var code int
+		var exitError *exec.ExitError
+		if err != nil {
+			if errors.As(err, &exitError) {
+				code = exitError.ExitCode()
+			} else {
+				code = -1
+			}
+		}
+		wailsRuntime.EventsEmit(a.ctx, "server:stopped", map[string]any{
+			"folderId": folderId,
+			"exitCode": code,
+		})
+		err = file.Close()
+		if err != nil {
+			return
+		}
+		a.mu.Lock()
+		delete(a.RunningInstances, folderId)
+		delete(a.servStdin, folderId)
+		a.mu.Unlock()
+	}()
 	return nil
-	// add all the mutex and running + killing instances stuff
 }
 
 // window.go.main.App.StartServer("27194314-d7c4-4512-8bb5-0df5ea92588b")
@@ -1839,6 +1933,25 @@ func (a *App) AcceptEula(folderId string) error {
 		return err
 	}
 	err = os.WriteFile(instanceJson, newInstanceInfo, 0o755)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *App) KillServer(folderId string) error {
+	err := a.SendServerCommand(folderId, "stop")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *App) SendServerCommand(folderId, command string) error {
+	if a.servStdin[folderId] == nil {
+		return fmt.Errorf("no server stdin for this folderId active")
+	}
+	_, err := io.WriteString(a.servStdin[folderId], command+"\n")
 	if err != nil {
 		return err
 	}
