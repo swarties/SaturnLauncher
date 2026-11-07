@@ -210,9 +210,16 @@ Most launchers today are aesthetically unpleasing, filled with ads, and too bloa
   </tr>
 </table>
 
-
-
-
+> [!IMPORTANT]
+>  AI usage disclosure
+>
+>  AI coding assistance tools have been used during the development of SaturnLauncher.
+>  However, we want to make it clear that it was never fully used to develop features.
+>  It was used to help fix bugs and figure out how certain APIs worked (Modrinth facets & Neoforge API (undocumented)).
+>
+>  No code was copied and pasted or written using an agentic AI coding tool (Claude code, Opencode, Codex, etc.)
+>
+>  In addition, AI assisted changes were thoroughly tested by active maintainers to ensure they would not induce any issues or security risks.
 
 
 
