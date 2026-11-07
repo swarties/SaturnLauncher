@@ -1770,7 +1770,6 @@ func (a *App) CreateServerInstance(name string, version string) (*instances.Serv
 }
 
 func (a *App) StartServer(folderId string) error {
-
 	// make user agree to eula https://aka.ms/MinecraftEULA
 	servInfo, err := a.InstanceManager.GetServerInstanceInfo(folderId)
 	if err != nil {
@@ -1846,6 +1845,7 @@ func (a *App) StartServer(folderId string) error {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
+			fmt.Println("[SERVER]", line)
 			wailsRuntime.EventsEmit(a.ctx, "server:info", line)
 			_, err := fmt.Fprintln(file, line)
 			if err != nil {
@@ -1861,6 +1861,7 @@ func (a *App) StartServer(folderId string) error {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
+			fmt.Println("[SERVER ERR]", line)
 			wailsRuntime.EventsEmit(a.ctx, "server:error", line)
 			_, err := fmt.Fprintln(file, line)
 			if err != nil {
@@ -1872,8 +1873,12 @@ func (a *App) StartServer(folderId string) error {
 		}
 	}()
 	go func() {
-		err = server.Wait()
 		waitGroup.Wait()
+		err = server.Wait()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		var code int
 		var exitError *exec.ExitError
 		if err != nil {

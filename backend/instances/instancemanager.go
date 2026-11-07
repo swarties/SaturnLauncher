@@ -2,6 +2,7 @@ package instances
 
 import (
 	"SaturnLauncher/backend/download"
+	skins2 "SaturnLauncher/backend/skins"
 	"archive/zip"
 	"context"
 	"encoding/base64"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/v4/mem"
+	"gopkg.in/ini.v1"
 )
 
 type InstanceManager struct {
@@ -61,6 +63,11 @@ type ServerInstance struct {
 }
 type Ram struct {
 	TotalRamMB int
+}
+
+type Whitelist struct {
+	UUID string `json:"uuid"`
+	Name string `json:"name"`
 }
 
 func (i *InstanceManager) InitStorage() (*string, error) {
@@ -1193,4 +1200,86 @@ func (i *InstanceManager) GetServerInstanceInfo(folderId string) (*ServerInstanc
 		return nil, err
 	}
 	return &inst, nil
+}
+
+func (i *InstanceManager) GetServerProperties(folderId string) (map[string]string, error) {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	propertiesPath := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "server.properties")
+	cfg, err := ini.Load(propertiesPath)
+	if err != nil {
+		return nil, err
+	}
+	sProps := cfg.Section("").KeysHash()
+	return sProps, nil
+}
+
+func (i *InstanceManager) EditServerProperties(folderId, key, val string) error {
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	propertiesPath := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "server.properties")
+	cfg, err := ini.Load(propertiesPath)
+	if err != nil {
+		return err
+	}
+	section := cfg.Section("")
+	section.Key(key).SetValue(val)
+	err = cfg.SaveTo(propertiesPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *InstanceManager) AddUsernameToWhitelist(folderId, username string) error {
+	skins := skins2.NewSkinsManager()
+	UserInfo, err := skins.GetUUIDByUsername(username)
+	if err != nil {
+		return err
+	}
+	whitelist, err := i.ReadWhitelist(folderId)
+	if err != nil {
+		return err
+	}
+	newWhitelist := Whitelist{
+		UUID: UserInfo.Id,
+		Name: UserInfo.Name,
+	}
+	whitelist = append(whitelist, newWhitelist)
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	serverWhitelist := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "whitelist.json")
+	filebytes, err := json.MarshalIndent(whitelist, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(serverWhitelist, filebytes, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *InstanceManager) ReadWhitelist(folderId string) ([]Whitelist, error) {
+	var whitelist []Whitelist
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	serverWhitelist := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "whitelist.json")
+	file, err := os.ReadFile(serverWhitelist)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(file, &whitelist)
+	if err != nil {
+		return nil, err
+	}
+	return whitelist, nil
 }

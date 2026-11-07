@@ -51,29 +51,33 @@ type Metadata struct {
 	Model string `json:"model"`
 }
 
-func (s *Skins) GetSkinByUsername(username string) (string, error) {
+func (s *Skins) GetUUIDByUsername(username string) (*GetUUID, error) {
 	var uuidStruct GetUUID
-	var skinStruct GetSkin
-	var skinTextures GetSkinTextures
 	getUUID, err := http.Get("https://api.mojang.com/users/profiles/minecraft/" + username)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if getUUID.StatusCode != http.StatusOK {
 		defer getUUID.Body.Close()
-		return "", fmt.Errorf("user does not exist")
+		return nil, fmt.Errorf("user does not exist")
 	}
 	defer getUUID.Body.Close()
 	uuid, err := io.ReadAll(getUUID.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	err = json.Unmarshal(uuid, &uuidStruct)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	return &uuidStruct, nil
+}
 
-	getSkin, err := http.Get("https://sessionserver.mojang.com/session/minecraft/profile/" + uuidStruct.Id)
+func (s *Skins) GetSkinByUsername(username string) (string, error) {
+	var skinStruct GetSkin
+	var skinTextures GetSkinTextures
+	uuid, err := s.GetUUIDByUsername(username)
+	getSkin, err := http.Get("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid.Id)
 	if err != nil {
 		return "", err
 	}
