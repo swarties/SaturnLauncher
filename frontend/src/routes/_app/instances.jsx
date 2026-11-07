@@ -17,6 +17,7 @@ import { VersionPicker } from '@/components/ui/version-picker.jsx';
 import { LoaderPicker } from '@/components/ui/loader-picker.jsx';
 import { FabricVersionPicker } from '@/components/ui/fabric-version-picker.jsx';
 import { QuiltVersionPicker } from '@/components/ui/quilt-version-picker.jsx';
+import { NeoforgeVersionPicker } from '@/components/ui/neoforge-version-picker.jsx';
 import { toast } from '@/stores/toasts';
 import {
   MorphingDialog,
@@ -34,6 +35,7 @@ import {
   DetectInstances,
   InstallFabric,
   InstallMrpack,
+  InstallNeoforge,
   InstallQuilt,
   ListInstances,
   ParsePrism,
@@ -635,15 +637,17 @@ function InstanceCard({ instance, onDelete, index }) {
             {instance.name}
           </p>
           <p className="text-muted-foreground mt-1 text-xs font-thin">
-            {instance.quiltVersion
-              ? `Quilt · ${instance.quiltVersion
-                  .replace('quilt-loader-', '')
-                  .replace(`-${instance.version}`, '')}`
-              : instance.fabricVersion
-                ? `Fabric · ${instance.fabricVersion
-                    .replace('fabric-loader-', '')
+            {instance.neoForgeVersion
+              ? `Neoforge · ${instance.neoForgeVersion.replace('neoforge-', '')}`
+              : instance.quiltVersion
+                ? `Quilt · ${instance.quiltVersion
+                    .replace('quilt-loader-', '')
                     .replace(`-${instance.version}`, '')}`
-                : 'Vanilla'}
+                : instance.fabricVersion
+                  ? `Fabric · ${instance.fabricVersion
+                      .replace('fabric-loader-', '')
+                      .replace(`-${instance.version}`, '')}`
+                  : 'Vanilla'}
           </p>
           <div className="mt-auto flex items-center justify-between pt-6">
             <span className="text-muted-foreground text-xs font-thin">
@@ -747,6 +751,7 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
   const [loader, setLoader] = useState('vanilla');
   const [fabricVersion, setFabricVersion] = useState('');
   const [quiltVersion, setQuiltVersion] = useState('');
+  const [neoforgeVersion, setNeoforgeVersion] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [phase, setPhase] = useState('idle');
   const [partialUuid, setPartialUuid] = useState(
@@ -755,6 +760,7 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
   useEffect(() => {
     if (loader !== 'fabric') setFabricVersion('');
     if (loader !== 'quilt') setQuiltVersion('');
+    if (loader !== 'neoforge') setNeoforgeVersion('');
   }, [loader]);
 
   const handleSubmit = async () => {
@@ -762,6 +768,7 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
     if (!partialUuid && !name.trim()) return;
     if (!partialUuid && loader === 'fabric' && !fabricVersion) return;
     if (!partialUuid && loader === 'quilt' && !quiltVersion) return;
+    if (!partialUuid && loader === 'neoforge' && !neoforgeVersion) return;
 
     setSubmitting(true);
     setPreventClose(true);
@@ -781,6 +788,9 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
       } else if (loader === 'quilt') {
         setPhase(uuid === partialUuid ? 'retrying' : 'installing-quilt');
         await InstallQuilt(uuid, quiltVersion);
+      } else if (loader === 'neoforge') {
+        setPhase(uuid === partialUuid ? 'retrying' : 'installing-neoforge');
+        await InstallNeoforge(uuid, neoforgeVersion);
       }
 
       onClose();
@@ -798,6 +808,7 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
       if (phase === 'creating') return 'Creating...';
       if (phase === 'installing') return 'Installing Fabric...';
       if (phase === 'installing-quilt') return 'Installing Quilt...';
+      if (phase === 'installing-neoforge') return 'Installing NeoForge...';
       if (phase === 'retrying') return 'Retrying...';
       return 'Working...';
     }
@@ -811,7 +822,8 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
       (name.trim() &&
         (loader === 'vanilla' ||
           (loader === 'fabric' && Boolean(fabricVersion)) ||
-          (loader === 'quilt' && Boolean(quiltVersion)))));
+          (loader === 'quilt' && Boolean(quiltVersion)) ||
+          (loader === 'neoforge' && Boolean(neoforgeVersion)))));
 
   return (
     <div className="flex h-full flex-col">
@@ -882,6 +894,25 @@ function CreateInstanceForm({ onClose, setPreventClose }) {
                 gameVersion={version}
                 value={quiltVersion}
                 onChange={setQuiltVersion}
+              />
+            </motion.div>
+          )}
+          {loader === 'neoforge' && (
+            <motion.div
+              className="flex flex-col gap-2"
+              key="neoforge-version"
+              initial={{ opacity: 0, height: 0, marginTop: -16 }}
+              animate={{ opacity: 1, height: 'auto', marginTop: 0 }}
+              exit={{ opacity: 0, height: 0, marginTop: -16 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.38, 1] }}
+            >
+              <span className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
+                NeoForge Version
+              </span>
+              <NeoforgeVersionPicker
+                gameVersion={version}
+                value={neoforgeVersion}
+                onChange={setNeoforgeVersion}
               />
             </motion.div>
           )}
