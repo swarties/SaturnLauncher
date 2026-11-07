@@ -25,6 +25,7 @@ func NewForge() *Forge {
 
 const userAgent = projectInfo.UserAgent
 
+// not going to be used for now as its kinda buggy
 type Versions struct {
 	XMLName    xml.Name `xml:"metadata"`
 	Text       string   `xml:",chardata"`

@@ -187,9 +187,9 @@ func (m *Modrinth) GetDiscoveryPage(projectType, version, categories, query, fol
 		{
 			"project_type:" + projectType,
 		},
-		{
-			"versions:" + version,
-		},
+	}
+	if strings.TrimSpace(version) != "" {
+		facets = append(facets, []string{"versions:" + version})
 	}
 	if strings.TrimSpace(categories) != "" {
 		split := strings.Split(categories, ",")

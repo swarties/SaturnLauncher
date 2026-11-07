@@ -329,16 +329,13 @@ func (a *App) StartGame(folderId, worldName string) error {
 		return err
 	}
 	wailsRuntime.EventsEmit(a.ctx, "download:progress", "Downloading Client Jar")
-	if instInfo.FabricVersion != "" || instInfo.QuiltVersion != "" || instInfo.NeoForgeVersion != "" || instInfo.ForgeVersion != "" {
+	if instInfo.FabricVersion != "" || instInfo.QuiltVersion != "" || instInfo.NeoForgeVersion != "" {
 		loaderVersion := instInfo.FabricVersion
 		if instInfo.QuiltVersion != "" {
 			loaderVersion = instInfo.QuiltVersion
 		}
 		if instInfo.NeoForgeVersion != "" {
 			loaderVersion = instInfo.NeoForgeVersion
-		}
-		if instInfo.ForgeVersion != "" {
-			loaderVersion = instInfo.ForgeVersion
 		}
 		fInfo, err := a.Download.ParseVersionInfo(loaderVersion, false)
 		if err != nil {
@@ -1740,29 +1737,29 @@ func (a *App) InstallNeoforge(folderId, loaderVersion string) error {
 	return nil
 }
 
-func (a *App) GetForgeVersions(gameVersion string) ([]string, error) {
-	versions, err := a.Forge.GetLoaderVersions(gameVersion)
-	if err != nil {
-		return nil, err
-	}
-	return versions, nil
-}
-
-func (a *App) InstallForge(folderId, loaderVersion string) error {
-	if loaderVersion == "" {
-		return fmt.Errorf("loader version parameter is empty")
-	}
-	forgeVersion, err := a.Forge.InstallForge(loaderVersion)
-	if err != nil {
-		return err
-	}
-	err = a.InstanceManager.UpdateForgeVersion(folderId, forgeVersion)
-	if err != nil {
-		return err
-	}
-	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
-	return nil
-}
+//func (a *App) GetForgeVersions(gameVersion string) ([]string, error) {
+//	versions, err := a.Forge.GetLoaderVersions(gameVersion)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return versions, nil
+//}
+//
+//func (a *App) InstallForge(folderId, loaderVersion string) error {
+//	if loaderVersion == "" {
+//		return fmt.Errorf("loader version parameter is empty")
+//	}
+//	forgeVersion, err := a.Forge.InstallForge(loaderVersion)
+//	if err != nil {
+//		return err
+//	}
+//	err = a.InstanceManager.UpdateForgeVersion(folderId, forgeVersion)
+//	if err != nil {
+//		return err
+//	}
+//	wailsRuntime.EventsEmit(a.ctx, "instance:changed")
+//	return nil
+//}
 
 func (a *App) CreateServerInstance(name string, version string) (*instances.ServerInstance, error) {
 	instance, err := a.InstanceManager.CreateServerInstance(name, version)
@@ -1952,6 +1949,14 @@ func (a *App) SendServerCommand(folderId, command string) error {
 		return fmt.Errorf("no server stdin for this folderId active")
 	}
 	_, err := io.WriteString(a.servStdin[folderId], command+"\n")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *App) ClearAllOldLogs() error {
+	err := a.InstanceManager.ClearAllOldLogs()
 	if err != nil {
 		return err
 	}
