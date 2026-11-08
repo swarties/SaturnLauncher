@@ -117,17 +117,17 @@ function ModrinthBrowser() {
     return () => resetBrowser();
   }, []);
 
-  const hasMods = Boolean(
+  const isNotVanilla = Boolean(
     instance?.fabricVersion ||
     instance?.quiltVersion ||
     instance?.neoForgeVersion
   );
 
   useEffect(() => {
-    if (!hasMods && activeTab === 'mod') {
+    if (!isNotVanilla && activeTab === 'mod') {
       setActiveTab('resourcepack');
     }
-  }, [hasMods, activeTab]);
+  }, [isNotVanilla, activeTab]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -261,7 +261,8 @@ function ModrinthBrowser() {
   if (!instance) return null;
 
   const visibleTabs = TABS.filter((tab) => {
-    if (tab.id === 'mod') return hasMods;
+    if (tab.id === 'mod') return isNotVanilla;
+    if (tab.id === 'shader') return isNotVanilla;
     return true;
   });
 

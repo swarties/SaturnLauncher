@@ -118,14 +118,15 @@ function InstanceDetailLayout() {
     setPill({ top: el.offsetTop, height: el.offsetHeight, ready: true });
   }, [targetIndex]);
 
-  const hasMods = Boolean(
+  const isNotVanilla = Boolean(
     instance?.fabricVersion ||
     instance?.quiltVersion ||
     instance?.neoForgeVersion
   );
 
   const visibleTabs = TABS.filter((tab) => {
-    if (tab.to === 'mods') return hasMods;
+    if (tab.to === 'mods') return isNotVanilla;
+    if (tab.to === 'shaderpacks') return isNotVanilla;
     return true;
   });
 
