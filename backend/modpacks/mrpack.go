@@ -2,6 +2,7 @@ package modpacks
 
 import (
 	"SaturnLauncher/backend/download"
+	"SaturnLauncher/backend/fabric"
 	"SaturnLauncher/backend/instances"
 	modrinth2 "SaturnLauncher/backend/modrinth"
 	"SaturnLauncher/backend/neoforge"
@@ -121,12 +122,12 @@ func (m *Mrpack) InstallModpack(path string) (string, error) {
 			return "", err
 		}
 	} else if modpack.Dependencies.FabricLoader != "" {
-		q := quilt.NewQuilt()
-		id, err := q.InstallQuilt(inst.Version, modpack.Dependencies.FabricLoader)
+		f := fabric.NewFabric()
+		id, err := f.InstallFabric(inst.Version, modpack.Dependencies.FabricLoader)
 		if err != nil {
 			return "", err
 		}
-		err = instManager.UpdateQuiltVersion(folderId, id)
+		err = instManager.UpdateFabricVersion(folderId, id)
 		if err != nil {
 			return "", err
 		}
