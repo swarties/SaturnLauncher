@@ -134,7 +134,7 @@ export function loadLogs(uuid) {
       let rawLines = [];
 
       if (raw.length > 0) {
-        let endIndex = raw.length;
+        let endIndex = 0;
         let newlineCount = 0;
 
         for (let i = raw.length - 1; i >= 0; i--) {

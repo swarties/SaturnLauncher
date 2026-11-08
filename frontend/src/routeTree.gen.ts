@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as InstanceRouteImport } from './routes/_instance'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ModpacksRouteImport } from './routes/modpacks'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
@@ -44,6 +45,11 @@ const InstanceRoute = InstanceRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModpacksRoute = ModpacksRouteImport.update({
+  id: '/modpacks',
+  path: '/modpacks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -128,6 +134,7 @@ const InstanceInstancesUuidShaderpacksRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/modpacks': typeof ModpacksRoute
   '/onboarding': typeof OnboardingRoute
   '/account': typeof AppAccountRoute
   '/home': typeof AppHomeRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/modpacks': typeof ModpacksRoute
   '/onboarding': typeof OnboardingRoute
   '/account': typeof AppAccountRoute
   '/home': typeof AppHomeRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_instance': typeof InstanceRouteWithChildren
   '/login': typeof LoginRoute
+  '/modpacks': typeof ModpacksRoute
   '/onboarding': typeof OnboardingRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/home': typeof AppHomeRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/modpacks'
     | '/onboarding'
     | '/account'
     | '/home'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/modpacks'
     | '/onboarding'
     | '/account'
     | '/home'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_instance'
     | '/login'
+    | '/modpacks'
     | '/onboarding'
     | '/_app/account'
     | '/_app/home'
@@ -244,6 +256,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   InstanceRoute: typeof InstanceRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ModpacksRoute: typeof ModpacksRoute
   OnboardingRoute: typeof OnboardingRoute
 }
 
@@ -275,6 +288,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/modpacks': {
+      id: '/modpacks'
+      path: '/modpacks'
+      fullPath: '/modpacks'
+      preLoaderRoute: typeof ModpacksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -439,6 +459,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   InstanceRoute: InstanceRouteWithChildren,
   LoginRoute: LoginRoute,
+  ModpacksRoute: ModpacksRoute,
   OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport

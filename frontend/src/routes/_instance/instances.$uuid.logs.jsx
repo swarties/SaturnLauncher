@@ -1,10 +1,15 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { FolderOpen, Search } from 'lucide-react';
+import { CloudUpload, FolderOpen, Loader2, Search } from 'lucide-react';
 
 import { useLaunch } from '@/stores/launch';
 import { loadLogs, useLogs } from '@/stores/logs';
-import { OpenInstanceFolder } from '../../../wailsjs/go/main/App';
+import { toast } from '@/stores/toasts';
+import { copyText } from '@/lib/backend';
+import {
+  OpenInstanceFolder,
+  UploadLatestLogs,
+} from '../../../wailsjs/go/main/App';
 
 export const Route = createFileRoute('/_instance/instances/$uuid/logs')({
   component: LogsTab,
@@ -50,6 +55,7 @@ function LogsTab() {
         onQueryChange={setQuery}
         isLive={isLive}
         onOpenFolder={() => void OpenInstanceFolder(uuid)}
+        uuid={uuid}
       />
       <div className="flex shrink-0 items-center gap-2">
         {['ALL', 'INFO', 'WARN', 'ERROR', 'DEBUG'].map((lvl) => (
@@ -78,7 +84,30 @@ function LogsTab() {
   );
 }
 
-function LogsHeader({ query, onQueryChange, onOpenFolder, isLive }) {
+function LogsHeader({ query, onQueryChange, onOpenFolder, isLive, uuid }) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async () => {
+    if (uploading || !uuid) return;
+    setUploading(true);
+
+    try {
+      const res = await UploadLatestLogs(uuid);
+      if (!res?.url) throw new Error('Upload failed: no URL returned');
+      const ok = await copyText(res.url);
+      toast.success(
+        ok
+          ? 'Logs uploaded! URL copied to your clipboard'
+          : `Logs uploaded: ${res.url}`,
+        { duration: 8000 }
+      );
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to upload logs');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="flex shrink-0 items-center gap-3">
       <div className="relative flex-1">
@@ -105,6 +134,20 @@ function LogsHeader({ query, onQueryChange, onOpenFolder, isLive }) {
           Live
         </span>
       )}
+      <button
+        type="button"
+        onClick={handleUpload}
+        disabled={uploading}
+        data-tooltip="Upload logs to mclo.gs"
+        aria-label="Upload logs to mclo.gs"
+        className="text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-(--hairline) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover) disabled:pointer-events-none disabled:opacity-40"
+      >
+        {uploading ? (
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+        ) : (
+          <CloudUpload className="size-4" aria-hidden="true" />
+        )}
+      </button>
       <button
         type="button"
         onClick={onOpenFolder}
