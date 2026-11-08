@@ -8,6 +8,7 @@ import (
 	"SaturnLauncher/backend/forge"
 	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/launch"
+	"SaturnLauncher/backend/mclogs"
 	"SaturnLauncher/backend/migration"
 	"SaturnLauncher/backend/modpacks"
 	"SaturnLauncher/backend/modrinth"
@@ -25,6 +26,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -61,6 +63,7 @@ type App struct {
 	NeoForge           *neoforge.NeoForge
 	Forge              *forge.Forge
 	servStdin          map[string]io.WriteCloser
+	McLogs             *mclogs.Mclogs
 }
 
 // NewApp creates a new App application struct
@@ -81,6 +84,7 @@ func NewApp() *App {
 		Quilt:            quilt.NewQuilt(),
 		NeoForge:         neoforge.NewNeoForge(),
 		Forge:            forge.NewForge(),
+		McLogs:           mclogs.NewmcLogs(),
 	}
 }
 
@@ -2000,4 +2004,38 @@ func (a *App) AddUsernameToWhitelist(folderId, username string) error {
 		return err
 	}
 	return nil
+}
+
+func (a *App) GetLanIPAddress() (string, error) {
+	addresses, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, adr := range addresses {
+		ipnet, ok := adr.(*net.IPNet)
+		if ok && !ipnet.IP.IsLoopback() {
+			ipv4 := ipnet.IP.To4()
+			if ipv4 != nil {
+				return ipv4.String(), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("no valid ipv4 found ")
+}
+
+func (a *App) UpdateServerMemory(folderId string, minram, maxram int) error {
+	err := a.InstanceManager.UpdateServerMemory(folderId, minram, maxram)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *App) UploadLatestLogs(folderId string) (*mclogs.Response, error) {
+	resp, err := a.McLogs.UploadLatestLogs(folderId)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
