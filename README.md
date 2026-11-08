@@ -57,6 +57,7 @@ Using wailsIo V2.15.0
 - Multi-account support (1 JSON file per account & an active.json file to determine which account is active)
 - Refresh Token Encryption (Windows DPAPI and Linux Keyring)
 - Added Offline Mode
+- Smart McToken handling (check validity instead of blindly refreshing and hitting rate limits when launching multiple instances)
 
 
 #### Game Launch
@@ -104,6 +105,12 @@ Using wailsIo V2.15.0
 
 - Install Quilt Loader using the Quilt meta api
 - Quilt Mod Parsing
+- Better quilt versions sorting
+
+#### Neoforge Loader Support
+
+- Added Neoforge install using the provided .jar installer
+- Neoforge mod parsing (Not done yet META-INF/neoforge.mods.toml with go-ini)
 
 #### Modrinth Support
 
@@ -140,6 +147,17 @@ Using wailsIo V2.15.0
 - Playtime tracker (global and per instance)
 - Kill All Instances at once
 - Open Launcher Folder Button
+- Simple crash parser
+
+#### Local Servers
+
+- Server Creation 
+- Eula handling
+- Live console (stdin, stderr, and stdout)
+- Server.properties editor
+- Bans, whitelist, and Ops management
+- Get Local Ip Address Helper
+- Vanilla servers only right now...
 
 #### Migration
 
@@ -147,10 +165,9 @@ Using wailsIo V2.15.0
 
 ## Planned Features
 
-- Add Forge and NeoForge
+- Add Forge
 - Friends List with built-in DMs (maybe)
 - Check for mod conflicts pre-launch
-- World backups
 
 ## Motivation
 Most launchers today are aesthetically unpleasing, filled with ads, and too bloated. That's why we're working on a great alternative to those options.
