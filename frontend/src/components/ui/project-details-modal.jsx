@@ -410,7 +410,7 @@ function VersionsTab({
   const [localInstalling, setLocalInstalling] = useState(null);
 
   const cacheKey = isModpack
-    ? `${projectId}___modpack_`
+    ? `${projectId}__modpack_`
     : `${projectId}_${instanceVersion}_${activeTab}_${loader}`;
 
   const entry = versions[cacheKey];
