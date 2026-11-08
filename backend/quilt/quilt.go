@@ -52,8 +52,10 @@ func (q *Quilt) GetLoaderVersions(gameVersion string) ([]LoaderVersion, error) {
 		return nil, err
 	}
 	for _, r := range raw {
-		if strings.Contains(r.Loader.Version, "beta") || strings.Contains(r.Loader.Version, "alpha") || strings.Contains(r.Loader.Version, "rc") {
+		if strings.Contains(r.Loader.Version, "beta") {
 			r.Loader.Stable = false
+		} else if strings.Contains(r.Loader.Version, "alpha") || strings.Contains(r.Loader.Version, "rc") {
+			continue
 		} else {
 			r.Loader.Stable = true
 		}
