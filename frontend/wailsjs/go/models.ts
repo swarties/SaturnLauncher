@@ -8,6 +8,7 @@ export namespace auth {
 	    xuid: string;
 	    offline?: boolean;
 	    encRefreshToken: string;
+	    mcToken: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AuthSession(source);
@@ -22,6 +23,7 @@ export namespace auth {
 	        this.xuid = source["xuid"];
 	        this.offline = source["offline"];
 	        this.encRefreshToken = source["encRefreshToken"];
+	        this.mcToken = source["mcToken"];
 	    }
 	}
 
@@ -139,6 +141,8 @@ export namespace instances {
 	    maxram: number;
 	    fabricVersion?: string;
 	    quiltVersion?: string;
+	    neoForgeVersion?: string;
+	    forgeVersion?: string;
 	    jvmArgs: string;
 	    javaPath?: string;
 	    playtimeSeconds?: number;
@@ -161,6 +165,8 @@ export namespace instances {
 	        this.maxram = source["maxram"];
 	        this.fabricVersion = source["fabricVersion"];
 	        this.quiltVersion = source["quiltVersion"];
+	        this.neoForgeVersion = source["neoForgeVersion"];
+	        this.forgeVersion = source["forgeVersion"];
 	        this.jvmArgs = source["jvmArgs"];
 	        this.javaPath = source["javaPath"];
 	        this.playtimeSeconds = source["playtimeSeconds"];
@@ -179,6 +185,73 @@ export namespace instances {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.TotalRamMB = source["TotalRamMB"];
+	    }
+	}
+	export class ServerInstance {
+	    name: string;
+	    description?: string;
+	    version: string;
+	    uuid: string;
+	    timecreated: string;
+	    minram: number;
+	    maxram: number;
+	    eula: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ServerInstance(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.version = source["version"];
+	        this.uuid = source["uuid"];
+	        this.timecreated = source["timecreated"];
+	        this.minram = source["minram"];
+	        this.maxram = source["maxram"];
+	        this.eula = source["eula"];
+	    }
+	}
+	export class Whitelist {
+	    uuid: string;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Whitelist(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.uuid = source["uuid"];
+	        this.name = source["name"];
+	    }
+	}
+
+}
+
+export namespace mclogs {
+	
+	export class Response {
+	    success: boolean;
+	    id: string;
+	    source: string;
+	    url: string;
+	    token: string;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Response(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.id = source["id"];
+	        this.source = source["source"];
+	        this.url = source["url"];
+	        this.token = source["token"];
+	        this.error = source["error"];
 	    }
 	}
 
@@ -206,6 +279,8 @@ export namespace migration {
 	    Name: string;
 	    McVersion: string;
 	    FabricVersion: string;
+	    QuiltVersion: string;
+	    NfVersion: string;
 	    MinRam: number;
 	    MaxRam: number;
 	    Path: string;
@@ -219,6 +294,8 @@ export namespace migration {
 	        this.Name = source["Name"];
 	        this.McVersion = source["McVersion"];
 	        this.FabricVersion = source["FabricVersion"];
+	        this.QuiltVersion = source["QuiltVersion"];
+	        this.NfVersion = source["NfVersion"];
 	        this.MinRam = source["MinRam"];
 	        this.MaxRam = source["MaxRam"];
 	        this.Path = source["Path"];
@@ -637,6 +714,25 @@ export namespace modrinth {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace neoforge {
+	
+	export class VersionManifest {
+	    isSnapshot: boolean;
+	    versions: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new VersionManifest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.isSnapshot = source["isSnapshot"];
+	        this.versions = source["versions"];
+	    }
 	}
 
 }
