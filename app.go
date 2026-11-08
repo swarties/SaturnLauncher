@@ -8,6 +8,7 @@ import (
 	"SaturnLauncher/backend/forge"
 	"SaturnLauncher/backend/instances"
 	"SaturnLauncher/backend/launch"
+	"SaturnLauncher/backend/mclogs"
 	"SaturnLauncher/backend/migration"
 	"SaturnLauncher/backend/modpacks"
 	"SaturnLauncher/backend/modrinth"
@@ -62,6 +63,7 @@ type App struct {
 	NeoForge           *neoforge.NeoForge
 	Forge              *forge.Forge
 	servStdin          map[string]io.WriteCloser
+	McLogs             *mclogs.Mclogs
 }
 
 // NewApp creates a new App application struct
@@ -82,6 +84,7 @@ func NewApp() *App {
 		Quilt:            quilt.NewQuilt(),
 		NeoForge:         neoforge.NewNeoForge(),
 		Forge:            forge.NewForge(),
+		McLogs:           mclogs.NewmcLogs(),
 	}
 }
 
@@ -2027,4 +2030,12 @@ func (a *App) UpdateServerMemory(folderId string, minram, maxram int) error {
 		return err
 	}
 	return nil
+}
+
+func (a *App) UploadLatestLogs(folderId string) (*mclogs.Response, error) {
+	resp, err := a.McLogs.UploadLatestLogs(folderId)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
