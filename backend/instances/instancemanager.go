@@ -70,6 +70,19 @@ type Whitelist struct {
 	Name string `json:"name"`
 }
 
+type Banlist struct {
+	UUID   string `json:"uuid"`
+	Name   string `json:"name"`
+	Reason string `json:"reason"`
+	Source string `json:"source"`
+}
+
+type OpsList struct {
+	UUID  string `json:"uuid"`
+	Name  string `json:"name"`
+	Level int    `json:"level"`
+}
+
 func (i *InstanceManager) InitStorage() (*string, error) {
 	appdatadir, err := os.UserConfigDir()
 	if err != nil {
@@ -1289,4 +1302,111 @@ func (i *InstanceManager) ReadWhitelist(folderId string) ([]Whitelist, error) {
 		return nil, err
 	}
 	return whitelist, nil
+}
+
+func (i *InstanceManager) ReadBanList(folderId string) ([]Banlist, error) {
+	var banlist []Banlist
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	serverBanlist := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "banned-players.json")
+	file, err := os.ReadFile(serverBanlist)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(file, &banlist)
+	if err != nil {
+		return nil, err
+	}
+	return banlist, nil
+}
+
+func (i *InstanceManager) AddUserNameToBanList(folderId, username, reason string) error {
+	skins := skins2.NewSkinsManager()
+	userId, err := skins.GetUUIDByUsername(username)
+	if err != nil {
+		return err
+	}
+	banlist, err := i.ReadBanList(folderId)
+	if err != nil {
+		return err
+	}
+	if reason == "" {
+		reason = "Banned by server manager"
+	}
+	newBanlist := Banlist{
+		UUID:   userId.Id,
+		Name:   userId.Name,
+		Reason: reason,
+		Source: "Server",
+	}
+	banlist = append(banlist, newBanlist)
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	serverBanlist := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "banned-players.json")
+	data, err := json.MarshalIndent(serverBanlist, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(serverBanlist, data, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *InstanceManager) ReadOpsList(folderId string) ([]OpsList, error) {
+	var opsList []OpsList
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	serverOpsList := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "ops.json")
+	file, err := os.ReadFile(serverOpsList)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(file, &opsList)
+	if err != nil {
+		return nil, err
+	}
+	return opsList, nil
+}
+
+func (i *InstanceManager) AddUsernameToOpsList(folderId, username string, level int) error {
+	if level > 4 {
+		return fmt.Errorf("level is invalid. Please choose a level between 0-4")
+	}
+	skins := skins2.NewSkinsManager()
+	userId, err := skins.GetUUIDByUsername(username)
+	if err != nil {
+		return err
+	}
+	opList, err := i.ReadOpsList(folderId)
+	if err != nil {
+		return err
+	}
+	newOpList := OpsList{
+		UUID:  userId.Id,
+		Name:  userId.Name,
+		Level: level,
+	}
+	opList = append(opList, newOpList)
+	appdata, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	serverOpsList := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "ops.json")
+	data, err := json.MarshalIndent(opList, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(serverOpsList, data, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
 }
