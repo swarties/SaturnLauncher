@@ -281,11 +281,16 @@ func (m *Modrinth) GetProject(projectId string) (*ProjectPage, error) {
 
 func (m *Modrinth) GetVersions(projectId, gameVersion, projectType, loader string) ([]VersionInfo, error) {
 	var verInfo []VersionInfo
-	if strings.TrimSpace(gameVersion) == "" {
-		return nil, fmt.Errorf("version is invalid")
+	if projectType != "modpack" {
+		if strings.TrimSpace(gameVersion) == "" {
+			return nil, fmt.Errorf("version is invalid")
+		}
 	}
 	gameVer := "[\"" + gameVersion + "\"]"
-	url := "https://api.modrinth.com/v2/project/" + projectId + "/version" + "?game_versions=" + url2.QueryEscape(gameVer)
+	url := "https://api.modrinth.com/v2/project/" + projectId + "/version"
+	if projectType != "modpack" {
+		url += "?game_versions=" + url2.QueryEscape(gameVer)
+	}
 	if projectType == "mod" {
 		url += "&loaders=" + url2.QueryEscape("[\""+loader+"\"]")
 	}
