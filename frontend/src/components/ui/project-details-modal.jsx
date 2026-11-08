@@ -22,6 +22,9 @@ import {
 } from '@/stores/modrinth';
 import { cn, formatNumber, timeAgo } from '@/lib/utils';
 import { openExternalURL } from '@/lib/backend.js';
+import { useNavigate } from '@tanstack/react-router';
+import { InstallModrinthModpack } from '../../../wailsjs/go/main/App';
+import { toast } from '@/stores/toasts.js';
 
 const EASE = [0.22, 1, 0.38, 1];
 
@@ -39,6 +42,7 @@ export function ProjectDetailsModal({
   activeTab,
   initialTab = 'description',
   onClose,
+  isModpack = false,
 }) {
   const { projects } = useModrinth();
   const [tab, setTab] = useState(initialTab);
@@ -65,14 +69,18 @@ export function ProjectDetailsModal({
 
   useEffect(() => {
     if (tab === 'versions') {
-      void fetchVersions(
-        project.project_id,
-        instanceVersion,
-        activeTab,
-        loader
-      );
+      if (isModpack) {
+        void fetchVersions(project.project_id, '', 'modpack', '');
+      } else {
+        void fetchVersions(
+          project.project_id,
+          instanceVersion,
+          activeTab,
+          loader
+        );
+      }
     }
-  }, [tab, project.project_id, instanceVersion, activeTab, loader]);
+  }, [tab, project.project_id, instanceVersion, activeTab, loader, isModpack]);
 
   const activeIndex = TABS.findIndex((t) => t.id === tab);
   const targetIndex = hoveredIndex ?? activeIndex;
@@ -200,6 +208,9 @@ export function ProjectDetailsModal({
                   uuid={uuid}
                   instanceVersion={instanceVersion}
                   activeTab={activeTab}
+                  isModpack={isModpack}
+                  onClose={onClose}
+                  loader={loader}
                 />
               )}
             </div>
@@ -385,20 +396,64 @@ function GalleryTab({ entry }) {
   );
 }
 
-function VersionsTab({ projectId, uuid, instanceVersion, activeTab }) {
+function VersionsTab({
+  projectId,
+  uuid,
+  instanceVersion,
+  activeTab,
+  isModpack,
+  onClose,
+  loader,
+}) {
+  const navigate = useNavigate();
   const { versions, installing } = useModrinth();
-  const entry = versions[projectId];
+  const [localInstalling, setLocalInstalling] = useState(null);
+
+  const cacheKey = isModpack
+    ? `${projectId}___modpack_`
+    : `${projectId}_${instanceVersion}_${activeTab}_${loader}`;
+
+  const entry = versions[cacheKey];
+  console.log('cacheKey:', cacheKey, 'entry: ', entry);
 
   if (!entry || entry.loading) return <Loading />;
+
+  let filteredData = entry?.data ?? [];
+  if (isModpack) {
+    filteredData = filteredData.filter((v) => {
+      const hasLoader = v.loaders.some((l) =>
+        ['fabric', 'quilt', 'neoforge'].includes(l)
+      );
+
+      if (!hasLoader) return false;
+
+      return v.game_versions.some((gv) => {
+        const parts = gv.split('.');
+        if (parts[0] === '1') return parseInt(parts[1]) >= 14;
+        return true;
+      });
+    });
+    if (filteredData.length === 0) {
+      return (
+        <p className="text-muted-foreground text-sm font-thin">
+          No supported versions found (must be 1.14+ and use Fabric, Quilt or
+          NeoForge).
+        </p>
+      );
+    }
+  }
+
   if (!entry.data || entry.data.length === 0) {
     return (
       <p className="text-muted-foreground text-sm font-thin">
-        No compatible versions for Minecraft {instanceVersion}
+        {isModpack
+          ? 'No versions available for this modpack.'
+          : `No compatible versions for Minecraft ${instanceVersion}`}
       </p>
     );
   }
 
-  const sortedVersions = [...entry.data].sort(
+  const sortedVersions = [...filteredData].sort(
     (a, b) => new Date(b.date_published) - new Date(a.date_published)
   );
   const latestReleaseId = sortedVersions.find(
@@ -413,7 +468,7 @@ function VersionsTab({ projectId, uuid, instanceVersion, activeTab }) {
       <div className="flex flex-col gap-2">
         {sortedVersions.map((ver) => {
           const isLatest = ver.id === latestReleaseId;
-          const isInstalling = installing[ver.id];
+          const isInstalling = installing[ver.id] || localInstalling === ver.id;
           return (
             <div
               key={ver.id}
@@ -444,9 +499,34 @@ function VersionsTab({ projectId, uuid, instanceVersion, activeTab }) {
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  void installMod(uuid, projectId, ver.id, ver.name, activeTab)
-                }
+                onClick={async () => {
+                  if (isModpack) {
+                    setLocalInstalling(ver.id);
+                    try {
+                      const newUuid = await InstallModrinthModpack(ver.id);
+                      if (newUuid) {
+                        onClose();
+                        await navigate({
+                          to: '/instances/$uuid',
+                          params: { uuid: newUuid },
+                        });
+                      }
+                    } catch (e) {
+                      console.error(e);
+                      toast.error(e?.message || String(e));
+                    } finally {
+                      setLocalInstalling(null);
+                    }
+                  } else {
+                    void installMod(
+                      uuid,
+                      projectId,
+                      ver.id,
+                      ver.name,
+                      activeTab
+                    );
+                  }
+                }}
                 disabled={isInstalling}
                 data-tooltip={`Install ${ver.version_number}`}
                 className={[
