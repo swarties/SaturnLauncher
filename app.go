@@ -45,7 +45,6 @@ import (
 type App struct {
 	ctx                context.Context
 	Auth               *auth.Auth
-	ActiveAccessToken  string
 	Launch             *launch.Launch
 	Download           *download.Download
 	InstanceManager    *instances.InstanceManager
@@ -190,7 +189,6 @@ func (a *App) StartLogin() {
 			wailsRuntime.EventsEmit(a.ctx, "login:error", "Missing UserHash from Xbox Live response")
 			return
 		}
-
 		session := auth.AuthSession{
 			Username:     mcinfo.Username,
 			UUID:         mcinfo.UUID,
@@ -211,7 +209,6 @@ func (a *App) StartLogin() {
 
 func (a *App) StartApp() {
 	go func() {
-		a.ActiveAccessToken = ""
 		Keys, err := a.Auth.GetActiveAccount()
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
@@ -231,14 +228,11 @@ func (a *App) StartApp() {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
-		a.ActiveAccessToken = mctoken.AccessToken
-
 		mcinfo, err := a.Auth.GetAccountInfo(mctoken)
 		if err != nil || mcinfo.Error != "" || mcinfo.UUID == "" {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
-
 		wailsRuntime.EventsEmit(a.ctx, "auth:success", mcinfo)
 		return
 	}()
@@ -257,25 +251,34 @@ func (a *App) StartGame(folderId, worldName string) error {
 		return err
 	}
 	if Keys.Offline == false {
-		var authErr error
-		mcpayload, Session, authErr = a.Auth.RefreshMinecraftToken(*Keys)
-		if authErr != nil {
-			return authErr
-		}
-		authErr = a.Auth.SaveAndActivateAccount(Session)
-		if authErr != nil {
-			return authErr
-		}
-		mcinfo, authErr = a.Auth.GetAccountInfo(mcpayload)
-		if authErr != nil {
-			return authErr
+		if !a.Auth.GetTokenValidity(Keys.MinecraftToken) {
+			var authErr error
+			mcpayload, Session, authErr = a.Auth.RefreshMinecraftToken(*Keys)
+			if authErr != nil {
+				return authErr
+			}
+			mcinfo, authErr = a.Auth.GetAccountInfo(mcpayload)
+			if authErr != nil {
+				return authErr
+			}
+			Session.MinecraftToken = mcpayload.AccessToken
+			authErr = a.Auth.SaveAndActivateAccount(Session)
+			if authErr != nil {
+				return authErr
+			}
+		} else {
+			Session = *Keys
+			mcpayload = auth.MinecraftPayload{AccessToken: Keys.MinecraftToken}
+			mcinfo = &auth.MinecraftInfo{
+				Username: Keys.Username,
+				UUID:     Keys.UUID,
+			}
 		}
 	} else {
 		Session = *Keys
 		mcpayload = auth.MinecraftPayload{AccessToken: "0"}
 		mcinfo = &auth.MinecraftInfo{Username: Keys.Username, UUID: Keys.UUID}
 	}
-
 	instInfo, err := a.InstanceManager.GetInstanceInfo(folderId)
 	if err != nil {
 		return err
@@ -678,7 +681,6 @@ func (a *App) RenameInstance(folderId, name string) error {
 }
 
 func (a *App) Logout() {
-	a.ActiveAccessToken = ""
 	account, err := a.GetActiveAccount()
 	if err != nil {
 		wailsRuntime.EventsEmit(a.ctx, "auth:required")

@@ -67,6 +67,7 @@ type AuthSession struct {
 	Xuid            string `json:"xuid"`
 	Offline         bool   `json:"offline,omitempty"`
 	EncRefreshToken string `json:"encRefreshToken"`
+	MinecraftToken  string `json:"mcToken"`
 }
 
 type MinecraftInfo struct {
@@ -535,4 +536,18 @@ func (a *Auth) SetOfflineMode(uuid string, offline bool) error {
 		return err
 	}
 	return nil
+}
+
+func (a *Auth) GetTokenValidity(mcToken string) bool {
+	request, err := http.NewRequest("GET", "https://api.minecraftservices.com/minecraft/profile", nil)
+	if err != nil {
+		return false
+	}
+	request.Header.Add("Authorization", "Bearer "+mcToken)
+	do, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return false
+	}
+	defer do.Body.Close()
+	return do.StatusCode == http.StatusOK
 }
