@@ -168,155 +168,157 @@ function SettingsTab() {
   };
 
   return (
-    <div className="flex min-h-full w-full flex-col">
-      {loadError && (
-        <p className="mb-6 text-xs font-thin text-red-400">
-          Failed to load instance: {loadError}
-        </p>
-      )}
+    <div className="flex h-full w-full flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto pr-2 pb-6">
+        {loadError && (
+          <p className="mb-6 text-xs font-thin text-red-400">
+            Failed to load instance: {loadError}
+          </p>
+        )}
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-        <div className="flex flex-col gap-8">
-          <header className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-foreground text-3xl font-normal tracking-tight">
-                Settings
-              </h1>
-              <p className="text-muted-foreground mt-1 text-sm font-thin">
-                Configure this instance.
-              </p>
-            </div>
-            <div className="lg:hidden">
-              <IconField
-                uuid={uuid}
-                iconSrc={iconSrc}
-                iconUploading={iconUploading}
-                onUploadClick={handleUploadIcon}
-                onDropUpload={handleDropUpload}
-                onDropError={(msg) => toast.error(msg)}
-                compact={true}
-              />
-            </div>
-          </header>
-          <Field label="Name">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="bg-background text-foreground h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
-            />
-          </Field>
-
-          <Field label="Description">
-            <textarea
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="bg-background text-foreground w-full resize-none rounded-md border border-(--hairline) px-4 py-3 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
-            />
-          </Field>
-          <Field label="Memory">
-            <div className="flex flex-col gap-5">
-              <RamSlider
-                label="Minimum"
-                value={minRam}
-                onChange={updateMin}
-                max={dynamicMax}
-              />
-              <RamSlider
-                label="Maximum"
-                value={maxRam}
-                onChange={updateMax}
-                max={dynamicMax}
-              />
-            </div>
-          </Field>
-          <Field label="JVM Arguments">
-            <JvmArgsInput value={jvmArgs} onChange={setJvmArgs} />
-            <p className="text-muted-foreground mt-2 text-xs font-thin">
-              Additional JVM arguments passed to the game. Separate multiple
-              arguments with a space. Less is more and don't touch this if you
-              don't know what you're doing!
-            </p>
-          </Field>
-          <Field label="Java Path">
-            <div className="flex items-center gap-3">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+          <div className="flex flex-col gap-8">
+            <header className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-foreground text-3xl font-normal tracking-tight">
+                  Settings
+                </h1>
+                <p className="text-muted-foreground mt-1 text-sm font-thin">
+                  Configure this instance.
+                </p>
+              </div>
+              <div className="lg:hidden">
+                <IconField
+                  uuid={uuid}
+                  iconSrc={iconSrc}
+                  iconUploading={iconUploading}
+                  onUploadClick={handleUploadIcon}
+                  onDropUpload={handleDropUpload}
+                  onDropError={(msg) => toast.error(msg)}
+                  compact={true}
+                />
+              </div>
+            </header>
+            <Field label="Name">
               <input
                 type="text"
-                value={javaPath}
-                onChange={(e) => setJavaPath(e.target.value)}
-                placeholder="Auto-detect (Leave blank for default)"
-                className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 flex-1 rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="bg-background text-foreground h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
               />
-              <button
-                type="button"
-                onClick={handlePickJava}
-                disabled={pickingJava}
-                className="text-muted-foreground h-11 shrink-0 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
-              >
-                {pickingJava ? 'Waiting...' : 'Browse'}
-              </button>
-            </div>
-            <p className="text-muted-foreground mt-2 text-xs font-thin">
-              Custom path to the Java executable. Leave blank to let the
-              launcher automatically manage Java.
-            </p>
-          </Field>
+            </Field>
 
-          <Field label="Pre-launch Command">
-            <input
-              type="text"
-              value={preLaunch}
-              onChange={(e) => setPreLaunch(e.target.value)}
-              placeholder="e.g. echo 'Starting...'"
-              className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+            <Field label="Description">
+              <textarea
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="bg-background text-foreground w-full resize-none rounded-md border border-(--hairline) px-4 py-3 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+              />
+            </Field>
+            <Field label="Memory">
+              <div className="flex flex-col gap-5">
+                <RamSlider
+                  label="Minimum"
+                  value={minRam}
+                  onChange={updateMin}
+                  max={dynamicMax}
+                />
+                <RamSlider
+                  label="Maximum"
+                  value={maxRam}
+                  onChange={updateMax}
+                  max={dynamicMax}
+                />
+              </div>
+            </Field>
+            <Field label="JVM Arguments">
+              <JvmArgsInput value={jvmArgs} onChange={setJvmArgs} />
+              <p className="text-muted-foreground mt-2 text-xs font-thin">
+                Additional JVM arguments passed to the game. Separate multiple
+                arguments with a space. Less is more and don't touch this if you
+                don't know what you're doing!
+              </p>
+            </Field>
+            <Field label="Java Path">
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={javaPath}
+                  onChange={(e) => setJavaPath(e.target.value)}
+                  placeholder="Auto-detect (Leave blank for default)"
+                  className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 flex-1 rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+                />
+                <button
+                  type="button"
+                  onClick={handlePickJava}
+                  disabled={pickingJava}
+                  className="text-muted-foreground h-11 shrink-0 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
+                >
+                  {pickingJava ? 'Waiting...' : 'Browse'}
+                </button>
+              </div>
+              <p className="text-muted-foreground mt-2 text-xs font-thin">
+                Custom path to the Java executable. Leave blank to let the
+                launcher automatically manage Java.
+              </p>
+            </Field>
+
+            <Field label="Pre-launch Command">
+              <input
+                type="text"
+                value={preLaunch}
+                onChange={(e) => setPreLaunch(e.target.value)}
+                placeholder="e.g. echo 'Starting...'"
+                className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+              />
+              <p className="text-muted-foreground mt-2 text-xs font-thin">
+                Command to run before the games launchers.
+              </p>
+            </Field>
+
+            <Field label="Wrapper Command">
+              <input
+                type="text"
+                value={wrapper}
+                onChange={(e) => setWrapper(e.target.value)}
+                placeholder="e.g. gamemoderun or prime-run"
+                className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+              />
+              <p className="text-muted-foreground mt-2 text-xs font-thin">
+                Wraps the Java execution.
+              </p>
+            </Field>
+
+            <Field label="Post-exit Command">
+              <input
+                type="text"
+                value={postExit}
+                onChange={(e) => setPostExit(e.target.value)}
+                placeholder="e.g. echo 'Game closed!'"
+                className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
+              />
+              <p className="text-muted-foreground mt-2 text-xs font-thin">
+                Command to run after the game closes.
+              </p>
+            </Field>
+          </div>
+
+          <div className="hidden lg:block lg:pt-22">
+            <IconField
+              uuid={uuid}
+              iconSrc={iconSrc}
+              iconUploading={iconUploading}
+              onUploadClick={handleUploadIcon}
+              onDropUpload={handleDropUpload}
+              onDropError={(msg) => toast.error(msg)}
+              compact={false}
             />
-            <p className="text-muted-foreground mt-2 text-xs font-thin">
-              Command to run before the games launchers.
-            </p>
-          </Field>
-
-          <Field label="Wrapper Command">
-            <input
-              type="text"
-              value={wrapper}
-              onChange={(e) => setWrapper(e.target.value)}
-              placeholder="e.g. gamemoderun or prime-run"
-              className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
-            />
-            <p className="text-muted-foreground mt-2 text-xs font-thin">
-              Wraps the Java execution.
-            </p>
-          </Field>
-
-          <Field label="Post-exit Command">
-            <input
-              type="text"
-              value={postExit}
-              onChange={(e) => setPostExit(e.target.value)}
-              placeholder="e.g. echo 'Game closed!'"
-              className="bg-background text-foreground placeholder:text-muted-foreground/50 h-11 w-full rounded-md border border-(--hairline) px-4 text-sm font-normal transition-colors outline-none focus:border-(--chip-border-hover)"
-            />
-            <p className="text-muted-foreground mt-2 text-xs font-thin">
-              Command to run after the game closes.
-            </p>
-          </Field>
-        </div>
-
-        <div className="hidden lg:block lg:pt-22">
-          <IconField
-            uuid={uuid}
-            iconSrc={iconSrc}
-            iconUploading={iconUploading}
-            onUploadClick={handleUploadIcon}
-            onDropUpload={handleDropUpload}
-            onDropError={(msg) => toast.error(msg)}
-            compact={false}
-          />
+          </div>
         </div>
       </div>
 
-      <div className="mt-auto flex justify-end gap-3 border-t border-(--divider) pt-6">
+      <div className="mt-auto flex shrink-0 justify-end gap-3 border-t border-(--divider) pt-6">
         <button
           type="button"
           onClick={handleCancel}

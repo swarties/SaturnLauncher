@@ -51,7 +51,7 @@ function SettingsPage() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col p-6">
+    <div className="flex h-full w-full scrollbar-gutter-stable flex-col overflow-y-auto p-6">
       <div className="mb-8">
         <h1 className="text-foreground text-3xl font-normal tracking-tight">
           Settings
