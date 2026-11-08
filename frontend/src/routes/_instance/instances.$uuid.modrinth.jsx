@@ -117,6 +117,12 @@ function ModrinthBrowser() {
     return () => resetBrowser();
   }, []);
 
+  const hasMods = Boolean(
+    instance?.fabricVersion ||
+    instance?.quiltVersion ||
+    instance?.neoForgeVersion
+  );
+
   useEffect(() => {
     if (!hasMods && activeTab === 'mod') {
       setActiveTab('resourcepack');
@@ -253,12 +259,6 @@ function ModrinthBrowser() {
   };
 
   if (!instance) return null;
-
-  const hasMods = Boolean(
-    instance?.fabricVersion ||
-    instance?.quiltVersion ||
-    instance?.neoForgeVersion
-  );
 
   const visibleTabs = TABS.filter((tab) => {
     if (tab.id === 'mod') return hasMods;
