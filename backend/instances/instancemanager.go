@@ -1410,3 +1410,28 @@ func (i *InstanceManager) AddUsernameToOpsList(folderId, username string, level 
 	}
 	return nil
 }
+
+func (i *InstanceManager) UpdateServerMemory(folderId string, minram, maxram int) error {
+	inst, err := i.GetServerInstanceInfo(folderId)
+	if err != nil {
+		return err
+	}
+	if minram == 0 || maxram == 0 {
+		return fmt.Errorf("memory fields are invalid")
+	}
+	if minram > maxram {
+		return fmt.Errorf("memory fields are invalid")
+	}
+	inst.MaxRam = maxram
+	inst.MinRam = minram
+	appdatadir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	base := filepath.Join(appdatadir, "SaturnLauncher", "serverInstances", folderId, "instance.json")
+	data, err := json.MarshalIndent(inst, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(base, data, 0o600)
+}

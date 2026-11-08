@@ -25,6 +25,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1996,6 +1997,32 @@ func (a *App) ReadWhitelist(folderId string) ([]instances.Whitelist, error) {
 
 func (a *App) AddUsernameToWhitelist(folderId, username string) error {
 	err := a.InstanceManager.AddUsernameToWhitelist(folderId, username)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *App) GetLanIPAddress() (string, error) {
+	addresses, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, adr := range addresses {
+		ipnet, ok := adr.(*net.IPNet)
+		if ok && !ipnet.IP.IsLoopback() {
+			ipv4 := ipnet.IP.To4()
+			if ipv4 != nil {
+				return ipv4.String(), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("no valid ipv4 found ")
+}
+
+func (a *App) UpdateServerMemory(folderId string, minram, maxram int) error {
+	err := a.InstanceManager.UpdateServerMemory(folderId, minram, maxram)
 	if err != nil {
 		return err
 	}
