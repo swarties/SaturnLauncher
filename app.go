@@ -1967,3 +1967,35 @@ func (a *App) ClearAllOldLogs() error {
 	}
 	return nil
 }
+
+func (a *App) GetServerProperties(folderId string) (map[string]string, error) {
+	properties, err := a.InstanceManager.GetServerProperties(folderId)
+	if err != nil {
+		return nil, err
+	}
+	return properties, nil
+}
+
+func (a *App) EditServerProperties(folderId, key, val string) error {
+	err := a.InstanceManager.EditServerProperties(folderId, key, val)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *App) ReadWhitelist(folderId string) ([]instances.Whitelist, error) {
+	whitelist, err := a.InstanceManager.ReadWhitelist(folderId)
+	if err != nil {
+		return nil, err
+	}
+	return whitelist, nil
+}
+
+func (a *App) AddUsernameToWhitelist(folderId, username string) error {
+	err := a.InstanceManager.AddUsernameToWhitelist(folderId, username)
+	if err != nil {
+		return err
+	}
+	return nil
+}

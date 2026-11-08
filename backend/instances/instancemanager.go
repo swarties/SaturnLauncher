@@ -1208,6 +1208,13 @@ func (i *InstanceManager) GetServerProperties(folderId string) (map[string]strin
 		return nil, err
 	}
 	propertiesPath := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "server.properties")
+	_, err = os.Stat(propertiesPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("no server.properties file exists")
+		}
+		return nil, err
+	}
 	cfg, err := ini.Load(propertiesPath)
 	if err != nil {
 		return nil, err
