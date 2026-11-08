@@ -61,10 +61,11 @@ export async function fetchDiscovery(
   version,
   query,
   tab,
-  categories = ''
+  categories = '',
+  loader = ''
 ) {
   if (query === '' && categories === '') {
-    const cacheKey = `${tab}_${version}`;
+    const cacheKey = `${tab}_${version}_${loader}`;
     const cached = discoveryCache[cacheKey];
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       setState({
@@ -78,6 +79,11 @@ export async function fetchDiscovery(
     }
   }
 
+  let finalCategories = categories;
+  if (tab === 'mod' && loader && loader !== 'vanilla') {
+    finalCategories = categories ? `${categories},${loader}` : loader;
+  }
+
   setState({
     query,
     activeTab: tab,
@@ -85,11 +91,17 @@ export async function fetchDiscovery(
     error: null,
   });
   try {
-    const res = await GetDiscoveryPage(tab, version, categories, query, uuid);
+    const res = await GetDiscoveryPage(
+      tab,
+      version,
+      finalCategories,
+      query,
+      uuid
+    );
     const hits = res.hits ?? [];
 
     if (query === '' && categories === '') {
-      const cacheKey = `${tab}_${version}`;
+      const cacheKey = `${tab}_${version}_${loader}`;
       discoveryCache[cacheKey] = { data: hits, timestamp: Date.now() };
     }
 
@@ -99,14 +111,24 @@ export async function fetchDiscovery(
   }
 }
 
-export async function fetchVersions(projectId, gameVersion, projectType) {
+export async function fetchVersions(
+  projectId,
+  gameVersion,
+  projectType,
+  loader
+) {
   if (state.versions[projectId]?.data || state.versions[projectId]?.loading)
     return;
 
   setState({ versions: { ...state.versions, [projectId]: { loading: true } } });
 
   try {
-    const res = await GetProjectVersions(projectId, gameVersion, projectType);
+    const res = await GetProjectVersions(
+      projectId,
+      gameVersion,
+      projectType,
+      loader
+    );
     setState({
       versions: { ...state.versions, [projectId]: { data: res ?? [] } },
     });
@@ -174,6 +196,14 @@ export function toggleCategory(category) {
 
 export function clearCategories() {
   setState({ selectedCategories: [] });
+}
+
+export function getLoader(instance) {
+  if (!instance) return 'fabric';
+  if (instance.neoForgeVersion) return 'neoforge';
+  if (instance.quiltVersion) return 'quilt';
+  if (instance.fabricVersion) return 'fabric';
+  return 'vanilla';
 }
 
 export async function installMod(

@@ -35,6 +35,7 @@ export function ProjectDetailsModal({
   project,
   uuid,
   instanceVersion,
+  loader,
   activeTab,
   initialTab = 'description',
   onClose,
@@ -64,9 +65,14 @@ export function ProjectDetailsModal({
 
   useEffect(() => {
     if (tab === 'versions') {
-      void fetchVersions(project.project_id, instanceVersion, activeTab);
+      void fetchVersions(
+        project.project_id,
+        instanceVersion,
+        activeTab,
+        loader
+      );
     }
-  }, [tab, project.project_id, instanceVersion, activeTab]);
+  }, [tab, project.project_id, instanceVersion, activeTab, loader]);
 
   const activeIndex = TABS.findIndex((t) => t.id === tab);
   const targetIndex = hoveredIndex ?? activeIndex;

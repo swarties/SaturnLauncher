@@ -64,12 +64,20 @@ export function QuiltVersionPicker({ gameVersion, value, onChange }) {
     };
   }, [gameVersion]);
 
+  const sortedVersions = [...versions].sort((a, b) => {
+    if (a.Stable && !b.Stable) return -1;
+    if (!a.Stable && b.Stable) return 1;
+
+    return b.version.localeCompare(a.version, undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    });
+  });
+
   useEffect(() => {
-    if (value || loading || versions.length === 0) return;
-    const stable = versions.find((v) => v.Stable);
-    const pick = stable ?? versions[0];
-    if (pick) onChange(pick.version);
-  }, [value, loading, versions, onChange]);
+    if (value || loading || sortedVersions.length === 0) return;
+    if (sortedVersions[0]) onChange(sortedVersions[0].version);
+  }, [value, loading, sortedVersions, onChange]);
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current) return;
@@ -108,9 +116,7 @@ export function QuiltVersionPicker({ gameVersion, value, onChange }) {
   }, [open]);
 
   const autoPickVersion =
-    !value && versions.length > 0
-      ? (versions.find((v) => v.Stable) ?? versions[0])?.version
-      : null;
+    !value && sortedVersions.length > 0 ? sortedVersions[0].version : null;
 
   const isUnsupported =
     error?.includes('404') || (!loading && versions.length === 0);
@@ -183,7 +189,7 @@ export function QuiltVersionPicker({ gameVersion, value, onChange }) {
 
               {!loading &&
                 !error &&
-                versions.map((v) => {
+                sortedVersions.map((v) => {
                   const selected = v.version === value;
                   return (
                     <button

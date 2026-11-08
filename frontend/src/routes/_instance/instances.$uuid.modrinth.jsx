@@ -38,6 +38,7 @@ import {
   clearCategories,
   fetchCategories,
   fetchDiscovery,
+  getLoader,
   resetBrowser,
   setSortBy,
   toggleCategory,
@@ -117,6 +118,12 @@ function ModrinthBrowser() {
   }, []);
 
   useEffect(() => {
+    if (!hasMods && activeTab === 'mod') {
+      setActiveTab('resourcepack');
+    }
+  }, [hasMods, activeTab]);
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const active = document.activeElement;
@@ -193,9 +200,18 @@ function ModrinthBrowser() {
 
     const delay = isTyping ? 600 : 0;
 
+    const loaderString = getLoader(instance);
+
     const timer = setTimeout(() => {
       const catString = selectedCategories.join(',');
-      void fetchDiscovery(uuid, instance.version, query, activeTab, catString);
+      void fetchDiscovery(
+        uuid,
+        instance.version,
+        query,
+        activeTab,
+        catString,
+        loaderString
+      );
     }, delay);
 
     return () => clearTimeout(timer);
@@ -237,6 +253,17 @@ function ModrinthBrowser() {
   };
 
   if (!instance) return null;
+
+  const hasMods = Boolean(
+    instance?.fabricVersion ||
+    instance?.quiltVersion ||
+    instance?.neoForgeVersion
+  );
+
+  const visibleTabs = TABS.filter((tab) => {
+    if (tab.id === 'mod') return hasMods;
+    return true;
+  });
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -397,7 +424,7 @@ function ModrinthBrowser() {
             onMouseLeave={() => setHoveredIndex(null)}
             className="mb-6 flex gap-1 border-b border-(--hairline) pb-4"
           >
-            {TABS.map((t, index) => {
+            {visibleTabs.map((t, index) => {
               const isActive = activeTab === t.id;
               return (
                 <button
@@ -477,6 +504,7 @@ function ModrinthBrowser() {
                 activeTab={activeTab}
                 initialTab={detailsProject.tab}
                 onClose={() => setDetailsProject(null)}
+                loader={getLoader(instance)}
               />
             )}
           </AnimatePresence>

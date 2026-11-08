@@ -23,6 +23,8 @@ import {
 
 import minecraftLogo from '@/assets/logos/minecraft.png';
 import fabricLogo from '@/assets/logos/fabric.png';
+import quiltLogo from '@/assets/logos/quilt.png';
+import neoforgeLogo from '@/assets/logos/neoforge.png';
 
 export const Route = createFileRoute('/_instance/instances/$uuid/settings')({
   component: SettingsTab,
@@ -131,9 +133,13 @@ function SettingsTab() {
 
   const iconSrc = iconDataUrl
     ? `data:image/png;base64,${iconDataUrl}`
-    : instance?.fabricVersion
-      ? fabricLogo
-      : minecraftLogo;
+    : instance?.neoForgeVersion
+      ? neoforgeLogo
+      : instance?.quiltVersion
+        ? quiltLogo
+        : instance?.fabricVersion
+          ? fabricLogo
+          : minecraftLogo;
 
   const handleUploadIcon = async () => {
     if (iconUploading) return;

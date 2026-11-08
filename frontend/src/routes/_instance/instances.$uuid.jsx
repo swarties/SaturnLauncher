@@ -20,6 +20,7 @@ import { startLaunch, stopLaunch, useLaunch } from '@/stores/launch';
 import minecraftLogo from '@/assets/logos/minecraft.png';
 import fabricLogo from '@/assets/logos/fabric.png';
 import quiltLogo from '@/assets/logos/quilt.png';
+import neoforgeLogo from '@/assets/logos/neoforge.png';
 
 export const Route = createFileRoute('/_instance/instances/$uuid')({
   validateSearch: (search) => ({
@@ -79,11 +80,13 @@ function InstanceDetailLayout() {
 
   const iconSrc = iconDataUrl
     ? `data:image/png;base64,${iconDataUrl}`
-    : instance?.quiltVersion
-      ? quiltLogo
-      : instance?.fabricVersion
-        ? fabricLogo
-        : minecraftLogo;
+    : instance?.neoForgeVersion
+      ? neoforgeLogo
+      : instance?.quiltVersion
+        ? quiltLogo
+        : instance?.fabricVersion
+          ? fabricLogo
+          : minecraftLogo;
 
   const [canAnimate, setCanAnimate] = useState(false);
 
@@ -114,6 +117,17 @@ function InstanceDetailLayout() {
 
     setPill({ top: el.offsetTop, height: el.offsetHeight, ready: true });
   }, [targetIndex]);
+
+  const hasMods = Boolean(
+    instance?.fabricVersion ||
+    instance?.quiltVersion ||
+    instance?.neoForgeVersion
+  );
+
+  const visibleTabs = TABS.filter((tab) => {
+    if (tab.to === 'mods') return hasMods;
+    return true;
+  });
 
   return (
     <motion.div
@@ -192,7 +206,7 @@ function InstanceDetailLayout() {
               transition={PILL_TRANSITION}
             />
           )}
-          {TABS.map((tab, index) => (
+          {visibleTabs.map((tab, index) => (
             <Link
               key={tab.to}
               to={`/instances/$uuid/${tab.to}`}

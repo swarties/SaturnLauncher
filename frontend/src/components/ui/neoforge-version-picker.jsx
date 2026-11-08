@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { GetNeoforgeVersions } from '../../../wailsjs/go/main/App';
 
-/** @typedef {{version: string, stable: boolean}} NeoforgeLoaderVersion */
+/** @typedef {string} NeoforgeLoaderVersion */
 
 const EASE = [0.22, 1, 0.38, 1];
 
@@ -13,7 +13,7 @@ export function NeoforgeVersionPicker({ gameVersion, value, onChange }) {
   const [open, setOpen] = useState(false);
   const [versions, setVersions] = useState(
     /**
-     * @type {NeoforgeLoaderVersion[]}
+     * @type {string[]}
      */
     ([])
   );
@@ -59,22 +59,27 @@ export function NeoforgeVersionPicker({ gameVersion, value, onChange }) {
     };
   }, [gameVersion]);
 
+  const sortedVersions = [...versions].sort((a, b) =>
+    b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' })
+  );
+
   useEffect(() => {
     if (loading) return;
 
-    if (versions.length === 0) {
+    if (sortedVersions.length === 0) {
       if (value !== '') onChange('');
+      return;
     }
 
-    if (value && !versions.includes(value)) {
+    if (value && !sortedVersions.includes(value)) {
       onChange('');
       return;
     }
 
     if (!value) {
-      onChange(versions[0]);
+      onChange(sortedVersions[0]);
     }
-  }, [value, loading, versions, onChange]);
+  }, [value, loading, sortedVersions, onChange]);
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current) return;
@@ -188,7 +193,7 @@ export function NeoforgeVersionPicker({ gameVersion, value, onChange }) {
 
               {!loading &&
                 !error &&
-                versions.map((v) => {
+                sortedVersions.map((v) => {
                   const selected = v === value;
                   return (
                     <button
