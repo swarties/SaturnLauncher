@@ -1347,7 +1347,7 @@ func (i *InstanceManager) AddUserNameToBanList(folderId, username, reason string
 		return err
 	}
 	serverBanlist := filepath.Join(appdata, "SaturnLauncher", "serverInstances", folderId, "banned-players.json")
-	data, err := json.MarshalIndent(serverBanlist, "", "  ")
+	data, err := json.MarshalIndent(banlist, "", "  ")
 	if err != nil {
 		return err
 	}
