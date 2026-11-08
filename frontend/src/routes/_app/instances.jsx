@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Check,
   LoaderCircle,
+  Package,
   PackagePlus,
   Plus,
   X,
@@ -157,6 +158,13 @@ function InstancesPage() {
             </p>
             <div className="flex items-center gap-4">
               <button
+                onClick={() => navigate({ to: '/modpacks', replace: true })}
+                className="text-muted-foreground flex h-11 items-center gap-2 rounded-lg border-2 border-(--surface-border) px-6 font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
+              >
+                Browse Modpacks
+                <Package className="size-4 shrink-0" />
+              </button>
+              <button
                 onClick={() => setPrismOpen(true)}
                 className="text-muted-foreground flex h-11 items-center gap-2 rounded-lg border-2 border-(--surface-border) px-6 font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
               >
@@ -185,6 +193,12 @@ function InstancesPage() {
                 </p>
               </div>
               <div className="flex items-center gap-4">
+                <button
+                  onClick={() => navigate({ to: '/modpacks', replace: true })}
+                  className="text-muted-foreground flex h-11 items-center gap-2 rounded-lg border-2 border-(--surface-border) px-6 font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"
+                >
+                  Browse Modpacks <Package className="size-4 shrink-0" />
+                </button>
                 <button
                   onClick={() => setPrismOpen(true)}
                   className="text-muted-foreground flex h-11 items-center gap-2 rounded-lg border-2 border-(--surface-border) px-6 font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover)"

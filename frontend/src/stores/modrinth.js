@@ -117,10 +117,12 @@ export async function fetchVersions(
   projectType,
   loader
 ) {
-  if (state.versions[projectId]?.data || state.versions[projectId]?.loading)
+  const cacheKey = `${projectId}_${gameVersion}_${projectType}_${loader}`;
+
+  if (state.versions[cacheKey]?.data || state.versions[cacheKey]?.loading)
     return;
 
-  setState({ versions: { ...state.versions, [projectId]: { loading: true } } });
+  setState({ versions: { ...state.versions, [cacheKey]: { loading: true } } });
 
   try {
     const res = await GetProjectVersions(
@@ -130,11 +132,13 @@ export async function fetchVersions(
       loader
     );
     setState({
-      versions: { ...state.versions, [projectId]: { data: res ?? [] } },
+      versions: { ...state.versions, [cacheKey]: { data: res ?? [] } },
     });
   } catch (e) {
-    console.error('Failed to load versions:', e);
-    setState({ versions: { ...state.versions, [projectId]: { data: [] } } });
+    console.error('Failed to load versions: ', e);
+    setState({
+      versions: { ...state.versions, [cacheKey]: { data: [] } },
+    });
     toast.error(e?.message ?? 'Failed to load versions');
   }
 }
