@@ -1,31 +1,46 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import {
+  Check,
   Compass,
   FileArchive,
   FolderOpen,
+  Loader2,
   Package,
   PackagePlus,
   Plus,
+  RefreshCw,
   Search,
   X,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 
 import { CONTENT_TYPES } from '@/lib/content-types';
-import { loadContent, patchContentItem, useContent } from '@/stores/content';
+import {
+  fetchContentUpdates,
+  loadContent,
+  patchContentItem,
+  useContent,
+} from '@/stores/content';
 import { onFileDrop } from '@/lib/backend';
 import { toast } from '@/stores/toasts';
 import {
+  ApplyContentUpdate,
   InstallContent,
   OpenContentFolder,
   RemoveContent,
   ToggleContent,
 } from '../../../wailsjs/go/main/App';
+import { useInstance } from '@/stores/instance';
+
+const EASE = [0.22, 1, 0.38, 1];
 
 export function ContentList({ uuid, contentType }) {
   const navigate = useNavigate();
   const config = CONTENT_TYPES[contentType];
   const { entries } = useContent();
+  const { data: instance } = useInstance();
 
   const [query, setQuery] = useState('');
   const dragCounter = useRef(0);
@@ -211,6 +226,11 @@ export function ContentList({ uuid, contentType }) {
           })
         }
         searchRef={searchRef}
+        uuid={uuid}
+        config={config}
+        instance={instance}
+        items={rawItems}
+        entry={entry}
       />
 
       <div
@@ -288,7 +308,37 @@ function ContentHeader({
   onOpenFolder,
   onBrowse,
   searchRef,
+  uuid,
+  config,
+  instance,
+  items,
+  entry,
 }) {
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+
+  const handleOpenUpdates = () => {
+    setIsUpdateModalOpen(true);
+    void fetchContentUpdates(
+      uuid,
+      config.backendKey,
+      config.projectType,
+      instance?.version ?? ''
+    );
+  };
+
+  useEffect(() => {
+    if (!isUpdateModalOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsUpdateModalOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isUpdateModalOpen]);
+
   return (
     <div className="flex shrink-0 items-center gap-3">
       <div className="relative flex-1">
@@ -325,6 +375,55 @@ function ContentHeader({
       >
         <PackagePlus className="size-4" aria-hidden="true" />
       </button>
+      <button
+        type="button"
+        onClick={handleOpenUpdates}
+        data-tooltip="Check for updates"
+        aria-label="Check for updates"
+        disabled={entry?.updating}
+        className="text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-(--hairline) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover) disabled:pointer-events-none disabled:opacity-40"
+      >
+        <RefreshCw
+          aria-hidden="true"
+          className={`size-4 ${entry?.updating ? 'animate-spin' : ''}`}
+        />
+      </button>
+
+      {createPortal(
+        <AnimatePresence>
+          {isUpdateModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setIsUpdateModalOpen(false);
+              }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-(--backdrop) p-6 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                transition={{ duration: 0.28, ease: EASE }}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="bg-background relative flex max-h-[75vh] w-full max-w-3xl flex-col overflow-hidden rounded-md border-2 border-(--surface-border)"
+              >
+                <UpdateModal
+                  uuid={uuid}
+                  config={config}
+                  items={items}
+                  updates={entry?.updates ?? []}
+                  updating={entry?.updating ?? false}
+                  onClose={() => setIsUpdateModalOpen(false)}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
       <button
         type="button"
         onClick={onOpenFolder}
@@ -462,6 +561,177 @@ function EmptyState({ children }) {
         {children}
       </p>
     </div>
+  );
+}
+
+function UpdateModal({ uuid, config, items, updates, updating, onClose }) {
+  const [selected, setSelected] = useState({});
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const getDisplayName = (oldFileName) => {
+    const cleanName = oldFileName.replace(/\.disabled$/, '');
+    const item = items.find(
+      (i) => i.filename.replace(/\.disabled$/, '') === cleanName
+    );
+    return item?.displayName || cleanName.replace(/\.jar$/i, '');
+  };
+
+  const uniqueUpdates = useMemo(() => {
+    const seen = new Set();
+    return updates.filter((u) => {
+      const cleanOldName = u.oldFileName.replace(/\.disabled$/, '');
+
+      const existsInTab = items.some(
+        (i) => i.filename.replace(/\.disabled$/, '') === cleanOldName
+      );
+      if (!existsInTab) return false;
+
+      const key = u.projectId || getDisplayName(u.oldFileName);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [updates, items]);
+
+  useEffect(() => {
+    if (uniqueUpdates.length > 0) {
+      const init = {};
+      uniqueUpdates.forEach((update) => {
+        init[update.oldFileName] = true;
+      });
+      setSelected(init);
+    }
+  }, [uniqueUpdates]);
+
+  const toggle = (filename) => {
+    setSelected((prev) => ({ ...prev, [filename]: !prev[filename] }));
+  };
+
+  const handleUpdate = async () => {
+    const toUpdate = uniqueUpdates.filter((upd) => selected[upd.oldFileName]);
+    if (toUpdate.length === 0) return;
+
+    setActionLoading(true);
+    try {
+      for (const upd of toUpdate) {
+        await ApplyContentUpdate(
+          uuid,
+          config.backendKey,
+          upd.oldFileName,
+          upd.newVersion,
+          config.projectType
+        );
+      }
+      toast.success(`Successfully updated ${toUpdate.length} items!`);
+      onClose();
+      void loadContent(uuid, config.backendKey, { silent: true });
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to apply updates.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex shrink-0 flex-col gap-2 border-b border-(--hairline) p-6 pb-4">
+        <h2 className="text-foreground text-lg font-extralight tracking-tight">
+          Available Updates
+        </h2>
+        <p className="text-muted-foreground text-sm font-thin">
+          You're about to update the following resources.
+        </p>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+        {updating ? (
+          <div className="flex h-32 items-center justify-center">
+            <Loader2 className="text-saturn-500 size-6 animate-spin" />
+          </div>
+        ) : uniqueUpdates.length === 0 ? (
+          <p className="text-muted-foreground py-10 text-center text-sm font-thin">
+            All {config.label} are up to date!
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {uniqueUpdates.map((upd) => {
+              const isChecked = selected[upd.oldFileName];
+              return (
+                <button
+                  key={upd.oldFileName}
+                  type="button"
+                  onClick={() => toggle(upd.oldFileName)}
+                  className={[
+                    'flex w-full cursor-pointer items-start gap-3 rounded-md border p-3 text-left transition-colors',
+                    isChecked
+                      ? 'border-(--chip-border-hover) bg-(--chip-bg-hover)'
+                      : 'border-(--hairline) hover:bg-(--surface-hover)',
+                  ].join(' ')}
+                >
+                  <div
+                    className={[
+                      'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+                      isChecked
+                        ? 'border-saturn-500 bg-saturn-500 text-white'
+                        : 'border-(--hairline) bg-(--surface-active)',
+                    ].join(' ')}
+                  >
+                    {isChecked && <Check className="size-3" />}
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span
+                      className={[
+                        'truncate text-sm font-normal',
+                        isChecked
+                          ? 'text-(--saturn-fg-strong)'
+                          : 'text-foreground',
+                      ].join(' ')}
+                    >
+                      {getDisplayName(upd.oldFileName)}
+                    </span>
+                    <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-thin">
+                      <span>Provider: Modrinth</span>
+                      <span className="truncate">
+                        <span className="opacity-60">Old:</span>{' '}
+                        {upd.oldFileName.replace('.jar', '')}
+                      </span>
+                      <span className="truncate text-emerald-500">
+                        <span className="opacity-60">New:</span>{' '}
+                        {upd.newFileName.replace('.jar', '')}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center justify-between border-t border-(--hairline) p-6">
+        <p className="text-muted-foreground text-xs font-thin">
+          Only resources with a check will be updated!
+        </p>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={actionLoading}
+            className="text-muted-foreground h-10 rounded-md border-2 border-(--surface-border) px-4 text-sm font-thin transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-40"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleUpdate}
+            disabled={actionLoading || uniqueUpdates.length === 0}
+            className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 flex h-10 items-center justify-center rounded-md border px-6 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
+          >
+            {actionLoading ? 'Updating...' : 'OK'}
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 

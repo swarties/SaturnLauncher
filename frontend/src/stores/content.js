@@ -1,6 +1,9 @@
 import { useSyncExternalStore } from 'react';
 import { onBackendEvent } from '@/lib/backend';
-import { GetInstalledContent } from '../../wailsjs/go/main/App';
+import {
+  GetContentUpdates,
+  GetInstalledContent,
+} from '../../wailsjs/go/main/App';
 import { CONTENT_TYPES } from '@/lib/content-types';
 
 // State:
@@ -143,6 +146,24 @@ export function patchContentItem(uuid, contentType, filename, updater) {
     it.filename === filename ? updater(it) : it
   );
   setEntry(key, { items });
+}
+
+export async function fetchContentUpdates(
+  uuid,
+  contentType,
+  projectType,
+  gameVersion
+) {
+  const key = `${uuid}:${contentType}`;
+  setEntry(key, { updating: true });
+  try {
+    const updates = await GetContentUpdates(uuid, gameVersion, projectType);
+    setEntry(key, { updates: updates || [], updating: false });
+    return updates || [];
+  } catch (e) {
+    setEntry(key, { updating: false });
+    throw e;
+  }
 }
 
 let subsInstalled = false;

@@ -971,7 +971,7 @@ func (a *App) RemoveContent(folderId, contentType, filename string) error {
 	err = os.Remove(dest)
 	if err != nil {
 		err = os.Remove(filepath.Join(contentDir, filename+".disabled"))
-		if err != nil {
+		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
 	}

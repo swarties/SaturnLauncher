@@ -63,7 +63,13 @@ function MorphingDialog({ children, transition }) {
   );
 }
 
-function MorphingDialogTrigger({ children, className, style, triggerRef }) {
+function MorphingDialogTrigger({
+  children,
+  className,
+  style,
+  triggerRef,
+  ...props
+}) {
   const { setIsOpen, isOpen, uniqueId } = useMorphingDialog();
 
   const handleClick = useCallback(() => {
@@ -92,6 +98,7 @@ function MorphingDialogTrigger({ children, className, style, triggerRef }) {
       aria-expanded={isOpen}
       aria-controls={`motion-ui-morphing-dialog-content-${uniqueId}`}
       aria-label={`Open dialog ${uniqueId}`}
+      {...props}
     >
       {children}
     </motion.button>

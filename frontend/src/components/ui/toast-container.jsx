@@ -22,7 +22,7 @@ export function ToastContainer() {
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="pointer-events-none fixed right-6 bottom-6 z-[100] flex w-80 flex-col gap-3">
+    <div className="pointer-events-none fixed right-6 bottom-6 z-200 flex w-80 flex-col gap-3">
       <AnimatePresence>
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} />
