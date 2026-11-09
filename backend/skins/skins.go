@@ -141,7 +141,7 @@ func (s *Skins) UploadSkin(path, variant, accessToken string) error {
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("PUT", "https://api.minecraftservices.com/minecraft/profile/skins", &buffer)
+	request, err := http.NewRequest("POST", "https://api.minecraftservices.com/minecraft/profile/skins", &buffer)
 	if err != nil {
 		return err
 	}
