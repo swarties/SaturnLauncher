@@ -25,6 +25,7 @@ import {
   SetActiveAccount,
   StartApp,
 } from '../../../wailsjs/go/main/App';
+import { CachedImage } from '@/components/ui/cached-image';
 
 export const Route = createFileRoute('/_app/account')({
   component: AccountPage,
@@ -327,7 +328,7 @@ function AccountCard({
 
       <div className="mt-12 flex w-full flex-col gap-6">
         <div className="flex items-center gap-6">
-          <img
+          <CachedImage
             src={`https://mc-heads.net/avatar/${account.uuid}/128`}
             alt=""
             draggable={false}

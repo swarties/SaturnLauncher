@@ -29,6 +29,7 @@ import {
 } from '@/stores/launch';
 import { copyText } from '@/lib/backend';
 import { GetLatestCrash, ListWorlds } from '../../../wailsjs/go/main/App';
+import { CachedImage } from '@/components/ui/cached-image';
 
 export const Route = createFileRoute('/_app/home')({
   component: HomePage,
@@ -300,7 +301,7 @@ function HomePage() {
             </div>
           </div>
 
-          <img
+          <CachedImage
             src={`https://render.crafty.gg/3d/full/${username}?width=300&height=360&x=30&z=50`}
             alt=""
             draggable={false}

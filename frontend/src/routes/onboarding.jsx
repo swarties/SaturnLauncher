@@ -17,6 +17,7 @@ import { TextShimmerWave } from '@/components/ui/text-shimmer-wave.jsx';
 import { TextEffect } from '@/components/ui/text-effect.jsx';
 import { NAV_ITEMS } from '@/lib/nav-items';
 import { ArrowRight } from 'lucide-react';
+import { CachedImage } from '@/components/ui/cached-image';
 
 export const Route = createFileRoute('/onboarding')({
   component: OnboardingPage,
@@ -136,7 +137,7 @@ function OnboardingNavDemo({ profile }) {
 
       {profile && (
         <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-sm border border-(--nav-account-border) bg-(--nav-account-bg) py-1.5 pr-3 pl-1">
-          <img
+          <CachedImage
             src={`https://mc-heads.net/avatar/${profile.id}`}
             alt=""
             draggable="false"
