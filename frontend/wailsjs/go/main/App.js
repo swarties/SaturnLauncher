@@ -166,6 +166,10 @@ export function GetSkinByUsername(arg1) {
   return window['go']['main']['App']['GetSkinByUsername'](arg1);
 }
 
+export function GetSkinPreview(arg1) {
+  return window['go']['main']['App']['GetSkinPreview'](arg1);
+}
+
 export function GetTotalPlaytime() {
   return window['go']['main']['App']['GetTotalPlaytime']();
 }
@@ -208,6 +212,10 @@ export function InstallProjectContent(arg1, arg2, arg3, arg4) {
 
 export function InstallQuilt(arg1, arg2) {
   return window['go']['main']['App']['InstallQuilt'](arg1, arg2);
+}
+
+export function IsNetworkError(arg1) {
+  return window['go']['main']['App']['IsNetworkError'](arg1);
 }
 
 export function KillAllInstances() {
@@ -268,6 +276,10 @@ export function PickInstanceIcon() {
 
 export function PickJavaPath() {
   return window['go']['main']['App']['PickJavaPath']();
+}
+
+export function PickSkin() {
+  return window['go']['main']['App']['PickSkin']();
 }
 
 export function ReadWhitelist(arg1) {

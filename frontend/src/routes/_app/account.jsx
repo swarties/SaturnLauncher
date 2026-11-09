@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { createFileRoute } from '@tanstack/react-router';
@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import {
   copyText,
   onBackendEvent,
+  onFileDrop,
   openExternalURL,
   startLogin,
 } from '@/lib/backend';
@@ -14,16 +15,21 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  Loader2,
   LogOut,
   Plus,
+  UploadCloud,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { refreshAccounts, useAccounts } from '@/stores/accounts';
 import { toast } from '@/stores/toasts';
 import {
   DeleteAccount,
+  GetSkinPreview,
+  PickSkin,
   SetActiveAccount,
   StartApp,
+  UploadSkin,
 } from '../../../wailsjs/go/main/App';
 import { CachedImage } from '@/components/ui/cached-image';
 
@@ -170,8 +176,8 @@ function AccountPage() {
 
   return (
     <div className="flex h-full w-full items-center justify-center p-6">
-      <div className="flex w-full max-w-3xl items-stretch gap-5">
-        <div className="flex min-h-0 flex-8 flex-col gap-3">
+      <div className="flex h-[85vh] w-full max-w-6xl items-stretch gap-5">
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
           {showArrows && <CarouselArrow direction="up" onClick={goPrev} />}
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-md border-2 border-(--surface-border)">
             {loading && !accounts.length ? (
@@ -228,22 +234,24 @@ function AccountPage() {
           </div>
 
           {showArrows && <CarouselArrow direction="down" onClick={goNext} />}
+
+          <button
+            type="button"
+            onClick={handleAddClick}
+            disabled={adding}
+            className="group mt-2 flex h-14 shrink-0 cursor-pointer items-center justify-center gap-3 rounded-md border-2 border-(--surface-border) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-60"
+          >
+            <Plus
+              aria-hidden="true"
+              className="text-saturn-500 size-5 transition-colors group-hover:text-(--saturn-fg-strong)"
+            />
+            <span className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase transition-colors group-hover:text-(--saturn-fg)">
+              {adding ? 'Waiting for sign-in...' : 'Add Account'}
+            </span>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleAddClick}
-          disabled={adding}
-          className="group flex flex-4 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-(--surface-border) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) disabled:pointer-events-none disabled:opacity-60"
-        >
-          <Plus
-            aria-hidden="true"
-            strokeWidth={1}
-            className="text-saturn-500 size-24 transition-colors group-hover:text-(--saturn-fg-strong)"
-          />
-          <span className="text-muted-foreground text-sm font-thin tracking-[0.2em] uppercase transition-colors group-hover:text-(--saturn-fg)">
-            {adding ? 'Waiting for sign-in...' : 'Add Account'}
-          </span>
-        </button>
+
+        <SkinManager username={current?.username} />
       </div>
 
       <AnimatePresence>
@@ -310,7 +318,7 @@ function AccountCard({
   const busy = switching || deleting;
 
   return (
-    <div className="relative flex flex-col p-8">
+    <div className="relative flex h-full flex-col p-8">
       <button
         type="button"
         onClick={onSwitch}
@@ -326,7 +334,7 @@ function AccountCard({
         {isActive ? 'Selected' : switching ? 'Switching...' : 'Select'}
       </button>
 
-      <div className="mt-12 flex w-full flex-col gap-6">
+      <div className="mt-10 flex h-full w-full flex-col gap-6">
         <div className="flex items-center gap-6">
           <CachedImage
             src={`https://mc-heads.net/avatar/${account.uuid}/128`}
@@ -363,6 +371,15 @@ function AccountCard({
               </button>
             </div>
           </div>
+        </div>
+
+        <div className="flex min-h-0 flex-1 items-center justify-center py-4">
+          <CachedImage
+            src={`https://render.crafty.gg/3d/full/${account.username}?width=300&height=360&x=30&z=50`}
+            alt=""
+            draggable={false}
+            className="h-full max-h-75 w-auto object-contain drop-shadow-xl"
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-3 border-t border-(--divider) pt-6 sm:grid-cols-2">
@@ -483,5 +500,213 @@ function AddAccountOverlay({ code, uri, error, onCancel }) {
       </motion.div>
     </motion.div>,
     document.body
+  );
+}
+
+function SkinManager({ username }) {
+  const [path, setPath] = useState('');
+  const [preview, setPreview] = useState(null);
+  const [variant, setVariant] = useState('classic'); // 'classic' || 'slim'
+  const [hoveredVariant, setHoveredVariant] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const dragCounter = useRef(0);
+
+  const loadFile = async (filePath) => {
+    try {
+      setPath(filePath);
+      const b64 = await GetSkinPreview(filePath);
+      setPreview(`data:image/png;base64,${b64}`);
+    } catch (e) {
+      toast.error('Failed to load image preview.');
+      setPath('');
+      setPreview(null);
+    }
+  };
+
+  useEffect(() => {
+    const off = onFileDrop(async (x, y, paths) => {
+      setDragActive(false);
+      dragCounter.current = 0;
+
+      const zone = document
+        .elementsFromPoint(x, y)
+        .map((el) => el?.closest?.('[data-skin-dropzone]'))
+        .find(Boolean);
+
+      if (!zone) return;
+
+      const valid = paths.find((p) => p.toLowerCase().endsWith('.png'));
+      if (!valid) {
+        toast.error('Only .png files are allowed for skins.');
+        return;
+      }
+      void loadFile(valid);
+    });
+    return off;
+  }, []);
+
+  const handlePick = async () => {
+    try {
+      const p = await PickSkin();
+      if (p) {
+        void loadFile(p);
+      }
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to pick file.');
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!path || uploading) return;
+    setUploading(true);
+    try {
+      await UploadSkin(path, variant);
+      toast.success('Skin uploaded successfully!');
+      setPath('');
+      setPreview(null);
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to upload skin.');
+      console.log('Failed to upload skin:', e);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    dragCounter.current += 1;
+    if (dragCounter.current === 1) setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setDragActive(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-1 flex-col rounded-md border-2 border-(--surface-border) p-8">
+      <div className="mb-6">
+        <h2 className="text-foreground text-lg font-extralight tracking-tight">
+          Skin Manager
+        </h2>
+        <p className="text-muted-foreground mt-1 text-sm font-thin">
+          Upload a new skin for {username ?? 'your account'}
+        </p>
+      </div>
+
+      <div className="flex flex-1 flex-col items-center justify-center gap-6">
+        <div className="flex min-h-[300px] w-full flex-1 items-center justify-center rounded-md border border-(--hairline) bg-(--surface-active)/30 p-6">
+          {preview ? (
+            <img
+              src={preview}
+              alt="Skin Preview"
+              className="h-full max-h-[40vh] w-auto rounded object-contain drop-shadow-xl [image-rendering:pixelated]"
+            />
+          ) : (
+            <p className="text-muted-foreground/60 text-sm font-thin">
+              No skin selected
+            </p>
+          )}
+        </div>
+
+        <div
+          data-skin-dropzone
+          style={
+            /** @type {import('react').CSSProperties} */ ({
+              '--wails-drop-target': 'drop',
+            })
+          }
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            dragCounter.current = 0;
+            setDragActive(false);
+          }}
+          onClick={handlePick}
+          className={[
+            'group flex h-32 w-full shrink-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed transition-all duration-200',
+            dragActive
+              ? 'border-saturn-400 bg-(--surface-hover)'
+              : 'hover:border-saturn-500/50 border-(--surface-border) hover:bg-(--surface-hover) hover:shadow-lg',
+          ].join(' ')}
+        >
+          <UploadCloud
+            className="text-muted-foreground/60 group-hover:text-saturn-400 size-8 transition-colors"
+            strokeWidth={1.5}
+          />
+          <div className="flex flex-col items-center gap-0.5 text-center">
+            <p className="text-foreground text-sm font-normal">
+              {preview ? 'Replace skin' : 'Click or drag in a .png'}
+            </p>
+            <p className="text-muted-foreground text-xs font-thin">
+              64x64 image required
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 flex items-end justify-between gap-6 border-t border-(--divider) pt-6">
+        <div className="flex flex-col gap-2">
+          <span className="text-muted-foreground text-xs font-thin tracking-[0.2em] uppercase">
+            Variant
+          </span>
+          <div
+            className="relative flex h-11 rounded-md border border-(--hairline) p-1"
+            onMouseLeave={() => setHoveredVariant(null)}
+          >
+            {['classic', 'slim'].map((v) => {
+              const isHovered = (hoveredVariant ?? variant) === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setVariant(v)}
+                  onMouseEnter={() => setHoveredVariant(v)}
+                  className={[
+                    'relative z-10 flex flex-1 items-center justify-center rounded-sm px-6 text-sm font-thin transition-colors',
+                    variant === v
+                      ? 'text-(--saturn-fg-strong)'
+                      : 'text-muted-foreground hover:text-(--saturn-fg)',
+                  ].join(' ')}
+                >
+                  {isHovered && (
+                    <motion.div
+                      layoutId="skin-variant-pill"
+                      className="absolute inset-0 rounded-sm bg-(--surface-active)"
+                      transition={{
+                        type: 'spring',
+                        stiffness: 400,
+                        damping: 35,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10 capitalize">{v}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={!path || uploading}
+          className="border-saturn-700/60 bg-saturn-900 text-saturn-100 hover:bg-saturn-800 hover:text-saturn-50 flex h-11 items-center justify-center rounded-md border px-8 text-sm font-thin transition-colors disabled:pointer-events-none disabled:opacity-40"
+        >
+          {uploading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            'Apply Skin'
+          )}
+        </button>
+      </div>
+    </div>
   );
 }

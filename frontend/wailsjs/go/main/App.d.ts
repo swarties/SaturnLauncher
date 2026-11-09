@@ -84,6 +84,8 @@ export function GetServerProperties(arg1:string):Promise<Record<string, string>>
 
 export function GetSkinByUsername(arg1:string):Promise<string>;
 
+export function GetSkinPreview(arg1:string):Promise<string>;
+
 export function GetTotalPlaytime():Promise<number>;
 
 export function GetTotalRam():Promise<instances.Ram>;
@@ -105,6 +107,8 @@ export function InstallNeoforge(arg1:string,arg2:string):Promise<void>;
 export function InstallProjectContent(arg1:string,arg2:string,arg3:string,arg4:string):Promise<string>;
 
 export function InstallQuilt(arg1:string,arg2:string):Promise<void>;
+
+export function IsNetworkError(arg1:Error):Promise<boolean>;
 
 export function KillAllInstances():Promise<void>;
 
@@ -135,6 +139,8 @@ export function ParsePrism(arg1:Array<migration.DetectedInstances>):Promise<Arra
 export function PickInstanceIcon():Promise<string>;
 
 export function PickJavaPath():Promise<string>;
+
+export function PickSkin():Promise<string>;
 
 export function ReadWhitelist(arg1:string):Promise<Array<instances.Whitelist>>;
 
