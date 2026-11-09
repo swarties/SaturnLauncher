@@ -57,11 +57,10 @@ func (s *Skins) GetUUIDByUsername(username string) (*GetUUID, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer getUUID.Body.Close()
 	if getUUID.StatusCode != http.StatusOK {
-		defer getUUID.Body.Close()
 		return nil, fmt.Errorf("user does not exist")
 	}
-	defer getUUID.Body.Close()
 	uuid, err := io.ReadAll(getUUID.Body)
 	if err != nil {
 		return nil, err
@@ -77,16 +76,21 @@ func (s *Skins) GetSkinByUsername(username string) (string, error) {
 	var skinStruct GetSkin
 	var skinTextures GetSkinTextures
 	uuid, err := s.GetUUIDByUsername(username)
+	if err != nil {
+		return "", err
+	}
 	getSkin, err := http.Get("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid.Id)
 	if err != nil {
 		return "", err
 	}
+	defer getSkin.Body.Close()
 	if getSkin.StatusCode != http.StatusOK {
-		defer getSkin.Body.Close()
 		return "", fmt.Errorf("user does not exist")
 	}
-	defer getSkin.Body.Close()
 	skin, err := io.ReadAll(getSkin.Body)
+	if err != nil {
+		return "", err
+	}
 	err = json.Unmarshal(skin, &skinStruct)
 	if err != nil {
 		return "", err
@@ -133,27 +137,27 @@ func (s *Skins) UploadSkin(path, variant, accessToken string) error {
 	if err != nil {
 		return err
 	}
+	err = writer.Close()
+	if err != nil {
+		return err
+	}
 	request, err := http.NewRequest("PUT", "https://api.minecraftservices.com/minecraft/profile/skins", &buffer)
 	if err != nil {
 		return err
 	}
 	request.Header.Add("Content-Type", writer.FormDataContentType())
 	request.Header.Add("Authorization", "Bearer "+accessToken)
-	err = writer.Close()
-	if err != nil {
-		return err
-	}
 	do, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
 	defer do.Body.Close()
-	if do.StatusCode != http.StatusOK {
-		all, err := io.ReadAll(do.Body)
-		if err != nil {
-			return err
+	if do.StatusCode != http.StatusOK && do.StatusCode != http.StatusNoContent {
+		all, readErr := io.ReadAll(do.Body)
+		if readErr != nil {
+			return readErr
 		}
-		return fmt.Errorf("couldn't upload the skin. error was %s. response body: %s", err, all)
+		return fmt.Errorf("couldn't upload the skin. error was %s. response body: %s. Status: %s", readErr, all, do.StatusCode)
 	}
 	return nil
 }
