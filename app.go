@@ -27,6 +27,7 @@ import (
 	"image/png"
 	"io"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -98,7 +99,7 @@ func (a *App) startup(ctx context.Context) {
 	}
 	_, err = a.Download.GetVersionManifest()
 	if err != nil {
-		return
+		fmt.Println("couldn't update manifest")
 	}
 	wailsRuntime.WindowSetMinSize(ctx, 1000, 700)
 	wailsRuntime.WindowSetMaxSize(ctx, 0, 0)
@@ -220,13 +221,24 @@ func (a *App) StartApp() {
 		}
 		mctoken, NewAuthSession, err := a.Auth.RefreshMinecraftToken(*Keys)
 		if err != nil {
+			if a.IsNetworkError(err) {
+				NewAuthSession.Offline = true
+				_ = a.Auth.SaveAndActivateAccount(NewAuthSession)
+				wailsRuntime.EventsEmit(a.ctx, "auth:offline", &auth.MinecraftInfo{
+					Username: Keys.Username,
+					UUID:     Keys.UUID,
+				})
+				return
+			}
 			wailsRuntime.EventsEmit(a.ctx, "auth:required", err.Error())
 			return
 		}
 		if strings.TrimSpace(NewAuthSession.RefreshToken) == "" {
-			wailsRuntime.EventsEmit(a.ctx, "auth:required", fmt.Errorf("refresh Key Is Empty"))
+			wailsRuntime.EventsEmit(a.ctx, "auth:required", "refresh Key Is Empty")
 			return
 		}
+		NewAuthSession.Offline = false
+		NewAuthSession.MinecraftToken = mctoken.AccessToken
 		err = a.Auth.SaveAndActivateAccount(NewAuthSession)
 		if err != nil {
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
@@ -234,12 +246,34 @@ func (a *App) StartApp() {
 		}
 		mcinfo, err := a.Auth.GetAccountInfo(mctoken)
 		if err != nil || mcinfo.Error != "" || mcinfo.UUID == "" {
+			if a.IsNetworkError(err) {
+				NewAuthSession.Offline = true
+				_ = a.Auth.SaveAndActivateAccount(NewAuthSession)
+				wailsRuntime.EventsEmit(a.ctx, "auth:offline", &auth.MinecraftInfo{
+					Username: Keys.Username,
+					UUID:     Keys.UUID,
+				})
+				return
+			}
 			wailsRuntime.EventsEmit(a.ctx, "auth:required")
 			return
 		}
 		wailsRuntime.EventsEmit(a.ctx, "auth:success", mcinfo)
 		return
 	}()
+}
+
+func (a *App) IsNetworkError(err error) bool {
+	if _, ok := errors.AsType[*url.Error](err); ok {
+		return true
+	}
+	if _, ok := errors.AsType[net.Error](err); ok {
+		return true
+	}
+	if _, ok := errors.AsType[*net.OpError](err); ok {
+		return true
+	}
+	return false
 }
 
 func (a *App) StartGame(folderId, worldName string) error {
@@ -259,6 +293,14 @@ func (a *App) StartGame(folderId, worldName string) error {
 			var authErr error
 			mcpayload, Session, authErr = a.Auth.RefreshMinecraftToken(*Keys)
 			if authErr != nil {
+				if a.IsNetworkError(authErr) {
+					Session = *Keys
+					mcpayload = auth.MinecraftPayload{AccessToken: "0"}
+					mcinfo = &auth.MinecraftInfo{
+						Username: Keys.Username,
+						UUID:     Keys.UUID,
+					}
+				}
 				return authErr
 			}
 			mcinfo, authErr = a.Auth.GetAccountInfo(mcpayload)
@@ -272,7 +314,7 @@ func (a *App) StartGame(folderId, worldName string) error {
 			}
 		} else {
 			Session = *Keys
-			mcpayload = auth.MinecraftPayload{AccessToken: Keys.MinecraftToken}
+			mcpayload = auth.MinecraftPayload{AccessToken: "0"}
 			mcinfo = &auth.MinecraftInfo{
 				Username: Keys.Username,
 				UUID:     Keys.UUID,
