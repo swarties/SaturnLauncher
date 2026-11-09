@@ -2099,3 +2099,11 @@ func (a *App) PickSkin() (string, error) {
 	}
 	return path, nil
 }
+
+func (a *App) GetSkinPreview(path string) (string, error) {
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(file), nil
+}
