@@ -32,6 +32,7 @@ import {
   UploadSkin,
 } from '../../../wailsjs/go/main/App';
 import { CachedImage } from '@/components/ui/cached-image';
+import { deleteCachedImage } from '@/lib/image-cache';
 
 export const Route = createFileRoute('/_app/account')({
   component: AccountPage,
@@ -251,7 +252,7 @@ function AccountPage() {
           </button>
         </div>
 
-        <SkinManager username={current?.username} />
+        <SkinManager username={current?.username} uuid={current?.uuid} />
       </div>
 
       <AnimatePresence>
@@ -503,7 +504,7 @@ function AddAccountOverlay({ code, uri, error, onCancel }) {
   );
 }
 
-function SkinManager({ username }) {
+function SkinManager({ username, uuid }) {
   const [path, setPath] = useState('');
   const [preview, setPreview] = useState(null);
   const [variant, setVariant] = useState('classic'); // 'classic' || 'slim'
@@ -563,11 +564,21 @@ function SkinManager({ username }) {
     try {
       await UploadSkin(path, variant);
       toast.success('Skin uploaded successfully!');
+
+      if (uuid && username) {
+        await Promise.all([
+          deleteCachedImage(
+            `https://render.crafty.gg/3d/full/${username}?width=300&height=360&x=30&z=50`
+          ),
+          deleteCachedImage(`https://mc-heads.net/avatar/${uuid}/128`),
+          deleteCachedImage(`https://mc-heads.net/avatar/${uuid}`),
+        ]);
+      }
+
       setPath('');
       setPreview(null);
     } catch (e) {
       toast.error(e?.message ?? 'Failed to upload skin.');
-      console.log('Failed to upload skin:', e);
     } finally {
       setUploading(false);
     }

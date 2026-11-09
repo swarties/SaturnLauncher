@@ -44,3 +44,18 @@ export async function setCachedImage(url, blob) {
     return null;
   }
 }
+
+export async function deleteCachedImage(url) {
+  try {
+    const db = await getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.delete(url);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch {
+    return null;
+  }
+}
