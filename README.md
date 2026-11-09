@@ -122,7 +122,7 @@ Using wailsIo V2.15.0
 - Modrinth Manifest
 - Modrinth Update system (backend only for now)
 - Installed checkmarks thanks to manifest
-- Bulk Mod Updates
+- Bulk Mod Updates/Individual mod updates
 
 #### Advanced Features
 
@@ -148,6 +148,7 @@ Using wailsIo V2.15.0
 - Kill All Instances at once
 - Open Launcher Folder Button
 - Simple crash parser
+- Upload logs to mclo.gs
 
 #### Local Servers
 
