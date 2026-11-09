@@ -2081,3 +2081,21 @@ func (a *App) UploadLatestLogs(folderId string) (*mclogs.Response, error) {
 	}
 	return resp, nil
 }
+
+func (a *App) PickSkin() (string, error) {
+	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
+		Title: "Pick a skin file",
+		Filters: []wailsRuntime.FileFilter{
+			{
+				DisplayName: "Skin file",
+				Pattern:     "*.png",
+			},
+		},
+		ShowHiddenFiles:      false,
+		CanCreateDirectories: false,
+	})
+	if err != nil {
+		return "", err
+	}
+	return path, nil
+}
