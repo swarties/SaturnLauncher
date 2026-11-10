@@ -1,12 +1,19 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { CloudUpload, FolderOpen, Loader2, Search } from 'lucide-react';
+import {
+  CloudUpload,
+  FolderOpen,
+  FolderOutput,
+  Loader2,
+  Search,
+} from 'lucide-react';
 
 import { useLaunch } from '@/stores/launch';
 import { loadLogs, useLogs } from '@/stores/logs';
 import { toast } from '@/stores/toasts';
 import { copyText } from '@/lib/backend';
 import {
+  ExportInstanceAsModpack,
   OpenInstanceFolder,
   UploadLatestLogs,
 } from '../../../wailsjs/go/main/App';
@@ -86,6 +93,7 @@ function LogsTab() {
 
 function LogsHeader({ query, onQueryChange, onOpenFolder, isLive, uuid }) {
   const [uploading, setUploading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const handleUpload = async () => {
     if (uploading || !uuid) return;
@@ -105,6 +113,22 @@ function LogsHeader({ query, onQueryChange, onOpenFolder, isLive, uuid }) {
       toast.error(e?.message ?? 'Failed to upload logs');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (exporting || !uuid) return;
+    setExporting(true);
+
+    try {
+      const dir = await ExportInstanceAsModpack(uuid, true, true);
+      if (!(dir === '')) {
+        toast.success('Instance exported at ' + dir);
+      }
+    } catch (e) {
+      toast.error(e?.message ?? 'Failed to export instance');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -134,6 +158,20 @@ function LogsHeader({ query, onQueryChange, onOpenFolder, isLive, uuid }) {
           Live
         </span>
       )}
+      <button
+        type="button"
+        onClick={handleExport}
+        disabled={exporting}
+        data-tooltip="Export Instance"
+        aria-label="Export Instance"
+        className="text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-(--hairline) transition-colors hover:border-(--surface-border-hover) hover:bg-(--surface-hover) hover:text-(--saturn-fg-hover) disabled:pointer-events-none disabled:opacity-40"
+      >
+        {exporting ? (
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+        ) : (
+          <FolderOutput className="size-4" aria-hidden="true" />
+        )}
+      </button>
       <button
         type="button"
         onClick={handleUpload}
