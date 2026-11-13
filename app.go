@@ -1402,13 +1402,13 @@ func (a *App) InstallModrinthModpack(vId string) (string, error) {
 		return "", err
 	}
 	for _, v := range version.Loaders {
-		if v == "fabric" || v == "quilt" {
+		if v == "fabric" || v == "quilt" || v == "neoforge" {
 			isSupported = true
 			// return "", fmt.Errorf("SaturnLauncher currently only supports fabric")
 		}
 	}
 	if isSupported == false {
-		return "", fmt.Errorf("SaturnLauncher currently only supports fabric and quilt")
+		return "", fmt.Errorf("SaturnLauncher currently only supports fabric, neoforge and quilt")
 	}
 	for _, v := range version.Files {
 		if v.Primary == true {
