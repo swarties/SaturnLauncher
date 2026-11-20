@@ -173,6 +173,9 @@ func (a *Auth) GetXBL(at MicrosoftAccessToken) (*XBLPayload, error) {
 		return nil, err
 	}
 	req, err := http.NewRequest("POST", "https://user.auth.xboxlive.com/user/authenticate", bytes.NewBuffer(JsonBody))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -208,29 +211,30 @@ func (a *Auth) GetXSTS(xblToken XBLPayload) (*XSTSPayload, error) {
 		return nil, err
 	}
 	req, err := http.NewRequest("POST", "https://xsts.auth.xboxlive.com/xsts/authorize", bytes.NewBuffer(JsonBody))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
-	} else if resp.StatusCode == http.StatusOK {
-		err := json.NewDecoder(resp.Body).Decode(&XSTSToken)
-		if err != nil {
-			return nil, err
-		}
-	} else if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		fmt.Println("Status Code", resp.StatusCode)
-		fmt.Println(string(b))
 	}
 	defer resp.Body.Close()
-	return &XSTSToken, err
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("XSTS error HTTP %d: %s", resp.StatusCode, string(b))
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&XSTSToken); err != nil {
+		return nil, err
+	}
+	return &XSTSToken, nil
 }
 
 func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (*MinecraftPayload, error) {
 	var MinecraftToken MinecraftPayload
 	if len(XBLuhs.DisplayClaims.Xui) == 0 {
-		return nil, fmt.Errorf("Missing UserHash ")
+		return nil, fmt.Errorf("missing UserHash")
 	}
 	body := map[string]any{
 		"identityToken": "XBL3.0 x=" + XBLuhs.DisplayClaims.Xui[0].Uhs + ";" + xstsToken.Token,
@@ -240,26 +244,27 @@ func (a *Auth) GetMinecraftAuth(xstsToken XSTSPayload, XBLuhs XBLPayload) (*Mine
 		return nil, err
 	}
 	req, err := http.NewRequest("POST", "https://api.minecraftservices.com/authentication/login_with_xbox", bytes.NewBuffer(JsonBody))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		defer resp.Body.Close()
 		return nil, err
-	} else if resp.StatusCode == http.StatusOK {
-		err := json.NewDecoder(resp.Body).Decode(&MinecraftToken)
-		defer resp.Body.Close()
-		if err != nil {
-			return nil, err
-		}
-	} else if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		fmt.Println("Status Code", resp.StatusCode)
-		defer resp.Body.Close()
-		fmt.Println(string(b))
 	}
 	defer resp.Body.Close()
-	return &MinecraftToken, err
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("minecraft login error HTTP %d: %s", resp.StatusCode, string(b))
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&MinecraftToken); err != nil {
+		return nil, err
+	}
+	if MinecraftToken.AccessToken == "" {
+		return nil, fmt.Errorf("minecraft login returned an empty access token")
+	}
+	return &MinecraftToken, nil
 }
 
 func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (MinecraftPayload, AuthSession, error) {
@@ -284,6 +289,8 @@ func (a *Auth) RefreshMinecraftToken(microsoftaccesskeys AuthSession) (Minecraft
 		}
 		if newaccesskeys.RefreshToken != "" {
 			AuthInfo.RefreshToken = newaccesskeys.RefreshToken
+			// persist right away so a later failure doesn't lose the rotated token
+			_ = a.SaveAndActivateAccount(AuthInfo)
 		}
 
 	} else if resp.StatusCode != http.StatusOK {

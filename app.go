@@ -223,7 +223,6 @@ func (a *App) StartApp() {
 		if err != nil {
 			if a.IsNetworkError(err) {
 				NewAuthSession.Offline = true
-				_ = a.Auth.SaveAndActivateAccount(NewAuthSession)
 				wailsRuntime.EventsEmit(a.ctx, "auth:offline", &auth.MinecraftInfo{
 					Username: Keys.Username,
 					UUID:     Keys.UUID,
@@ -247,8 +246,6 @@ func (a *App) StartApp() {
 		mcinfo, err := a.Auth.GetAccountInfo(mctoken)
 		if err != nil || mcinfo.Error != "" || mcinfo.UUID == "" {
 			if a.IsNetworkError(err) {
-				NewAuthSession.Offline = true
-				_ = a.Auth.SaveAndActivateAccount(NewAuthSession)
 				wailsRuntime.EventsEmit(a.ctx, "auth:offline", &auth.MinecraftInfo{
 					Username: Keys.Username,
 					UUID:     Keys.UUID,
@@ -288,43 +285,39 @@ func (a *App) StartGame(folderId, worldName string) error {
 	if err != nil {
 		return err
 	}
-	if Keys.Offline == false {
-		if !a.Auth.GetTokenValidity(Keys.MinecraftToken) {
-			var authErr error
-			mcpayload, Session, authErr = a.Auth.RefreshMinecraftToken(*Keys)
-			if authErr != nil {
-				if a.IsNetworkError(authErr) {
+		if !Keys.Offline {
+			if a.Auth.GetTokenValidity(Keys.MinecraftToken) {
+				// Token is still good: use it (this used to pass "0")
+				Session = *Keys
+				mcpayload = auth.MinecraftPayload{AccessToken: Keys.MinecraftToken}
+				mcinfo = &auth.MinecraftInfo{Username: Keys.Username, UUID: Keys.UUID}
+			} else {
+				var authErr error
+				mcpayload, Session, authErr = a.Auth.RefreshMinecraftToken(*Keys)
+				if authErr != nil {
+					if !a.IsNetworkError(authErr) {
+						return authErr
+					}
+					// No network: fall back to an offline launch
 					Session = *Keys
 					mcpayload = auth.MinecraftPayload{AccessToken: "0"}
-					mcinfo = &auth.MinecraftInfo{
-						Username: Keys.Username,
-						UUID:     Keys.UUID,
+					mcinfo = &auth.MinecraftInfo{Username: Keys.Username, UUID: Keys.UUID}
+				} else {
+					mcinfo, authErr = a.Auth.GetAccountInfo(mcpayload)
+					if authErr != nil {
+						return authErr
+					}
+					Session.MinecraftToken = mcpayload.AccessToken
+					if authErr = a.Auth.SaveAndActivateAccount(Session); authErr != nil {
+						return authErr
 					}
 				}
-				return authErr
-			}
-			mcinfo, authErr = a.Auth.GetAccountInfo(mcpayload)
-			if authErr != nil {
-				return authErr
-			}
-			Session.MinecraftToken = mcpayload.AccessToken
-			authErr = a.Auth.SaveAndActivateAccount(Session)
-			if authErr != nil {
-				return authErr
 			}
 		} else {
 			Session = *Keys
 			mcpayload = auth.MinecraftPayload{AccessToken: "0"}
-			mcinfo = &auth.MinecraftInfo{
-				Username: Keys.Username,
-				UUID:     Keys.UUID,
-			}
+			mcinfo = &auth.MinecraftInfo{Username: Keys.Username, UUID: Keys.UUID}
 		}
-	} else {
-		Session = *Keys
-		mcpayload = auth.MinecraftPayload{AccessToken: "0"}
-		mcinfo = &auth.MinecraftInfo{Username: Keys.Username, UUID: Keys.UUID}
-	}
 	instInfo, err := a.InstanceManager.GetInstanceInfo(folderId)
 	if err != nil {
 		return err
@@ -1287,10 +1280,12 @@ func (a *App) UploadSkin(path, variant string) error {
 	if err != nil {
 		return err
 	}
-	token, _, err := a.Auth.RefreshMinecraftToken(*account)
+	token, session, err := a.Auth.RefreshMinecraftToken(*account)
 	if err != nil {
 		return err
 	}
+	session.MinecraftToken = token.AccessToken
+	_ = a.Auth.SaveAndActivateAccount(session)
 	err = a.skins.UploadSkin(path, variant, token.AccessToken)
 	if err != nil {
 		return err
