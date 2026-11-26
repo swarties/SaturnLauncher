@@ -12,7 +12,7 @@ This project was made for the ThirdSpace YSWS.
 - OS: Windows 10/11 (Requires WebView2; Comes with a regular Windows 11 install) or Linux
 - CPU: 2+ cores
 - RAM: 1GB of free RAM ( 4+ GB to run Minecraft)
-- Storage: 50 MB of free storage (additional 1.5 GB for Java & Minecraft files)
+- Storage: 15 MB of free storage (additional 1.5 GB or more for Java & Minecraft files)
 - Network: Required for login and installing game files and mods from Modrinth
 - Java: No installation required 
 
