@@ -69,7 +69,7 @@ Using wailsIo V2.15.0
 - Game Lifecycle to prevent launching the same instance twice
 - Self-healing game files on launch
 - Live Java & Game logs to be able to see Java errors
-- World Listing (preparing for quickplay)
+- World Listing
 
 #### Java
 
@@ -84,18 +84,14 @@ Using wailsIo V2.15.0
 - Ability to select the custom Java args, RAM icon, etc. for each instance
 - Instance Duplication
 - Instance Backup And Restore
+- Export instance as modpack
 
 #### Content Manager
 
 - Install mods, resource packs, and shaders using local files
-- Fully install Modrinth modpacks and their overrides (not implemented in frontend)
+- Fully install Modrinth modpacks and their overrides
 - List mods, resource packs, and shader packs (rich metadata available for mods and resource packs)
-- Enable/disable mods, resource packs, and shader packs (add .disabled to the end of the file name)
-
-#### Modpacks
-
-- Installing modpacks from local and Modrinth
-- Exporting instances as valid .mrpack files
+- Enable/disable mods, resource packs, and shader packs
 
 #### Fabric Loader Support
 
@@ -115,12 +111,12 @@ Using wailsIo V2.15.0
 #### Modrinth Support
 
 - Discovery Page
-- Ability to look up mods, shaders, and resource packs (installing modpacks from Modrinth support is a planned feature)
+- Ability to look up mods, shaders, and resource packs
 - Individual Project Page
 - Version Page for each project
 - Recursive mod + deps installation (Installs mods and their deps (and the deps of deps))
 - Modrinth Manifest
-- Modrinth Update system (backend only for now)
+- Modrinth Update system
 - Installed checkmarks thanks to manifest
 - Bulk Mod Updates/Individual mod updates
 
@@ -138,7 +134,7 @@ Using wailsIo V2.15.0
 - Bloat free
 - No ads
 - Auto-update from GitHub on launch (supports NSIS, portable version, and Linux)
-- Skin lookup and select + upload to Minecraft servers (backend)
+- Skin lookup and select + upload to Minecraft servers
 - Screenshot manager
 - Discord Rich Presence
 - Frontend config in a `config.cfg` file instead of JavaScript's localStorage
@@ -159,6 +155,7 @@ Using wailsIo V2.15.0
 - Bans, whitelist, and Ops management
 - Get Local Ip Address Helper
 - Vanilla servers only right now...
+- Not Implemented to the frontend but the backend is there PRs for this would be appreciated
 
 #### Migration
 
