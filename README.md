@@ -172,6 +172,11 @@ Most launchers today are aesthetically unpleasing, filled with ads, and too bloa
 
 ## Gallery
 
+### Speed Benchmark
+
+[Watch The Demo On Youtube Now!](https://youtu.be/m5s5KsIZZ7c)
+
+
 ### Login
 
 | <img width="1262" height="723" alt="image" src="https://github.com/user-attachments/assets/262f6783-296b-445a-aded-89880316b00f" /> | <img width="1258" height="727" alt="image" src="https://github.com/user-attachments/assets/e3e0bd63-4d54-480b-8fcd-dee646125194" /> |
