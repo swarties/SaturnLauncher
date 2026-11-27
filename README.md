@@ -1,7 +1,6 @@
 # Saturn Launcher
 
 Our take on a lightweight, ad-free, minimalistic, and blazingly fast open-source Minecraft launcher!
-This project was made for the ThirdSpace YSWS.
 
 ## Main Contributors
 
